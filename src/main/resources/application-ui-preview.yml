@@ -1,0 +1,10 @@
+# Opt-in: --spring.profiles.active=ui-preview (fixture UI only)
+spring:
+  config:
+    activate:
+      on-profile: ui-preview
+  thymeleaf:
+    cache: false
+  devtools:
+    restart:
+      enabled: false

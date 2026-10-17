@@ -1,0 +1,47 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<div th:fragment="rowActions(label, viewUrl)" class="row-actions">
+  <a th:if="${!#strings.isEmpty(viewUrl)}" class="action-icon action-view" th:href="@{${viewUrl}}"
+     th:attr="title=${'Xem chi tiết ' + label},aria-label=${'Xem chi tiết ' + label}">
+    <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+  </a>
+  <button type="button" class="action-icon action-edit" data-ui-only="edit"
+          th:attr="title=${'Sửa ' + label},aria-label=${'Sửa ' + label}">
+    <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg><span class="sr-only">Sửa</span>
+  </button>
+  <button type="button" class="action-icon action-delete" data-ui-only="delete"
+          th:attr="title=${'Xóa ' + label},aria-label=${'Xóa ' + label}">
+    <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg><span class="sr-only">Xóa</span>
+  </button>
+</div>
+<div th:fragment="actions" class="page-actions">
+  <th:block th:each="action : ${screen.actions}"
+            th:with="iconName=${#strings.startsWith(action.label, 'Xem') ? 'view' : (#strings.startsWith(action.label, 'Sửa') or #strings.startsWith(action.label, 'Thay thế') ? 'edit' : (#strings.startsWith(action.label, 'Xóa') ? 'delete' : ''))}">
+    <a th:if="${action.enabled and action.kind == 'link'}" class="button" th:href="@{${action.url}}"
+       th:classappend="${#strings.isEmpty(iconName) ? '' : 'action-icon action-' + iconName}"
+       th:attr="title=${action.label},aria-label=${action.label}">
+      <th:block th:if="${!#strings.isEmpty(iconName)}"><svg th:replace="~{common/fragments/icons :: actionIcon(${iconName})}"></svg></th:block>
+      <span th:classappend="${#strings.isEmpty(iconName) ? '' : 'sr-only'}" th:text="${action.label}"></span>
+    </a>
+    <button th:if="${action.enabled and action.kind != 'link'}" type="button" class="button"
+            th:classappend="${#strings.isEmpty(iconName) ? '' : 'action-icon action-' + iconName}"
+            th:attr="data-action=${action.kind},title=${action.label},aria-label=${action.label}">
+      <th:block th:if="${!#strings.isEmpty(iconName)}"><svg th:replace="~{common/fragments/icons :: actionIcon(${iconName})}"></svg></th:block>
+      <span th:classappend="${#strings.isEmpty(iconName) ? '' : 'sr-only'}" th:text="${action.label}"></span>
+    </button>
+    <span th:unless="${action.enabled}" class="disabled-action" th:title="${action.label + ' — ' + action.reason}">
+      <button type="button" class="button" disabled
+              th:classappend="${#strings.isEmpty(iconName) ? '' : 'action-icon action-' + iconName}"
+              th:attr="aria-label=${action.label},title=${action.label}">
+        <th:block th:if="${!#strings.isEmpty(iconName)}"><svg th:replace="~{common/fragments/icons :: actionIcon(${iconName})}"></svg></th:block>
+        <span th:classappend="${#strings.isEmpty(iconName) ? '' : 'sr-only'}" th:text="${action.label}"></span>
+      </button>
+      <small th:text="${action.reason}"></small>
+    </span>
+  </th:block>
+</div>
+<div th:fragment="metrics" class="stats-grid" th:if="${!#lists.isEmpty(screen.metrics)}"><article class="stat-card" th:each="metric, i : ${screen.metrics}"><span class="stat-icon" aria-hidden="true" th:text="${i.index + 1}"></span><h2 th:text="${metric.label}"></h2><strong class="value" th:text="${metric.value}"></strong><p th:text="${metric.caption}"></p></article></div>
+<section th:fragment="facts" th:if="${!#lists.isEmpty(screen.facts)}" class="content-card"><div class="content-card-header"><h2>Thông tin hồ sơ</h2><span th:if="${!#strings.isEmpty(screen.status)}" class="badge" th:attr="data-status=${screen.status}" th:text="${screen.status}"></span></div><dl class="facts-grid"><div th:each="fact : ${screen.facts}"><dt th:text="${fact.label}"></dt><dd th:text="${fact.value}"></dd></div></dl></section>
+<section th:fragment="checks" th:if="${!#lists.isEmpty(screen.checks)}" class="content-card"><div class="content-card-header"><h2>Điều kiện & kiểm tra</h2><span class="caption">Theo dữ liệu mẫu</span></div><ul class="checklist"><li th:each="check : ${screen.checks}" th:classappend="${check.passed ? 'passed' : 'blocked'}" th:attr="data-passed=${check.passed}"><span class="check-icon" aria-hidden="true" th:text="${check.passed ? '✓' : '!'}"></span><div><strong th:text="${check.label}"></strong><small th:text="${check.passed ? 'Đã đáp ứng' : 'Cần xử lý trước khi hoàn tất'}"></small><p th:if="${!#strings.isEmpty(check.explanation)}" th:text="${check.explanation}"></p></div></li></ul></section>
+<section th:fragment="history" th:if="${!#lists.isEmpty(screen.history)}" class="content-card"><div class="content-card-header"><h2>Lịch sử & bằng chứng</h2></div><ol class="timeline"><li th:each="event : ${screen.history}"><time th:text="${event.time}"></time><strong th:text="${event.action}"></strong><small th:text="${event.actor}"></small></li></ol></section>
+<section th:fragment="steps" th:if="${!#lists.isEmpty(screen.steps)}" class="content-card"><div class="content-card-header"><h2>Các bước liên quan</h2><span class="caption">Mở UI của người xử lý tiếp theo</span></div><div class="workflow-links"><a th:each="step, i : ${screen.steps}" th:href="@{${step.url}}"><span th:text="${i.index + 1}"></span><strong th:text="${step.label}"></strong><span aria-hidden="true">→</span></a></div></section>
+</body></html>

@@ -1,0 +1,54 @@
+# Production — cache templates/static assets, lean logging, faster steady state
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST}:${DB_PORT:1433};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 5
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    show-sql: false
+  thymeleaf:
+    cache: true
+  devtools:
+    add-properties: false
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 7d
+          cache-public: true
+      chain:
+        compressed: true
+        cache: true
+
+server:
+  error:
+    include-message: on-param
+    include-binding-errors: on-param
+    include-stacktrace: never
+    include-exception: false
+  tomcat:
+    threads:
+      max: 300
+      min-spare: 25
+
+logging:
+  level:
+    root: WARN
+    fu.he.training.fall2026: INFO
+    org.springframework: WARN
+    org.springframework.security: WARN

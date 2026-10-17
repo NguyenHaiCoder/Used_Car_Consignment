@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<div th:fragment="fields" class="form-grid">
+  <div class="field" th:each="field : ${screen.fields}" th:classappend="${field.type == 'textarea' or field.type == 'checkbox' or field.type == 'file' ? 'full-width' : ''}" th:attr="data-field=${field.name}">
+    <label th:for="${'field-' + field.name}"><span th:text="${field.label}"></span><span th:if="${field.required}" class="required" aria-label="bắt buộc"> *</span></label>
+    <select th:if="${field.type == 'select'}" th:id="${'field-' + field.name}" th:name="${field.name}" th:required="${field.required}" th:attr="aria-describedby=${'hint-' + field.name + ' error-' + field.name}"><option value="">Chọn một giá trị</option><option th:each="option : ${field.options}" th:value="${option}" th:text="${option}" th:selected="${option == field.value}"></option></select>
+    <textarea th:if="${field.type == 'textarea'}" th:id="${'field-' + field.name}" th:name="${field.name}" th:required="${field.required}" rows="4" maxlength="2000" th:text="${field.value}" th:attr="aria-describedby=${'hint-' + field.name + ' error-' + field.name}"></textarea>
+    <input th:if="${field.type != 'textarea' and field.type != 'select'}" th:type="${field.type}" th:id="${'field-' + field.name}" th:name="${field.name}" th:value="${field.type == 'file' ? null : field.value}" th:required="${field.required}" th:attr="min=${field.type == 'number' ? '0' : null},step=${field.type == 'number' ? 'any' : null},accept=${field.type == 'file' ? '.pdf,.jpg,.jpeg,.png' : null},aria-describedby=${'hint-' + field.name + ' error-' + field.name},autocomplete=${field.type == 'password' ? 'current-password' : null}">
+    <small class="field-hint" th:id="${'hint-' + field.name}" th:text="${field.type == 'file' ? 'PDF, JPG hoặc PNG; tối đa 10 MB. File không được gửi lên máy chủ.' : field.hint}"></small>
+    <small class="field-error" th:id="${'error-' + field.name}" aria-live="polite"></small>
+  </div>
+</div>
+<section th:fragment="form" class="content-card" th:if="${!#lists.isEmpty(screen.fields)}"><div class="content-card-header"><h2 th:text="${screen.kind == 'agreement' and screen.status == 'ACTIVE' ? 'Tạo phiên bản sửa đổi' : 'Nhập thông tin'}"></h2><span class="caption">* Thông tin bắt buộc</span></div>
+  <form id="preview-form" class="preview-form" method="post" novalidate th:attr="data-key=${route}">
+    <p class="form-message" id="form-message" role="status" hidden></p>
+    <div th:replace="~{common/fragments/forms :: fields}"></div>
+    <div th:replace="~{common/fragments/workflow-panels :: formExtras}"></div>
+    <p class="field-hint" th:if="${screen.kind == 'agreement' and screen.status == 'ACTIVE'}">Bản active ở phía trên giữ nguyên. Form này tạo nháp phiên bản tiếp theo trong trình duyệt.</p>
+    <div class="form-actions">
+      <button type="button" class="button" id="save-draft" disabled>Lưu nháp trên trình duyệt</button>
+      <button type="button" class="button action-icon action-delete" id="clear-draft" title="Xóa nháp" aria-label="Xóa nháp" disabled>
+        <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg><span class="sr-only">Xóa nháp</span>
+      </button>
+      <button type="submit" class="button button-primary action-with-icon" id="review-submit" disabled>
+        <th:block th:if="${screen.kind == 'report'}"><svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg></th:block>
+        <span data-submit-label th:text="${screen.kind == 'report' ? 'Xem khoảng ngày mẫu' : 'Kiểm tra &amp; mô phỏng gửi'}"></span>
+      </button>
+    </div>
+    <div id="preview-result" class="result-panel" role="status" hidden></div>
+  </form>
+  <noscript><p class="alert">Cần bật JavaScript để kiểm tra, lưu nháp và mô phỏng form. Form không gửi dữ liệu lên server.</p></noscript>
+</section>
+</body></html>

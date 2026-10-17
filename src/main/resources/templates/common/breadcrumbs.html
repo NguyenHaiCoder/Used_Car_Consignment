@@ -1,0 +1,18 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<nav th:fragment="breadcrumbs" class="breadcrumbs" aria-label="Đường dẫn">
+  <th:block th:if="${appShell}">
+    <a th:href="${roleHome}">Trang chủ</a>
+    <span aria-hidden="true">/</span>
+    <span th:text="${role.label}">Vai trò</span>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page" th:text="${screen.title}"></span>
+  </th:block>
+  <th:block th:unless="${appShell}">
+    <a th:href="@{/ui}">Bộ UI</a>
+    <span aria-hidden="true">/</span>
+    <a th:href="@{'/ui/' + ${role.key}}" th:text="${role.label}"></a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page" th:text="${screen.title}"></span>
+  </th:block>
+</nav>
+</body></html>

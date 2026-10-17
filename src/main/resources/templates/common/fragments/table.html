@@ -1,0 +1,26 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<section th:fragment="table" class="content-card table-card" th:if="${!#lists.isEmpty(screen.columns)}">
+  <div class="content-card-header"><h2 th:text="${screen.kind == 'dashboard' ? 'Công việc cần xử lý' : 'Danh sách hồ sơ'}"></h2><span class="caption" th:text="${#lists.size(screen.rows) + ' bản ghi mẫu'}"></span></div>
+  <div class="table-toolbar"><div class="toolbar-field"><label for="table-search">Tìm kiếm</label><input type="search" id="table-search" placeholder="Tìm mã, tên, xe hoặc liên hệ…"></div><div class="toolbar-field"><label for="table-status">Trạng thái</label><select id="table-status"><option value="">Tất cả trạng thái</option><option th:each="status : ${#sets.toSet(screen.rows.![status])}" th:value="${status}" th:text="${status}"></option></select></div><div class="toolbar-field"><label for="table-size">Mỗi trang</label><select id="table-size"><option>2</option><option selected>5</option><option>10</option><option>20</option></select></div><button type="button" class="button" data-action="export">Xuất CSV mẫu</button></div>
+  <p class="table-hint">Trên màn hình nhỏ, cuộn ngang bảng để xem đầy đủ thông tin và thao tác.</p>
+  <div class="table-scroll">
+    <table class="custom-table" id="records-table">
+      <caption class="sr-only" th:text="${screen.title + ' — dữ liệu mẫu'}"></caption>
+      <thead><tr>
+        <th th:each="column, i : ${screen.columns}" scope="col" aria-sort="none"><button type="button" class="sort-button" th:attr="data-sort=${i.index}" th:text="${column + ' ↕'}"></button></th>
+        <th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+      </tr></thead>
+      <tbody><tr th:each="row : ${screen.rows}" th:attr="data-status=${row.status},data-record-id=${row.id}">
+        <td th:each="cell : ${row.cells}" th:text="${cell}"></td>
+        <td><span class="badge" th:attr="data-status=${row.status}" th:text="${row.status}"></span></td>
+        <td class="action-cell">
+          <div th:replace="~{common/fragments/components :: rowActions(${row.cells[0]}, ${row.url})}"></div>
+          <span th:if="${#strings.isEmpty(row.url)}">Chỉ số tổng hợp</span>
+        </td>
+      </tr></tbody>
+    </table>
+  </div>
+  <div class="empty-state" id="table-empty" hidden><span aria-hidden="true">⌕</span><h3>Không có hồ sơ phù hợp</h3><p>Thử thay đổi từ khóa hoặc bỏ bộ lọc.</p><button type="button" class="button action-with-icon" id="reset-filters"><svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg><span>Xóa bộ lọc</span></button></div>
+  <div class="pagination"><p id="table-count" aria-live="polite"></p><div><button type="button" class="button" id="previous-page" aria-label="Trang trước">← Trước</button><span id="page-number">1</span><button type="button" class="button" id="next-page" aria-label="Trang sau">Sau →</button></div></div>
+</section>
+</body></html>

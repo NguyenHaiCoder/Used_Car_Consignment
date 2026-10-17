@@ -1,0 +1,3 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<div th:fragment="pageHeader" class="page-header"><div><p class="eyebrow" th:text="${screen.module}"></p><h1 th:text="${screen.title}"></h1><p class="page-description" th:text="${screen.description}"></p></div><div class="page-actions" th:replace="~{common/fragments/components :: actions}"></div></div>
+</body></html>

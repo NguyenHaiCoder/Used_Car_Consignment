@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/auth-layout :: shell(~{::content})}">
+<body>
+<section th:fragment="content" data-template="auth/sign-in">
+  <section th:replace="~{common/fragments/forms :: form}"></section>
+  <div th:replace="~{common/fragments/components :: actions}"></div>
+  <p class="panel-note"><a th:href="@{/}">Về trang chủ GaragePro</a></p>
+</section>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/layout :: shell(~{::content})}">
+<body>
+<!-- Tổng quan: edit this page composition here; data comes from Spring Model. -->
+<section th:fragment="content" class="screen-content" data-template="finance/dashboard">
+  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+  <div th:replace="~{common/fragments/components :: metrics}"></div>
+  <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
+  <section th:replace="~{common/fragments/table :: table}"></section>
+</section>
+</body>
+</html>

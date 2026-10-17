@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<head th:fragment="head(title)">
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title + ' | GaragePro Consign'}">GaragePro Consign</title>
+  <link th:href="@{/css/ui/tokens.css}" rel="stylesheet">
+  <link th:href="@{/css/ui/components.css}" rel="stylesheet">
+  <link th:href="@{/css/ui/actions.css}" rel="stylesheet">
+</head>
+<header th:fragment="header" class="main-header">
+  <button class="icon-button menu-toggle" aria-label="Mở điều hướng" aria-controls="app-sidebar" aria-expanded="false">☰</button>
+  <div class="header-context"><strong>UCCMS</strong><span>Ký gửi ô tô đã qua sử dụng</span></div>
+  <div class="header-actions">
+    <a class="button button-quiet" th:unless="${appShell}" th:href="@{/ui/urls}">URL theo role</a>
+    <details class="user-menu"><summary><span class="avatar small" th:text="${role.initials}">VK</span><span th:text="${role.userName}">Nhân viên</span></summary>
+      <div class="dropdown" th:if="${appShell}">
+        <strong th:text="${role.label}"></strong>
+        <p th:text="${role.userName}">Nhân viên</p>
+        <a th:href="@{/home}">Trang chủ GaragePro</a>
+        <form th:action="@{/auth/logout}" method="post" style="margin:0">
+          <button type="submit" class="button button-quiet" style="width:100%;margin-top:.5rem">Đăng xuất</button>
+        </form>
+      </div>
+      <div class="dropdown" th:unless="${appShell}">
+        <strong th:text="${role.label}"></strong>
+        <p>Tài khoản mẫu của vai trò đang xem.</p>
+        <a th:href="@{/ui}">Đổi vai trò xem trước</a>
+        <a th:href="@{/home}">Trang chủ GaragePro</a>
+      </div>
+    </details>
+  </div>
+</header>
+</body></html>

@@ -1,0 +1,6 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<th:block th:fragment="notifications">
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="review-dialog" aria-labelledby="dialog-title"><div class="dialog-heading"><h2 id="dialog-title">Kiểm tra thông tin</h2><button type="button" class="icon-button" data-close-dialog aria-label="Đóng hộp thoại">×</button></div><p class="preview-note">Thao tác xem trước; không cập nhật dữ liệu trên máy chủ.</p><div id="review-content"></div><div class="dialog-actions"><button type="button" class="button" data-close-dialog>Quay lại</button><button type="button" class="button button-primary" id="confirm-preview">Xác nhận mô phỏng</button></div></dialog>
+</th:block>
+</body></html>

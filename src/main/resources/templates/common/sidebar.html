@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<aside th:fragment="sidebar" class="sidebar" id="app-sidebar" aria-label="Điều hướng theo vai trò">
+  <div th:replace="~{common/sidebar-header :: sidebarHeader}"></div>
+  <div class="user-profile"><span class="avatar" th:text="${role.initials}">VK</span><div class="user-info"><strong th:text="${role.userName}"></strong><small th:text="${role.label}"></small></div></div>
+  <nav class="nav-menu" aria-label="Nghiệp vụ">
+    <th:block th:each="module : ${ {'Quản trị','Điều hành','Ký gửi','Xe &amp; kiểm định','Kinh doanh','Tài chính','Bàn giao','Hồ sơ &amp; sang tên'} }">
+      <details class="nav-group" open th:if="${!#lists.isEmpty(navigation.?[module == #vars.module])}">
+        <summary th:text="${module}"></summary>
+        <a th:each="item : ${navigation}" th:if="${item.module == module}" class="nav-link" th:classappend="${activeNav == item.url ? 'active' : ''}" th:href="@{${item.url}}" th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:text="${item.label}"></a>
+      </details>
+    </th:block>
+  </nav>
+  <a class="sidebar-bottom" th:if="${appShell}" th:href="@{/home}">← Trang chủ</a>
+  <a class="sidebar-bottom" th:unless="${appShell}" th:href="@{/ui}">↔ Đổi role xem trước</a>
+</aside>
+</body></html>

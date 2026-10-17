@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${pageTitle}">Hồ sơ ký gửi</title>
+  <style>
+    :root { --ink:#172033; --muted:#5b6b7c; --line:#d0d7e2; --navy:#1f4e78; --bg:#f6f8fb; }
+    body { margin:0; font-family:"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); }
+    main { max-width:960px; margin:32px auto; padding:0 20px; }
+    h1 { margin:0 0 8px; font-size:1.6rem; }
+    p { color:var(--muted); margin:0 0 20px; }
+    table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+    th, td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); font-size:.95rem; }
+    th { background:var(--navy); color:#fff; }
+    tr:last-child td { border-bottom:none; }
+    a { color:var(--navy); font-weight:600; text-decoration:none; }
+    .status { font-size:.8rem; font-weight:700; }
+  </style>
+</head>
+<body>
+<main>
+  <h1 th:text="${pageTitle}">Hồ sơ ký gửi</h1>
+  <p>Dữ liệu từ <code>ConsignmentService</code> → <code>Model</code> → Thymeleaf (không dùng REST API).</p>
+  <table>
+    <thead>
+    <tr>
+      <th>Mã</th>
+      <th>Xe</th>
+      <th>Chủ xe</th>
+      <th>Trạng thái</th>
+      <th>Ngày tiếp nhận</th>
+      <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="c : ${consignments}">
+      <td th:text="${c.code}">KG-101</td>
+      <td th:text="${c.vehicle.displayLabel}">Toyota Camry</td>
+      <td th:text="${c.consignor.fullName}">Chủ xe</td>
+      <td class="status" th:text="${c.status}">DRAFT</td>
+      <td th:text="${#temporals.format(c.intakeDate, 'dd/MM/yyyy')}">01/01/2026</td>
+      <td><a th:href="@{/consignments/{id}(id=${c.id})}">Chi tiết</a></td>
+    </tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>

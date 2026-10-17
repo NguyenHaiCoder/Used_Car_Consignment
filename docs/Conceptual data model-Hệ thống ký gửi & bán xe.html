@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ERD — Hệ thống ký gửi &amp; bán xe</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f6fa;--card:#fff;--ink:#16213a;--mut:#5d6b80;--ln:#8695a9;--a:#4f46e5;--c:#0f766e;--s:#b45309;--p:#be185d;--hl:#e11d48}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1424;--card:#16213a;--ink:#e7edf7;--mut:#94a3b8;--ln:#7b8da6;--a:#818cf8;--c:#2dd4bf;--s:#fbbf24;--p:#f472b6;--hl:#fb7185}}
+:root[data-theme="dark"]{--bg:#0d1424;--card:#16213a;--ink:#e7edf7;--mut:#94a3b8;--ln:#7b8da6;--a:#818cf8;--c:#2dd4bf;--s:#fbbf24;--p:#f472b6;--hl:#fb7185}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,Arial,sans-serif;padding:1rem}
+header{display:flex;flex-wrap:wrap;gap:.4rem 1.4rem;align-items:center;margin-bottom:.7rem}
+h1{font-size:1.35rem}
+.lg{display:flex;flex-wrap:wrap;gap:.3rem 1rem;font-size:.82rem;color:var(--mut)}
+.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--k);margin-right:.35rem;vertical-align:-1px}
+.wrap{overflow:auto;border:1px solid color-mix(in srgb,var(--ln) 35%,transparent);border-radius:12px;background:var(--card)}
+svg{display:block;width:100%;min-width:1750px;height:auto}
+.n rect{fill:color-mix(in srgb,var(--k) 13%,var(--card));stroke:var(--k);stroke-width:2}
+.n text{font-size:13px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.n{cursor:pointer}
+.l{fill:none;stroke:var(--ln);stroke-width:1.5}
+.t{font-size:11px;font-style:italic;fill:var(--mut);text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:4px}
+.m{font-size:11.5px;font-weight:700;fill:var(--ink);text-anchor:middle;paint-order:stroke;stroke:var(--card);stroke-width:3px}
+.g-a{--k:var(--a)}.g-c{--k:var(--c)}.g-s{--k:var(--s)}.g-p{--k:var(--p)}
+svg.dim .n:not(.on),svg.dim .e:not(.on){opacity:.14}
+svg.dim .e.on .l{stroke:var(--hl);stroke-width:2.4}
+.hint{margin-top:.6rem;font-size:.82rem;color:var(--mut);text-align:center}
+</style>
+</head>
+<body>
+<header><h1>ERD — Hệ thống ký gửi &amp; bán xe</h1>
+<div class="lg"><span><i style="--k:var(--a)"></i>Xác thực &amp; phân quyền</span><span><i style="--k:var(--c)"></i>Ký gửi &amp; xe</span><span><i style="--k:var(--s)"></i>Bán hàng</span><span><i style="--k:var(--p)"></i>Thanh toán</span><span>N = nhiều · 1 = một</span></div></header>
+<div class="wrap"><svg id="s" viewBox="0 0 2120 770" role="img" aria-label="ERD không thuộc tính"></svg></div>
+<p class="hint" id="h">Rê chuột vào một thực thể để làm nổi bật các quan hệ của nó.</p>
+<script>
+var N={User:'a',UserToken:'a',OtpVerification:'a',AuthToken:'a',Role:'a',RolePermission:'a',Permission:'a',AuditEvent:'a',Approval:'a',
+Consignor:'c',Consignment:'c',Vehicle:'c',ConsignmentAgreement:'c',Inspection:'c',InspectionItem:'c',Valuation:'c',VehicleSaleNews:'c',DocumentChecklist:'c',Document:'c',TransferCase:'c',
+Buyer:'s',Inquiry:'s',Viewing:'s',Reservation:'s',SalesContract:'s',Handover:'s',HandoverItem:'s',
+PaymentRequest:'p',PaymentTransaction:'p',PaymentWebhookEvent:'p',Payment:'p',Refund:'p',Settlement:'p',Payout:'p'};
+var E=[['UserToken','User','N','1','phát hành'],['OtpVerification','User','N','1','gửi OTP'],['AuthToken','User','N','1','xác minh email'],['User','Role','N','1','thuộc'],
+['RolePermission','Role','N','1','gán role'],['RolePermission','Permission','N','1','gán quyền'],['AuditEvent','User','N','1','ghi log'],
+['Approval','User','N','1','yêu cầu bởi'],['Approval','User','N','1','duyệt bởi'],['Consignment','Consignor','N','1','thuộc chủ xe'],['Consignment','Vehicle','N','1','áp dụng cho'],
+['ConsignmentAgreement','Consignment','N','1','phiên bản của'],['Inspection','Vehicle','N','1','kiểm định'],['InspectionItem','Inspection','N','1','thuộc kiểm định'],
+['Valuation','Consignment','N','1','định giá'],['VehicleSaleNews','Consignment','N','1','đăng tin bán'],['DocumentChecklist','Consignment','N','1','thuộc ký gửi'],
+['Document','DocumentChecklist','N','1','nộp cho checklist'],['Document','User','N','1','upload bởi'],['TransferCase','SalesContract','1','1','theo hợp đồng bán'],
+['Handover','SalesContract','1','1','bàn giao xe'],['HandoverItem','Handover','N','1','thuộc bàn giao'],['DocumentChecklist','TransferCase','N','1','thuộc sang tên'],
+['Inquiry','Buyer','N','1','của người mua'],['Inquiry','Vehicle','N','1','quan tâm xe'],['Inquiry','User','N','1','phụ trách bởi'],['Viewing','Inquiry','N','1','lịch xem xe'],
+['Reservation','Inquiry','N','1','chuyển từ yêu cầu'],['Reservation','Vehicle','N','1','giữ xe'],['Reservation','Buyer','N','1','đặt bởi'],['Reservation','User','N','1','phụ trách bởi'],
+['SalesContract','Reservation','1','1','tạo từ reservation'],['PaymentRequest','SalesContract','N','1','lệnh thanh toán'],['PaymentTransaction','PaymentRequest','N','1','giao dịch payOS'],
+['PaymentWebhookEvent','PaymentTransaction','N','1','webhook payOS'],['Payment','SalesContract','N','1','ghi nhận thanh toán'],['Payment','PaymentTransaction','1','1','từ transaction'],
+['Refund','Payment','N','1','hoàn tiền'],['Refund','Reservation','N','1','phát sinh từ reservation'],['Settlement','SalesContract','1','1','quyết toán hợp đồng'],
+['Settlement','ConsignmentAgreement','N','1','tính theo hợp đồng ký gửi'],['Payout','Settlement','N','1','chi trả chủ xe']];
+const POS={"User":[6,2],"UserToken":[7,2],"OtpVerification":[5,4],"AuthToken":[7,1],"Role":[6,3],"RolePermission":[6,4],"Permission":[6,5],"AuditEvent":[6,1],"Approval":[7,3],"Consignor":[2,1],"Consignment":[3,2],"Vehicle":[4,2],"ConsignmentAgreement":[2,2],"Inspection":[4,1],"InspectionItem":[4,0],"Valuation":[2,0],"VehicleSaleNews":[3,1],"DocumentChecklist":[3,3],"Document":[5,3],"TransferCase":[2,3],"Buyer":[5,2],"Inquiry":[5,1],"Viewing":[5,0],"Reservation":[4,3],"SalesContract":[2,4],"Handover":[1,3],"HandoverItem":[0,3],"PaymentRequest":[1,4],"PaymentTransaction":[1,5],"PaymentWebhookEvent":[0,5],"Payment":[2,5],"Refund":[3,4],"Settlement":[1,2],"Payout":[1,1]}
+;
+const NS="http://www.w3.org/2000/svg",svg=document.getElementById("s"),hint=document.getElementById("h"),H0=hint.textContent;
+const PX=260,PY=120,BW=164,BH=44,OX=50,OY=60;
+const e=(t,a,p,tx)=>{const n=document.createElementNS(NS,t);for(const k in a)n.setAttribute(k,a[k]);if(tx!=null)n.textContent=tx;if(p)p.appendChild(n);return n};
+const ctr=n=>[OX+POS[n][0]*PX+BW/2,OY+POS[n][1]*PY+BH/2];
+const clip=(c,d)=>{const s=Math.min(d[0]?BW/2/Math.abs(d[0]):1e9,d[1]?BH/2/Math.abs(d[1]):1e9);return[c[0]+d[0]*s,c[1]+d[1]*s]};
+const unit=v=>{const l=Math.hypot(v[0],v[1])||1;return[v[0]/l,v[1]/l]};
+const wrap=s=>{if(s.length<=13)return[s];const w=s.split(" ");let best=1,bd=1e9;for(let i=1;i<w.length;i++){const d=Math.abs(w.slice(0,i).join(" ").length-w.slice(i).join(" ").length);if(d<bd){bd=d;best=i}}return[w.slice(0,best).join(" "),w.slice(best).join(" ")]};
+const cnt={},seen={},EG=[],NG={};
+E.forEach(x=>{const k=[x[0],x[1]].sort().join("|");cnt[k]=(cnt[k]||0)+1});
+const eg=e("g",{},svg);
+E.forEach(([a,b,ca,cb,lab])=>{
+ const k=[a,b].sort().join("|"),i=seen[k]=(seen[k]||0);seen[k]++;
+ const A=ctr(a),C=ctr(b),d=[C[0]-A[0],C[1]-A[1]];
+ let p1=clip(A,d),p2=clip(C,[-d[0],-d[1]]),path,mid,d1,d2;
+ if(k==="Document|DocumentChecklist"){ // vòng phía dưới Reservation để không xuyên box
+  p1=[A[0],A[1]+BH/2];p2=[C[0],C[1]+BH/2];const cp=[(p1[0]+p2[0])/2,p1[1]+95];
+  path=`M${p1}Q${cp} ${p2}`;mid=[.25*p1[0]+.5*cp[0]+.25*p2[0],.25*p1[1]+.5*cp[1]+.25*p2[1]];d1=[0,1];d2=[0,1];
+ }else{
+  const off=(i-(cnt[k]-1)/2)*18,u=unit([-d[1],d[0]]);
+  p1=[p1[0]+u[0]*off,p1[1]+u[1]*off];p2=[p2[0]+u[0]*off,p2[1]+u[1]*off];
+  path=`M${p1}L${p2}`;mid=[(p1[0]+p2[0])/2,(p1[1]+p2[1])/2];d1=unit(d);d2=unit([-d[0],-d[1]]);
+ }
+ const g=e("g",{class:"e"},eg);e("path",{d:path,class:"l"},g);
+ const card=(p,dir,t,c)=>{const u=[-dir[1],dir[0]],out=q=>Math.max(Math.abs(q[0]-c[0])-BW/2,Math.abs(q[1]-c[1])-BH/2);let q;for(let k=14;k<=50;k+=6){const a=[p[0]+dir[0]*k+u[0]*10,p[1]+dir[1]*k+u[1]*10],b=[p[0]+dir[0]*k-u[0]*10,p[1]+dir[1]*k-u[1]*10];q=out(a)>=out(b)?a:b;if(out(q)>=9)break}e("text",{x:q[0],y:q[1]+4,class:"m"},g,t)};
+ card(p1,d1,ca,A);card(p2,d2,cb,C);
+ const L=wrap(lab),tx=e("text",{class:"t",x:mid[0],y:mid[1]-(L.length-1)*6+4},g);
+ L.forEach((s,j)=>e("tspan",{x:mid[0],dy:j?12:0},tx,s));
+ EG.push({a,b,g});
+});
+for(const n in N){
+ const c=ctr(n),G=e("g",{class:"n g-"+N[n]},svg);NG[n]=G;
+ e("rect",{x:c[0]-BW/2,y:c[1]-BH/2,width:BW,height:BH,rx:8},G);
+ e("text",{x:c[0],y:c[1]+4.5},G,n);
+ G.addEventListener("pointerenter",()=>{svg.classList.add("dim");G.classList.add("on");const r=[];
+  EG.forEach(o=>{if(o.a===n||o.b===n){o.g.classList.add("on");NG[o.a].classList.add("on");NG[o.b].classList.add("on");r.push(o.a===n?o.b:o.a)}});
+  hint.textContent=n+" — liên quan: "+[...new Set(r)].join(", ")});
+ G.addEventListener("pointerleave",()=>{svg.classList.remove("dim");svg.querySelectorAll(".on").forEach(x=>x.classList.remove("on"));hint.textContent=H0});
+}
+</script>
+</body>
+</html>

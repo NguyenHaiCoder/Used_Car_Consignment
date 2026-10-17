@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GaragePro - Xác minh OTP</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #FF7A00;
+      --primary-dark: #e66d00;
+      --accent-purple: #9D4EDD;
+      --accent-cyan: #00D9FF;
+      --accent-pink: #FF6B9D;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #0a0a0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #fff;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Galaxy Background với màu cam */
+    .galaxy-bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(ellipse at 15% 25%, rgba(255, 122, 0, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 75%, rgba(157, 78, 221, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(0, 217, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 30% 80%, rgba(255, 107, 157, 0.2) 0%, transparent 50%);
+      animation: galaxyPulse 10s ease-in-out infinite;
+    }
+
+    @keyframes galaxyPulse {
+      0%, 100% { 
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+      50% { 
+        transform: scale(1.15) rotate(3deg);
+        opacity: 0.85;
+      }
+    }
+
+    /* Floating Particles với màu cam */
+    .particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      background: radial-gradient(circle, var(--primary), transparent);
+      border-radius: 50%;
+      animation: float linear infinite;
+      filter: blur(1px);
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) scale(0) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 0.8;
+      }
+      100% {
+        transform: translateY(-100vh) scale(1) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* Shooting Stars với màu cam */
+    .shooting-stars {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 15px 3px rgba(255, 122, 0, 0.8);
+      animation: shoot 4s linear infinite;
+    }
+
+    @keyframes shoot {
+      0% {
+        transform: translateX(0) translateY(0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(-400px) translateY(400px) scale(0.5);
+        opacity: 0;
+      }
+    }
+
+    /* Glassmorphism Container */
+    .otp-container {
+      position: relative;
+      z-index: 10;
+      background: rgba(18, 18, 25, 0.75);
+      backdrop-filter: blur(50px) saturate(180%);
+      -webkit-backdrop-filter: blur(50px) saturate(180%);
+      border: 1.5px solid rgba(255, 122, 0, 0.25);
+      border-radius: 32px;
+      padding: 55px 50px;
+      max-width: 460px;
+      width: 90%;
+      box-shadow: 
+        0 25px 70px rgba(0, 0, 0, 0.6),
+        0 0 120px rgba(255, 122, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      animation: containerFadeIn 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes containerFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(50px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Logo Icon */
+    .logo-icon {
+      width: 85px;
+      height: 85px;
+      margin: 0 auto 35px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-cyan));
+      background-size: 200% 200%;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: #fff;
+      box-shadow: 
+        0 12px 35px rgba(255, 122, 0, 0.5),
+        0 0 50px rgba(157, 78, 221, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2);
+      animation: iconGradient 4s ease infinite, iconFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes iconGradient {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-12px) rotate(5deg); }
+    }
+
+    .title {
+      font-size: 30px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: -0.8px;
+      background: linear-gradient(135deg, #fff, var(--primary), var(--accent-purple));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textShine 4s ease-in-out infinite;
+    }
+
+    @keyframes textShine {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.4); }
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.65);
+      text-align: center;
+      margin-bottom: 45px;
+      line-height: 1.6;
+    }
+
+    .email-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(255, 122, 0, 0.2), rgba(157, 78, 221, 0.15));
+      border: 1px solid rgba(255, 122, 0, 0.4);
+      color: var(--primary);
+      padding: 5px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 6px;
+      text-shadow: 0 0 10px rgba(255, 122, 0, 0.3);
+    }
+
+    /* OTP Input Grid - VUÔNG TRÒN */
+    .otp-inputs {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .otp-inputs input {
+      width: 100%;
+      aspect-ratio: 1;
+      background: rgba(30, 30, 40, 0.5);
+      border: 2.5px solid rgba(255, 122, 0, 0.2);
+      border-radius: 18px;
+      color: #fff;
+      font-size: 32px;
+      font-weight: 700;
+      text-align: center;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      caret-color: var(--primary);
+      position: relative;
+    }
+
+    .otp-inputs input:focus {
+      background: rgba(30, 30, 40, 0.95);
+      border-color: var(--primary);
+      box-shadow: 
+        0 0 0 5px rgba(255, 122, 0, 0.2),
+        0 12px 30px rgba(255, 122, 0, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.08);
+      transform: scale(1.08) translateY(-2px);
+    }
+
+    .otp-inputs input.filled {
+      background: linear-gradient(135deg, rgba(255, 122, 0, 0.25), rgba(157, 78, 221, 0.15));
+      border-color: var(--primary);
+      box-shadow: 
+        0 0 25px rgba(255, 122, 0, 0.4),
+        inset 0 2px 0 rgba(255, 255, 255, 0.1);
+      animation: fillPulse 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes fillPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15) rotate(5deg); }
+      100% { transform: scale(1); }
+    }
+
+    /* Submit Button */
+    .btn-verify {
+      width: 100%;
+      height: 58px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-cyan));
+      background-size: 200% 200%;
+      border: none;
+      border-radius: 18px;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.35s ease;
+      box-shadow: 
+        0 12px 35px rgba(255, 122, 0, 0.45),
+        0 0 50px rgba(157, 78, 221, 0.25);
+      position: relative;
+      overflow: hidden;
+      animation: buttonGradient 4s ease infinite;
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes buttonGradient {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .btn-verify::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      transition: left 0.6s;
+    }
+
+    .btn-verify:hover {
+      transform: translateY(-3px);
+      box-shadow: 
+        0 18px 45px rgba(255, 122, 0, 0.6),
+        0 0 70px rgba(157, 78, 221, 0.35);
+    }
+
+    .btn-verify:hover::before {
+      left: 100%;
+    }
+
+    .btn-verify:active {
+      transform: scale(0.97);
+    }
+
+    .btn-verify:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Loading State */
+    .btn-verify.loading {
+      pointer-events: none;
+    }
+
+    .btn-verify.loading::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      left: 50%;
+      top: 50%;
+      margin: -11px 0 0 -11px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Resend Section */
+    .resend-section {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 28px;
+      border-top: 1.5px solid rgba(255, 122, 0, 0.2);
+    }
+
+    .resend-text {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .resend-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 700;
+      margin-left: 6px;
+      transition: all 0.25s;
+      text-shadow: 0 0 12px rgba(255, 122, 0, 0.5);
+    }
+
+    .resend-link:hover {
+      color: #ffaa55;
+      text-shadow: 0 0 20px rgba(255, 122, 0, 0.8);
+      transform: translateY(-1px);
+    }
+
+    .resend-link.disabled {
+      color: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      text-shadow: none;
+    }
+
+    /* Success Animation */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .success-overlay.show {
+      display: flex;
+    }
+
+    .success-content {
+      text-align: center;
+      animation: successPop 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes successPop {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .success-icon {
+      width: 110px;
+      height: 110px;
+      background: linear-gradient(135deg, #10b981, #34d399);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 25px;
+      font-size: 55px;
+      box-shadow: 0 25px 70px rgba(16, 185, 129, 0.6);
+      animation: successGlow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes successGlow {
+      0%, 100% { 
+        box-shadow: 0 25px 70px rgba(16, 185, 129, 0.6);
+        transform: scale(1);
+      }
+      50% { 
+        box-shadow: 0 30px 90px rgba(16, 185, 129, 0.9);
+        transform: scale(1.05);
+      }
+    }
+
+    .success-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .success-message {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Error State */
+    .error-message {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1.5px solid rgba(239, 68, 68, 0.35);
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 22px;
+      font-size: 14px;
+      color: #f87171;
+      display: none;
+      animation: shake 0.5s ease;
+    }
+
+    .error-message.show {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-12px); }
+      40%, 80% { transform: translateX(12px); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .otp-container {
+        padding: 45px 35px;
+      }
+      
+      .otp-inputs {
+        gap: 10px;
+      }
+      
+      .otp-inputs {
+        gap: 6px;
+      }
+
+      .otp-inputs input {
+        font-size: 22px;
+        border-radius: 12px;
+      }
+      
+      .title {
+        font-size: 26px;
+      }
+
+      .logo-icon {
+        width: 75px;
+        height: 75px;
+        font-size: 36px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="galaxy-bg"></div>
+  
+  <!-- Particles -->
+  <div class="particles" id="particles"></div>
+  
+  <!-- Shooting Stars -->
+  <div class="shooting-stars" id="shootingStars"></div>
+
+  <div class="otp-container">
+    <div class="logo-icon">
+      <i class="fas fa-shield-check"></i>
+    </div>
+
+    <h1 class="title">Xác minh danh tính</h1>
+    <p class="subtitle">
+      Nhập mã xác minh 6 chữ số đã được gửi đến<br>
+      <span class="email-badge" id="emailDisplay" th:text="${email} ?: 'email@example.com'">email@example.com</span>
+    </p>
+
+    <div class="error-message" id="errorMessage"
+         th:classappend="${otpError} ? ' show' : ''">
+      <i class="fas fa-exclamation-circle"></i>
+      <span th:text="${otpError} ?: 'Mã OTP không chính xác. Vui lòng thử lại.'">Mã OTP không chính xác.</span>
+    </div>
+    <p th:if="${authInfo}" style="text-align:center;color:#86efac;margin-bottom:1rem;font-size:14px;" th:text="${authInfo}"></p>
+
+    <form id="otpForm" th:action="@{/auth/verify-otp}" th:object="${verifyOtpRequest}" method="post" onsubmit="return prepareOtpSubmit(event)">
+      <input type="hidden" th:field="*{email}" id="emailHidden"/>
+      <input type="hidden" th:field="*{otpCode}" id="otpCodeHidden"/>
+
+      <div class="otp-inputs" id="otpInputs">
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" autocomplete="one-time-code" aria-label="OTP chữ số 1">
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" aria-label="OTP chữ số 2">
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" aria-label="OTP chữ số 3">
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" aria-label="OTP chữ số 4">
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" aria-label="OTP chữ số 5">
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric" aria-label="OTP chữ số 6">
+      </div>
+
+      <button type="submit" class="btn-verify" id="verifyBtn">
+        Xác nhận
+      </button>
+    </form>
+
+    <div class="resend-section">
+      <form th:action="@{/auth/resend-otp}" method="post" style="display:inline">
+        <input type="hidden" name="email" th:value="${email}"/>
+        <span class="resend-text">
+          Không nhận được mã?
+          <button type="submit" class="resend-link" id="resendLink" style="background:none;border:none;cursor:pointer;padding:0;font:inherit">Gửi lại</button>
+        </span>
+      </form>
+    </div>
+  </div>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-content">
+      <div class="success-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <h2 class="success-title">Xác minh thành công!</h2>
+      <p class="success-message">Đang chuyển hướng...</p>
+    </div>
+  </div>
+
+  <script>
+    // Create floating particles với màu cam
+    const particlesContainer = document.getElementById('particles');
+    const colors = ['#FF7A00', '#9D4EDD', '#00D9FF', '#FF6B9D'];
+    
+    for (let i = 0; i < 35; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.width = particle.style.height = (Math.random() * 5 + 2) + 'px';
+      particle.style.animationDuration = (Math.random() * 12 + 18) + 's';
+      particle.style.animationDelay = Math.random() * 6 + 's';
+      particle.style.background = `radial-gradient(circle, ${colors[Math.floor(Math.random() * colors.length)]}, transparent)`;
+      particlesContainer.appendChild(particle);
+    }
+
+    // Create shooting stars với màu cam
+    const starsContainer = document.getElementById('shootingStars');
+    setInterval(() => {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 50 + '%';
+      star.style.animationDuration = (Math.random() * 2 + 3) + 's';
+      starsContainer.appendChild(star);
+      
+      setTimeout(() => star.remove(), 5000);
+    }, 2500);
+
+    const otpInputs = document.querySelectorAll('.otp-inputs input');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const resendLink = document.getElementById('resendLink');
+    const errorMessage = document.getElementById('errorMessage');
+    const successOverlay = document.getElementById('successOverlay');
+    const emailDisplay = document.getElementById('emailDisplay');
+
+    const params = new URLSearchParams(window.location.search);
+    const emailFromQuery = params.get('email');
+    if (emailFromQuery && emailDisplay && !emailDisplay.textContent.trim()) {
+      emailDisplay.textContent = emailFromQuery;
+    }
+    const emailHidden = document.getElementById('emailHidden');
+    if (emailHidden && !emailHidden.value && emailFromQuery) {
+      emailHidden.value = emailFromQuery;
+    }
+
+    otpInputs[0].focus();
+
+    // Handle input navigation
+    otpInputs.forEach((input, index) => {
+      input.addEventListener('input', (e) => {
+        const value = e.target.value;
+        
+        // Only allow numbers
+        if (!/^\d*$/.test(value)) {
+          e.target.value = '';
+          return;
+        }
+
+        // Add filled class
+        if (value) {
+          input.classList.add('filled');
+          if (index < otpInputs.length - 1) {
+            otpInputs[index + 1].focus();
+          }
+        } else {
+          input.classList.remove('filled');
+        }
+
+        // Hide error on input
+        errorMessage.classList.remove('show');
+      });
+
+      input.addEventListener('keydown', (e) => {
+        // Backspace handling
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          otpInputs[index - 1].focus();
+          otpInputs[index - 1].value = '';
+          otpInputs[index - 1].classList.remove('filled');
+        }
+
+        // Arrow key navigation
+        if (e.key === 'ArrowLeft' && index > 0) {
+          otpInputs[index - 1].focus();
+        }
+        if (e.key === 'ArrowRight' && index < otpInputs.length - 1) {
+          otpInputs[index + 1].focus();
+        }
+      });
+
+      // Paste handling
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        if (/^\d+$/.test(pasteData)) {
+          pasteData.split('').forEach((char, i) => {
+            if (otpInputs[i]) {
+              otpInputs[i].value = char;
+              otpInputs[i].classList.add('filled');
+            }
+          });
+          otpInputs[Math.min(pasteData.length, otpInputs.length) - 1].focus();
+        }
+      });
+    });
+
+    function getOtpValue() {
+      return Array.from(otpInputs).map(i => i.value).join('');
+    }
+
+    function prepareOtpSubmit(e) {
+      const otp = getOtpValue();
+      if (otp.length !== 6) {
+        e.preventDefault();
+        showError('Vui lòng nhập đủ 6 chữ số OTP');
+        return false;
+      }
+      document.getElementById('otpCodeHidden').value = otp;
+      verifyBtn.classList.add('loading');
+      verifyBtn.textContent = '';
+      verifyBtn.disabled = true;
+      return true;
+    }
+
+    function showError(message) {
+      const errorText = errorMessage.querySelector('span');
+      if (errorText) errorText.textContent = message;
+      errorMessage.classList.add('show');
+      setTimeout(() => {
+        errorMessage.classList.remove('show');
+      }, 3500);
+    }
+  </script>
+</body>
+</html>

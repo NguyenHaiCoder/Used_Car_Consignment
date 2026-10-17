@@ -1,0 +1,70 @@
+# Local development — SQL Server (Hibernate ddl-auto=update tạo bảng)
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=GarageProConsign;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: 12345678
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  thymeleaf:
+    cache: false
+  devtools:
+    restart:
+      enabled: true
+      exclude: static/**,public/**,templates/**
+    livereload:
+      enabled: true
+  web:
+    resources:
+      cache:
+        period: 0
+  # MailDev local (`maildev`) — SMTP :1025 · Web UI http://localhost:1080
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+app:
+  mail:
+    from: noreply@garagepro.local
+    from-name: GaragePro Consign
+  auth:
+    otp:
+      # false khi dùng OTP thật từ MailDev; bật lại nếu cần bypass tạm
+      accept-master: false
+      master-code: "123456"
+
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+
+logging:
+  level:
+    fu.he.training.fall2026: DEBUG
+    org.springframework.web.servlet.mvc: INFO
+    org.springframework.boot.devtools: INFO

@@ -1,0 +1,9 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<footer th:fragment="footer" class="app-footer">
+  <span>GaragePro Consign · UCCMS</span>
+  <a th:unless="${appShell}" th:href="@{/ui/urls}">Danh mục URL kiểm tra</a>
+  <a th:if="${appShell}" th:href="@{/home}">Trang chủ</a>
+  <span th:unless="${appShell}">UI preview · 15/10/2026</span>
+  <span th:if="${appShell}">Phiên đăng nhập</span>
+</footer>
+</body></html>

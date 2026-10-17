@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/layout :: shell(~{::content})}">
+<body>
+<!-- Nhật ký hoạt động: edit this page composition here; data comes from Spring Model. -->
+<section th:fragment="content" class="screen-content" data-template="admin/audit/list">
+  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+  <section th:replace="~{common/fragments/table :: table}"></section>
+</section>
+</body>
+</html>

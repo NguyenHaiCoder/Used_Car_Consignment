@@ -1,0 +1,45 @@
+CDM Relationship Text - UCCMS
+Used Car Consignment Management System (UCCMS)
+
+UserToken (N)------phát hành------(1) User
+OtpVerification (N)------gửi OTP------(1) User
+AuthToken (N)------xác minh email------(1) User
+User (N)------thuộc------(1) Role
+RolePermission (N)------gán role------(1) Role
+RolePermission (N)------gán quyền------(1) Permission
+AuditEvent (N)------ghi log------(1) User
+Approval (N)------yêu cầu bởi------(1) User
+Approval (N)------duyệt bởi------(1) User
+Consignment (N)------thuộc chủ xe------(1) Consignor
+Consignment (N)------áp dụng cho------(1) Vehicle
+ConsignmentAgreement (N)------phiên bản của------(1) Consignment
+Inspection (N)------kiểm định------(1) Vehicle
+InspectionItem (N)------thuộc kiểm định------(1) Inspection
+Valuation (N)------định giá------(1) Consignment
+VehicleSaleNews (N)------đăng tin bán------(1) Consignment
+DocumentChecklist (N)------thuộc ký gửi------(1) Consignment
+Document (N)------nộp cho checklist------(1) DocumentChecklist
+Document (N)------upload bởi------(1) User
+TransferCase (1)------theo hợp đồng bán------(1) SalesContract
+Handover (1)------bàn giao xe------(1) SalesContract
+HandoverItem (N)------thuộc bàn giao------(1) Handover
+DocumentChecklist (N)------thuộc sang tên------(1) TransferCase
+Inquiry (N)------của người mua------(1) Buyer
+Inquiry (N)------quan tâm xe------(1) Vehicle
+Inquiry (N)------phụ trách bởi------(1) User
+Viewing (N)------lịch xem xe------(1) Inquiry
+Reservation (N)------chuyển từ yêu cầu------(1) Inquiry
+Reservation (N)------giữ xe------(1) Vehicle
+Reservation (N)------đặt bởi------(1) Buyer
+Reservation (N)------phụ trách bởi------(1) User
+SalesContract (1)------tạo từ reservation------(1) Reservation
+PaymentRequest (N)------lệnh thanh toán------(1) SalesContract
+PaymentTransaction (N)------giao dịch payOS------(1) PaymentRequest
+PaymentWebhookEvent (N)------webhook payOS------(1) PaymentTransaction
+Payment (N)------ghi nhận thanh toán------(1) SalesContract
+Payment (1)------từ transaction------(1) PaymentTransaction
+Refund (N)------hoàn tiền------(1) Payment
+Refund (N)------phát sinh từ reservation------(1) Reservation
+Settlement (1)------quyết toán hợp đồng------(1) SalesContract
+Settlement (N)------tính theo hợp đồng ký gửi------(1) ConsignmentAgreement
+Payout (N)------chi trả chủ xe------(1) Settlement

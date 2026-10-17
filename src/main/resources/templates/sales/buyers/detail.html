@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/layout :: shell(~{::content})}">
+<body>
+<!-- Khách mua: edit this page composition here; data comes from Spring Model. -->
+<section th:fragment="content" class="screen-content" data-template="sales/buyers/detail">
+  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+  <div class="detail-grid">
+    <section th:replace="~{common/fragments/components :: facts}"></section>
+    <section th:replace="~{common/fragments/components :: checks}"></section>
+  </div>
+</section>
+</body>
+</html>

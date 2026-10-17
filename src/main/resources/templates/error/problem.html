@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="|${status} · GaragePro Consign|">404 · GaragePro Consign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1a1a1a;
+      --muted: #5c6570;
+      --line: rgba(26, 26, 26, 0.12);
+      --primary: #ff7a00;
+      --primary-dark: #e66d00;
+      --panel: rgba(255, 255, 255, 0.88);
+      --shadow: 0 24px 60px rgba(18, 18, 18, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 80% 50% at 10% 0%, rgba(255, 122, 0, 0.18), transparent 55%),
+        radial-gradient(ellipse 70% 45% at 90% 100%, rgba(255, 122, 0, 0.12), transparent 50%),
+        linear-gradient(160deg, #f7f4ef 0%, #efe8df 45%, #f8f1e8 100%);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .shell {
+      width: min(520px, 100%);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 36px 32px 28px;
+      text-align: center;
+      animation: rise 420ms ease-out both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand {
+      margin: 0 0 18px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: var(--primary);
+    }
+
+    .brand span { color: var(--ink); font-weight: 700; }
+
+    .code {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 88px;
+      height: 88px;
+      margin: 0 auto 16px;
+      border-radius: 24px;
+      background: linear-gradient(145deg, #fff7ef, #ffe4c8);
+      border: 1px solid rgba(255, 122, 0, 0.28);
+      color: var(--primary-dark);
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      animation: pop 520ms 80ms cubic-bezier(.2, .9, .3, 1.2) both;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.86); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.45rem, 3.5vw, 1.85rem);
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .lead {
+      margin: 0 auto 8px;
+      max-width: 36ch;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.55;
+    }
+
+    .path {
+      margin: 0 0 24px;
+      font-size: 0.82rem;
+      color: #7a8490;
+      word-break: break-all;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 12px;
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(255, 122, 0, 0.28);
+    }
+
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(255, 122, 0, 0.45);
+      color: var(--primary-dark);
+    }
+
+    @media (max-width: 480px) {
+      .shell { padding: 28px 20px 22px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <p class="brand">GaragePro <span>Consign</span></p>
+    <div class="code" th:text="${status}">404</div>
+    <h1 th:text="${status == 404} ? 'Không tìm thấy trang' : (${error} ?: 'Đã xảy ra lỗi')">
+      Không tìm thấy trang
+    </h1>
+    <p class="lead" th:text="${message} ?: 'Trang bạn đang tìm không tồn tại hoặc đã được di chuyển.'">
+      Trang bạn đang tìm không tồn tại hoặc đã được di chuyển.
+    </p>
+    <p class="path" th:if="${path}" th:text="|Đường dẫn: ${path}|">Đường dẫn</p>
+
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" id="btn-back">Quay lại trang trước</button>
+      <a class="btn btn-primary" th:href="@{/}">Về trang chủ</a>
+    </div>
+  </main>
+
+  <script th:inline="javascript">
+    (function () {
+      var referer = /*[[${referer}]]*/ null;
+      var home = /*[[@{/}]]*/ '/';
+      var btn = document.getElementById('btn-back');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        if (window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+        if (referer) {
+          window.location.href = referer;
+          return;
+        }
+        window.location.href = home;
+      });
+    })();
+  </script>
+</body>
+</html>

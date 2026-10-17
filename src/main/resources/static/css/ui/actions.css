@@ -1,0 +1,94 @@
+/* Shared, local SVG actions: view = eye, edit = pencil, delete = trash. */
+.action-glyph {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.action-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-decoration: none;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+.action-icon:hover {
+  text-decoration: none;
+}
+
+.action-view {
+  color: var(--color-primary-text);
+}
+
+.action-view:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.action-edit {
+  color: var(--color-info-text);
+}
+
+.action-edit:hover {
+  background: var(--info-soft);
+  border-color: var(--info);
+}
+
+.action-delete {
+  color: var(--color-danger-text);
+}
+
+.action-delete:hover {
+  color: var(--color-danger-text);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.action-icon:disabled {
+  color: var(--color-muted);
+  background: var(--color-disabled);
+  border-color: var(--color-border);
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.custom-table td.action-cell {
+  width: 196px;
+  min-width: 196px;
+}
+
+.button.action-with-icon {
+  gap: var(--space-2);
+}
+
+.disabled-action:has(.action-icon) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+@media print {
+  .action-cell .row-actions {
+    display: none;
+  }
+}

@@ -1,0 +1,76 @@
+# GaragePro Consign — shared base (all profiles)
+spring:
+  application:
+    name: project-group-1
+  profiles:
+    default: dev
+    group:
+      dev:
+        - ui-preview
+  main:
+    banner-mode: console
+    register-shutdown-hook: true
+  jmx:
+    enabled: false
+  mvc:
+    throw-exception-if-no-handler-found: false
+  web:
+    resources:
+      add-mappings: true
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    servlet:
+      content-type: text/html
+    check-template-location: true
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Ho_Chi_Minh
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+server:
+  port: 8080
+  shutdown: graceful
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml,image/svg+xml
+    min-response-size: 1024
+  error:
+    path: /error
+    whitelabel:
+      enabled: false
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+  tomcat:
+    uri-encoding: UTF-8
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20s
+    keep-alive-timeout: 30s
+    threads:
+      max: 200
+      min-spare: 10
+    max-http-form-post-size: 2MB
+    max-swallow-size: 2MB
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+  level:
+    root: INFO
+    fu.he.training.fall2026: INFO
+    org.springframework.web: INFO
+    org.springframework.security: WARN
