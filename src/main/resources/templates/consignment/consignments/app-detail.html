@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Hồ sơ ' + consignment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${'Hồ sơ ' + consignment.code}">Hồ sơ</h1>
+      <p class="page-description">Tổng hợp chủ xe, xe ký gửi và trạng thái lần ký gửi.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:if="${consignment.status.name() == 'DRAFT'}"
+         th:href="@{/consignment/consignments/{id}/edit(id=${consignment.id})}">Sửa draft</a>
+      <a class="button" th:href="@{/consignment/consignments}">Danh sách hồ sơ</a>
+    </div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Thông tin hồ sơ</h2>
+      <span class="badge" th:attr="data-status=${consignment.status}" th:text="${consignment.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Mã hồ sơ</dt><dd th:text="${consignment.code}"></dd></div>
+      <div><dt>Chủ xe pháp lý</dt>
+        <dd><a th:href="@{/consignment/consignors/{id}(id=${consignment.consignor.id})}" th:text="${consignment.consignor.fullName}"></a></dd></div>
+      <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + (consignment.vehicle.year != null ? ' · ' + consignment.vehicle.year : '')}"></dd></div>
+      <div><dt>VIN</dt><dd th:text="${consignment.vehicle.vin}"></dd></div>
+      <div><dt>Giá kỳ vọng</dt><dd th:text="${consignment.expectedPrice != null ? #numbers.formatDecimal(consignment.expectedPrice, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}"></dd></div>
+      <div><dt>Ngày tiếp nhận</dt><dd th:text="${consignment.intakeDate != null ? #temporals.format(consignment.intakeDate, 'dd/MM/yyyy') : '—'}"></dd></div>
+      <div><dt>Yêu cầu / điều khoản</dt><dd th:text="${consignment.termNotes ?: '—'}"></dd></div>
+      <div><dt>Chủ xe đồng ý cung cấp thông tin</dt><dd th:text="${consignment.ownerConsent ? 'Đã xác nhận' : 'Chưa xác nhận'}"></dd></div>
+    </dl>
+    <form method="post" class="form-actions" th:if="${consignment.status.name() == 'DRAFT'}"
+          th:action="@{/consignment/consignments/{id}/submit(id=${consignment.id})}">
+      <p class="field-hint">Sau khi gửi duyệt, hồ sơ bị khóa và không sửa trực tiếp được nữa.</p>
+      <button type="submit" class="button button-primary">Gửi duyệt</button>
+    </form>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>
