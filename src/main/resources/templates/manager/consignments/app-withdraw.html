@@ -25,7 +25,7 @@
       <span class="badge" th:attr="data-status=${consignment.status}" th:text="${consignment.status}"></span>
     </div>
     <dl class="facts-grid">
-      <div><dt>Chủ xe</dt><dd th:text="${consignment.consignor.fullName}"></dd></div>
+      <div><dt>Chủ xe</dt><dd th:text="${consignment.consignorName}"></dd></div>
       <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + ' · ' + consignment.vehicle.vin}"></dd></div>
     </dl>
   </section>
@@ -51,11 +51,11 @@
     </div>
     <dl class="facts-grid" th:if="${withdrawRequest != null}">
       <div><dt>Lý do</dt><dd th:text="${withdrawRequest.reason}"></dd></div>
-      <div><dt>Người gửi</dt><dd th:text="${withdrawRequest.requestedBy.fullName}"></dd></div>
+      <div><dt>Người gửi</dt><dd th:text="${withdrawRequest.requestedByName}"></dd></div>
       <div><dt>Thời điểm gửi</dt><dd th:text="${#temporals.format(withdrawRequest.createdAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
-      <div><dt>Ngày trả xe</dt><dd th:text="${consignment.withdrawReturnDate != null ? #temporals.format(consignment.withdrawReturnDate, 'dd/MM/yyyy') : '—'}"></dd></div>
-      <div><dt>Tình trạng xe khi trả</dt><dd th:text="${consignment.withdrawCondition ?: '—'}"></dd></div>
-      <div><dt>Bằng chứng</dt><dd th:text="${consignment.withdrawEvidencePath ?: '—'}"></dd></div>
+      <div><dt>Ngày trả xe</dt><dd th:text="${withdrawRequest.returnDate != null ? #temporals.format(withdrawRequest.returnDate, 'dd/MM/yyyy') : '—'}"></dd></div>
+      <div><dt>Tình trạng xe khi trả</dt><dd th:text="${withdrawRequest.condition ?: '—'}"></dd></div>
+      <div><dt>Bằng chứng</dt><dd th:text="${withdrawRequest.evidencePath ?: '—'}"></dd></div>
     </dl>
     <p th:if="${withdrawRequest == null}">Chưa có yêu cầu rút cho hồ sơ này.</p>
   </section>

@@ -1,8 +1,11 @@
 package fu.he.training.fall2026.service.impl;
 
 import fu.he.training.fall2026.dto.consignment.ConsignmentForm;
+import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
 import fu.he.training.fall2026.dto.consignment.WithdrawCheck;
+import fu.he.training.fall2026.dto.consignment.VehicleResponse;
 import fu.he.training.fall2026.dto.consignment.WithdrawForm;
+import fu.he.training.fall2026.dto.consignment.WithdrawRequestResponse;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.consignment.Consignor;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
@@ -21,6 +24,8 @@ import fu.he.training.fall2026.repository.UserRepository;
 import fu.he.training.fall2026.repository.VehicleRepository;
 import fu.he.training.fall2026.service.ConsignmentService;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -48,12 +53,13 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Consignment> search(String keyword, ConsignmentStatus status, int page, int size) {
+    public Page<ConsignmentResponse> search(String keyword, ConsignmentStatus status, int page, int size) {
         String pattern = keyword == null || keyword.isBlank()
                 ? "%"
                 : "%" + keyword.trim().toLowerCase() + "%";
         return consignmentRepository.search(
-                pattern, status, PageRequest.of(Math.max(page, 0), size, Sort.by(Sort.Direction.DESC, "createdAt")));
+                        pattern, status, PageRequest.of(Math.max(page, 0), size, Sort.by(Sort.Direction.DESC, "createdAt")))
+                .map(ConsignmentServiceImpl::toDto);
     }
 
     @Override
@@ -71,21 +77,20 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Consignment get(Long id) {
-        return consignmentRepository.findDetailById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
+    public ConsignmentResponse get(Long id) {
+        return toDto(find(id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Vehicle> listVehicles() {
-        return vehicleRepository.findAll(Sort.by("make", "model"));
+    public List<VehicleResponse> listVehicles() {
+        return vehicleRepository.findAll(Sort.by("make", "model")).stream().map(ConsignmentServiceImpl::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public ConsignmentForm formFor(Long id) {
-        Consignment c = get(id);
+        Consignment c = find(id);
         requireDraft(c);
         ConsignmentForm form = new ConsignmentForm();
         form.setConsignorId(c.getConsignor().getId());
@@ -112,7 +117,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional
     public void updateDraft(Long id, ConsignmentForm form) {
-        Consignment consignment = get(id);
+        Consignment consignment = find(id);
         requireDraft(consignment);
         applyForm(consignment, form);
     }
@@ -120,7 +125,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional
     public void submit(Long id) {
-        Consignment consignment = get(id);
+        Consignment consignment = find(id);
         requireDraft(consignment);
         consignment.setStatus(ConsignmentStatus.SUBMITTED);
     }
@@ -128,7 +133,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional(readOnly = true)
     public List<WithdrawCheck> withdrawChecks(Long id) {
-        Consignment consignment = get(id);
+        Consignment consignment = find(id);
         Long vehicleId = consignment.getVehicle().getId();
         ConsignmentStatus status = consignment.getStatus();
         boolean open = status != ConsignmentStatus.SOLD
@@ -159,13 +164,13 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Transactional
     public void requestWithdraw(Long id, WithdrawForm form, Long actorUserId) {
         List<String> failed = withdrawChecks(id).stream()
-                .filter(check -> !check.passed())
-                .map(check -> check.label() + ". " + check.detail())
+                .filter(check -> !check.isPassed())
+                .map(check -> check.getLabel() + ". " + check.getDetail())
                 .toList();
         if (!failed.isEmpty()) {
             throw new BusinessException("Chưa thể gửi yêu cầu rút: " + String.join(" ", failed), HttpStatus.CONFLICT);
         }
-        Consignment consignment = get(id);
+        Consignment consignment = find(id);
         consignment.setWithdrawReason(form.getReason().trim());
         consignment.setWithdrawReturnDate(form.getReturnDate());
         consignment.setWithdrawCondition(blankToNull(form.getCondition()));
@@ -184,8 +189,48 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Approval> findWithdrawRequest(Long id) {
-        return approvalRepository.findRequests(ApprovalType.WITHDRAWAL, APPROVAL_TARGET, id).stream().findFirst();
+    public Optional<WithdrawRequestResponse> findWithdrawRequest(Long id) {
+        Consignment consignment = find(id);
+        return approvalRepository.findRequests(ApprovalType.WITHDRAWAL, APPROVAL_TARGET, id).stream()
+                .findFirst()
+                .map(request -> WithdrawRequestResponse.builder()
+                        .status(request.getStatus())
+                        .reason(request.getReason())
+                        .requestedByName(request.getRequestedBy().getFullName())
+                        .createdAt(LocalDateTime.ofInstant(request.getCreatedAt(), ZoneId.systemDefault()))
+                        .returnDate(consignment.getWithdrawReturnDate())
+                        .condition(consignment.getWithdrawCondition())
+                        .evidencePath(consignment.getWithdrawEvidencePath())
+                        .build());
+    }
+
+    private Consignment find(Long id) {
+        return consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
+    }
+
+    private static ConsignmentResponse toDto(Consignment c) {
+        return ConsignmentResponse.builder()
+                .id(c.getId())
+                .code(c.getCode())
+                .consignorId(c.getConsignor().getId())
+                .consignorName(c.getConsignor().getFullName())
+                .vehicle(toDto(c.getVehicle()))
+                .status(c.getStatus())
+                .expectedPrice(c.getExpectedPrice())
+                .intakeDate(c.getIntakeDate())
+                .termNotes(c.getTermNotes())
+                .ownerConsent(c.isOwnerConsent())
+                .build();
+    }
+
+    private static VehicleResponse toDto(Vehicle v) {
+        return VehicleResponse.builder()
+                .id(v.getId())
+                .vin(v.getVin())
+                .displayLabel(v.getDisplayLabel())
+                .year(v.getYear())
+                .build();
     }
 
     private boolean hasPendingWithdrawRequest(Long id) {

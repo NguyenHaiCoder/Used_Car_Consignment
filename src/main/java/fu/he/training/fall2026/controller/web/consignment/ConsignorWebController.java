@@ -1,8 +1,8 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
 import fu.he.training.fall2026.dto.consignor.ConsignorForm;
+import fu.he.training.fall2026.dto.consignor.ConsignorResponse;
 import fu.he.training.fall2026.exception.BusinessException;
-import fu.he.training.fall2026.entity.consignment.Consignor;
 import fu.he.training.fall2026.service.ConsignorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class ConsignorWebController {
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             Model model) {
-        Page<Consignor> result = consignorService.search(q, page, PAGE_SIZE);
+        Page<ConsignorResponse> result = consignorService.search(q, page, PAGE_SIZE);
         model.addAttribute("page", result);
         model.addAttribute("q", q == null ? "" : q);
         return "consignment/consignors/app-list";
@@ -73,8 +73,7 @@ public class ConsignorWebController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        Consignor consignor = consignorService.get(id);
-        model.addAttribute("consignor", consignor);
+        model.addAttribute("consignor", consignorService.get(id));
         return "consignment/consignors/app-detail";
     }
 

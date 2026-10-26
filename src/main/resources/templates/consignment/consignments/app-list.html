@@ -50,7 +50,7 @@
         <tbody>
           <tr th:each="c : ${page.content}">
             <td th:text="${c.code}"></td>
-            <td th:text="${c.consignor.fullName}"></td>
+            <td th:text="${c.consignorName}"></td>
             <td th:text="${c.vehicle.displayLabel + ' · ' + c.vehicle.vin}"></td>
             <td th:text="${c.expectedPrice != null ? #numbers.formatDecimal(c.expectedPrice, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}"></td>
             <td th:text="${c.intakeDate != null ? #temporals.format(c.intakeDate, 'dd/MM/yyyy') : '—'}"></td>

@@ -1,18 +1,18 @@
 package fu.he.training.fall2026.service;
 
 import fu.he.training.fall2026.dto.consignor.ConsignorForm;
-import fu.he.training.fall2026.entity.consignment.Consignor;
+import fu.he.training.fall2026.dto.consignor.ConsignorResponse;
 import java.util.List;
 import org.springframework.data.domain.Page;
 
 public interface ConsignorService {
 
-    Page<Consignor> search(String keyword, int page, int size);
+    Page<ConsignorResponse> search(String keyword, int page, int size);
 
-    Consignor get(Long id);
+    ConsignorResponse get(Long id);
 
     /** All consignors by name, for pick-lists. */
-    List<Consignor> listAll();
+    List<ConsignorResponse> listAll();
 
     ConsignorForm formFor(Long id);
 

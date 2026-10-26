@@ -61,7 +61,7 @@
         <tbody>
           <tr th:each="c : ${recent}">
             <td th:text="${c.code + ' · ' + c.vehicle.displayLabel}"></td>
-            <td th:text="${c.consignor.fullName}"></td>
+            <td th:text="${c.consignorName}"></td>
             <td th:text="${c.intakeDate != null ? #temporals.format(c.intakeDate, 'dd/MM/yyyy') : '—'}"></td>
             <td><span class="badge" th:attr="data-status=${c.status}" th:text="${c.status}"></span></td>
             <td class="action-cell">

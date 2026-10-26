@@ -1,6 +1,7 @@
 package fu.he.training.fall2026.service.impl;
 
 import fu.he.training.fall2026.dto.consignment.AgreementForm;
+import fu.he.training.fall2026.dto.consignment.AgreementResponse;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.consignment.ConsignmentAgreement;
 import fu.he.training.fall2026.entity.enums.AgreementStatus;
@@ -26,14 +27,16 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ConsignmentAgreement> findLatest(Long consignmentId) {
-        return agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId);
+    public Optional<AgreementResponse> findLatest(Long consignmentId) {
+        return latest(consignmentId).map(ConsignmentAgreementServiceImpl::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ConsignmentAgreement> versions(Long consignmentId) {
-        return agreementRepository.findByConsignmentIdOrderByVersionNoDesc(consignmentId);
+    public List<AgreementResponse> versions(Long consignmentId) {
+        return agreementRepository.findByConsignmentIdOrderByVersionNoDesc(consignmentId).stream()
+                .map(ConsignmentAgreementServiceImpl::toDto)
+                .toList();
     }
 
     @Override
@@ -58,7 +61,7 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     public void createDraft(Long consignmentId, AgreementForm form) {
         validateTerms(form);
         Consignment consignment = consignment(consignmentId);
-        if (findLatest(consignmentId).isPresent()) {
+        if (latest(consignmentId).isPresent()) {
             throw new BusinessException("Hồ sơ này đã có hợp đồng.", HttpStatus.CONFLICT);
         }
         ConsignmentAgreement agreement = new ConsignmentAgreement();
@@ -89,7 +92,7 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     @Override
     @Transactional
     public void createAmendment(Long consignmentId) {
-        ConsignmentAgreement current = findLatest(consignmentId)
+        ConsignmentAgreement current = latest(consignmentId)
                 .orElseThrow(() -> new BusinessException("Chưa có hợp đồng để sửa đổi."));
         if (current.getStatus() != AgreementStatus.ACTIVE) {
             throw new BusinessException("Chỉ hợp đồng ACTIVE mới tạo được phiên bản sửa đổi.", HttpStatus.CONFLICT);
@@ -110,9 +113,31 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
         agreementRepository.save(next);
     }
 
+    private Optional<ConsignmentAgreement> latest(Long consignmentId) {
+        return agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId);
+    }
+
+    private static AgreementResponse toDto(ConsignmentAgreement a) {
+        return AgreementResponse.builder()
+                .id(a.getId())
+                .code(a.getCode())
+                .versionNo(a.getVersionNo())
+                .status(a.getStatus())
+                .commissionRate(a.getCommissionRate())
+                .fixedFee(a.getFixedFee())
+                .priceFloor(a.getPriceFloor())
+                .validFrom(a.getValidFrom())
+                .validTo(a.getValidTo())
+                .custodyTerms(a.getCustodyTerms())
+                .terminationTerms(a.getTerminationTerms())
+                .payoutTerms(a.getPayoutTerms())
+                .signatureEvidencePath(a.getSignatureEvidencePath())
+                .build();
+    }
+
     /** Newest version, which must exist and still be a DRAFT. */
     private ConsignmentAgreement latestDraft(Long consignmentId) {
-        ConsignmentAgreement latest = findLatest(consignmentId)
+        ConsignmentAgreement latest = latest(consignmentId)
                 .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
         requireDraft(latest);
         return latest;

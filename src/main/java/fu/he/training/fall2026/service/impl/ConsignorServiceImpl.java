@@ -1,6 +1,7 @@
 package fu.he.training.fall2026.service.impl;
 
 import fu.he.training.fall2026.dto.consignor.ConsignorForm;
+import fu.he.training.fall2026.dto.consignor.ConsignorResponse;
 import fu.he.training.fall2026.entity.consignment.Consignor;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
@@ -23,31 +24,31 @@ public class ConsignorServiceImpl implements ConsignorService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Consignor> search(String keyword, int page, int size) {
+    public Page<ConsignorResponse> search(String keyword, int page, int size) {
         String pattern = keyword == null || keyword.isBlank()
                 ? "%"
                 : "%" + keyword.trim().toLowerCase() + "%";
         return consignorRepository.search(
-                pattern, PageRequest.of(Math.max(page, 0), size, Sort.by(Sort.Direction.DESC, "createdAt")));
+                        pattern, PageRequest.of(Math.max(page, 0), size, Sort.by(Sort.Direction.DESC, "createdAt")))
+                .map(ConsignorServiceImpl::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Consignor get(Long id) {
-        return consignorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
+    public ConsignorResponse get(Long id) {
+        return toDto(find(id));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Consignor> listAll() {
-        return consignorRepository.findAll(Sort.by("fullName"));
+    public List<ConsignorResponse> listAll() {
+        return consignorRepository.findAll(Sort.by("fullName")).stream().map(ConsignorServiceImpl::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public ConsignorForm formFor(Long id) {
-        Consignor c = get(id);
+        Consignor c = find(id);
         ConsignorForm form = new ConsignorForm();
         form.setFullName(c.getFullName());
         form.setPhone(c.getPhone());
@@ -73,10 +74,30 @@ public class ConsignorServiceImpl implements ConsignorService {
     @Override
     @Transactional
     public void update(Long id, ConsignorForm form) {
-        Consignor consignor = get(id);
+        Consignor consignor = find(id);
         rejectDuplicate(form, id);
         apply(consignor, form);
         consignorRepository.save(consignor);
+    }
+
+    private Consignor find(Long id) {
+        return consignorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
+    }
+
+    private static ConsignorResponse toDto(Consignor c) {
+        return ConsignorResponse.builder()
+                .id(c.getId())
+                .fullName(c.getFullName())
+                .phone(c.getPhone())
+                .email(c.getEmail())
+                .idNumber(c.getIdNumber())
+                .address(c.getAddress())
+                .bank(c.getBank())
+                .accountNumber(c.getAccountNumber())
+                .accountName(c.getAccountName())
+                .consentStored(c.isConsentStored())
+                .build();
     }
 
     private void rejectDuplicate(ConsignorForm form, Long excludeId) {

@@ -1,17 +1,17 @@
 package fu.he.training.fall2026.service;
 
 import fu.he.training.fall2026.dto.consignment.AgreementForm;
-import fu.he.training.fall2026.entity.consignment.ConsignmentAgreement;
+import fu.he.training.fall2026.dto.consignment.AgreementResponse;
 import java.util.List;
 import java.util.Optional;
 
 public interface ConsignmentAgreementService {
 
     /** Newest version of the consignment's agreement, if one was ever drafted. */
-    Optional<ConsignmentAgreement> findLatest(Long consignmentId);
+    Optional<AgreementResponse> findLatest(Long consignmentId);
 
     /** All versions, newest first. */
-    List<ConsignmentAgreement> versions(Long consignmentId);
+    List<AgreementResponse> versions(Long consignmentId);
 
     /** Form filled with the newest version, which must be a DRAFT. */
     AgreementForm formFor(Long consignmentId);

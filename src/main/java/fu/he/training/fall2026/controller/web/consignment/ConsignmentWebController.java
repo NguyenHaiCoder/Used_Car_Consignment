@@ -1,8 +1,8 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
 import fu.he.training.fall2026.dto.consignment.ConsignmentForm;
+import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
 import fu.he.training.fall2026.dto.consignment.WithdrawForm;
-import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignmentService;
@@ -42,7 +42,7 @@ public class ConsignmentWebController {
             @RequestParam(required = false) ConsignmentStatus status,
             @RequestParam(defaultValue = "0") int page,
             Model model) {
-        Page<Consignment> result = consignmentService.search(q, status, page, PAGE_SIZE);
+        Page<ConsignmentResponse> result = consignmentService.search(q, status, page, PAGE_SIZE);
         model.addAttribute("page", result);
         model.addAttribute("q", q == null ? "" : q);
         model.addAttribute("status", status);
@@ -86,8 +86,7 @@ public class ConsignmentWebController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        Consignment consignment = consignmentService.get(id);
-        model.addAttribute("consignment", consignment);
+        model.addAttribute("consignment", consignmentService.get(id));
         model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));
         return "consignment/consignments/app-detail";
     }

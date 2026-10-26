@@ -25,7 +25,7 @@
       <span class="badge" th:attr="data-status=${consignment.status}" th:text="${consignment.status}"></span>
     </div>
     <dl class="facts-grid">
-      <div><dt>Chủ xe</dt><dd th:text="${consignment.consignor.fullName}"></dd></div>
+      <div><dt>Chủ xe</dt><dd th:text="${consignment.consignorName}"></dd></div>
       <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + ' · ' + consignment.vehicle.vin}"></dd></div>
     </dl>
   </section>
