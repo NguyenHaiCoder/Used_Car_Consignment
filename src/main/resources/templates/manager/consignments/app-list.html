@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Hồ sơ ký gửi')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Điều hành</p>
+      <h1>Hồ sơ ký gửi</h1>
+      <p class="page-description">Theo dõi từng lần ký gửi từ draft đến đóng hồ sơ.</p>
+    </div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <section class="content-card table-card">
+    <div class="content-card-header">
+      <h2>Danh sách hồ sơ</h2>
+      <span class="caption" th:text="${page.totalElements + ' hồ sơ'}"></span>
+    </div>
+    <div class="table-toolbar">
+      <a class="button" th:classappend="${status == null ? 'button-primary' : ''}"
+         th:href="@{/manager/consignments(q=${q})}">Tất cả</a>
+      <a class="button" th:each="entry : ${counts}"
+         th:classappend="${entry.key == status ? 'button-primary' : ''}"
+         th:href="@{/manager/consignments(q=${q},status=${entry.key})}"
+         th:text="${entry.key + ' (' + entry.value + ')'}"></a>
+    </div>
+    <form class="table-toolbar" method="get" th:action="@{/manager/consignments}">
+      <input type="hidden" name="status" th:value="${status}" th:if="${status != null}">
+      <label>Tìm kiếm
+        <input type="search" name="q" th:value="${q}" placeholder="Mã hồ sơ, chủ xe, VIN, hãng hoặc dòng xe…">
+      </label>
+      <button type="submit" class="button button-primary">Tìm</button>
+      <a class="button" th:href="@{/manager/consignments}">Xóa bộ lọc</a>
+    </form>
+    <div class="table-scroll" th:if="${!page.empty}">
+      <table class="custom-table">
+        <caption class="sr-only">Danh sách hồ sơ ký gửi</caption>
+        <thead><tr>
+          <th scope="col">Mã hồ sơ</th><th scope="col">Chủ xe</th><th scope="col">Xe</th>
+          <th scope="col">Giá kỳ vọng</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="c : ${page.content}">
+            <td th:text="${c.code}"></td>
+            <td th:text="${c.consignor.fullName}"></td>
+            <td th:text="${c.vehicle.displayLabel + ' · ' + c.vehicle.vin}"></td>
+            <td th:text="${c.expectedPrice != null ? #numbers.formatDecimal(c.expectedPrice, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}"></td>
+            <td><span class="badge" th:attr="data-status=${c.status}" th:text="${c.status}"></span></td>
+            <td class="action-cell">
+              <div class="row-actions">
+                <a class="action-icon action-view" th:href="@{/manager/consignments/{id}(id=${c.id})}"
+                   th:attr="title=${'Xem chi tiết ' + c.code},aria-label=${'Xem chi tiết ' + c.code}">
+                  <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${page.empty}">
+      <span aria-hidden="true">⌕</span><h3>Không có hồ sơ phù hợp</h3>
+      <p>Thử đổi từ khóa hoặc bỏ bộ lọc.</p>
+    </div>
+    <div class="pagination" th:if="${page.totalPages > 1}">
+      <p th:text="${'Trang ' + (page.number + 1) + ' / ' + page.totalPages}"></p>
+      <div>
+        <a class="button" th:if="${page.hasPrevious()}"
+           th:href="@{/manager/consignments(q=${q},status=${status},page=${page.number - 1})}">← Trước</a>
+        <a class="button" th:if="${page.hasNext()}"
+           th:href="@{/manager/consignments(q=${q},status=${status},page=${page.number + 1})}">Sau →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

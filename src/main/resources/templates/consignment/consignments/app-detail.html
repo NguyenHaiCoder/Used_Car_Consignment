@@ -18,6 +18,8 @@
       <a class="button" th:if="${consignment.status.name() == 'DRAFT'}"
          th:href="@{/consignment/consignments/{id}/edit(id=${consignment.id})}">Sửa draft</a>
       <a class="button" th:href="@{/consignment/consignments/{id}/agreement(id=${consignment.id})}">Hợp đồng ký gửi</a>
+      <a class="button" th:if="${consignment.status.name() != 'SOLD' and consignment.status.name() != 'WITHDRAWN' and consignment.status.name() != 'CLOSED'}"
+         th:href="@{/consignment/consignments/{id}/withdraw(id=${consignment.id})}">Yêu cầu rút ký gửi</a>
       <a class="button" th:href="@{/consignment/consignments}">Danh sách hồ sơ</a>
     </div>
   </div>
@@ -44,6 +46,21 @@
       <p class="field-hint">Sau khi gửi duyệt, hồ sơ bị khóa và không sửa trực tiếp được nữa.</p>
       <button type="submit" class="button button-primary">Gửi duyệt</button>
     </form>
+  </section>
+
+  <section class="content-card" th:if="${withdrawRequest != null}">
+    <div class="content-card-header">
+      <h2>Yêu cầu rút hồ sơ</h2>
+      <span class="badge" th:attr="data-status=${withdrawRequest.status}" th:text="${withdrawRequest.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Lý do</dt><dd th:text="${withdrawRequest.reason}"></dd></div>
+      <div><dt>Người gửi</dt><dd th:text="${withdrawRequest.requestedBy.fullName}"></dd></div>
+      <div><dt>Thời điểm gửi</dt><dd th:text="${#temporals.format(withdrawRequest.createdAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+      <div><dt>Ngày trả xe</dt><dd th:text="${consignment.withdrawReturnDate != null ? #temporals.format(consignment.withdrawReturnDate, 'dd/MM/yyyy') : '—'}"></dd></div>
+      <div><dt>Tình trạng xe khi trả</dt><dd th:text="${consignment.withdrawCondition ?: '—'}"></dd></div>
+      <div><dt>Bằng chứng</dt><dd th:text="${consignment.withdrawEvidencePath ?: '—'}"></dd></div>
+    </dl>
   </section>
 
   <footer th:replace="~{common/footer :: footer}"></footer>

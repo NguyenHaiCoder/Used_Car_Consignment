@@ -1,11 +1,14 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
 import fu.he.training.fall2026.dto.consignment.ConsignmentForm;
+import fu.he.training.fall2026.dto.consignment.WithdrawForm;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignmentService;
 import fu.he.training.fall2026.service.ConsignorService;
+import fu.he.training.fall2026.util.SessionAuthUtils;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -85,6 +88,7 @@ public class ConsignmentWebController {
     public String detail(@PathVariable Long id, Model model) {
         Consignment consignment = consignmentService.get(id);
         model.addAttribute("consignment", consignment);
+        model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));
         return "consignment/consignments/app-detail";
     }
 
@@ -128,5 +132,37 @@ public class ConsignmentWebController {
         consignmentService.submit(id);
         flash.addFlashAttribute("flashMessage", "Đã gửi duyệt. Hồ sơ được khóa, không sửa trực tiếp nữa.");
         return "redirect:" + BASE + "/" + id;
+    }
+
+    @GetMapping("/{id}/withdraw")
+    public String withdrawForm(@PathVariable Long id, Model model) {
+        model.addAttribute("consignment", consignmentService.get(id));
+        model.addAttribute("checks", consignmentService.withdrawChecks(id));
+        model.addAttribute("form", new WithdrawForm());
+        model.addAttribute("base", BASE);
+        return "consignment/consignments/app-withdraw";
+    }
+
+    @PostMapping("/{id}/withdraw")
+    public String withdraw(
+            @PathVariable Long id,
+            @Valid @ModelAttribute("form") WithdrawForm form,
+            BindingResult errors,
+            HttpSession session,
+            Model model,
+            RedirectAttributes flash) {
+        if (!errors.hasErrors()) {
+            try {
+                consignmentService.requestWithdraw(id, form, SessionAuthUtils.getUserId(session));
+                flash.addFlashAttribute("flashMessage", "Đã gửi yêu cầu rút hồ sơ cho quản lý, chờ duyệt.");
+                return "redirect:" + BASE + "/" + id;
+            } catch (BusinessException ex) {
+                errors.reject("business", ex.getMessage());
+            }
+        }
+        model.addAttribute("consignment", consignmentService.get(id));
+        model.addAttribute("checks", consignmentService.withdrawChecks(id));
+        model.addAttribute("base", BASE);
+        return "consignment/consignments/app-withdraw";
     }
 }

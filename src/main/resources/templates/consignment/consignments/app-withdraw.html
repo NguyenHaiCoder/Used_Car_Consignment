@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Yêu cầu rút ký gửi · ' + consignment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${'Yêu cầu rút ký gửi · ' + consignment.code}">Rút / đóng ký gửi</h1>
+      <p class="page-description">Kiểm tra listing, reservation và tiền cọc, rồi gửi yêu cầu rút hồ sơ cho quản lý duyệt.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{${base} + '/' + ${consignment.id}}">Hồ sơ ký gửi</a>
+    </div>
+  </div>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Hồ sơ</h2>
+      <span class="badge" th:attr="data-status=${consignment.status}" th:text="${consignment.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Chủ xe</dt><dd th:text="${consignment.consignor.fullName}"></dd></div>
+      <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + ' · ' + consignment.vehicle.vin}"></dd></div>
+    </dl>
+  </section>
+
+  <section class="content-card">
+    <div class="content-card-header"><h2>Điều kiện & kiểm tra</h2></div>
+    <ul class="checklist">
+      <li th:each="check : ${checks}" th:classappend="${check.passed ? 'passed' : 'blocked'}">
+        <span class="check-icon" aria-hidden="true" th:text="${check.passed ? '✓' : '!'}"></span>
+        <div>
+          <strong th:text="${check.label}"></strong>
+          <small th:text="${check.passed ? 'Đã đáp ứng' : 'Cần xử lý trước khi gửi yêu cầu'}"></small>
+          <p th:if="${!check.passed and !#strings.isEmpty(check.detail)}" th:text="${check.detail}"></p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="content-card" th:if="${#lists.isEmpty(checks.?[!passed])}">
+    <div class="content-card-header">
+      <h2>Thông tin rút hồ sơ</h2><span class="caption">* Thông tin bắt buộc</span>
+    </div>
+    <form id="withdraw-form" method="post" novalidate
+          th:action="@{${base} + '/' + ${consignment.id} + '/withdraw'}" th:object="${form}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field full-width">
+          <label for="field-reason">Lý do rút<span class="required" aria-label="bắt buộc"> *</span></label>
+          <textarea id="field-reason" th:field="*{reason}" rows="3" maxlength="2000" required></textarea>
+          <small class="field-error" th:errors="*{reason}"></small>
+        </div>
+        <div class="field">
+          <label for="field-returnDate">Ngày trả xe</label>
+          <input type="date" id="field-returnDate" th:field="*{returnDate}">
+          <small class="field-error" th:errors="*{returnDate}"></small>
+        </div>
+        <div class="field">
+          <label for="field-evidencePath">Bằng chứng (số hiệu hoặc đường dẫn tài liệu)</label>
+          <input type="text" id="field-evidencePath" th:field="*{evidencePath}" maxlength="500">
+          <small class="field-error" th:errors="*{evidencePath}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-condition">Tình trạng xe khi trả</label>
+          <textarea id="field-condition" th:field="*{condition}" rows="3" maxlength="2000"></textarea>
+          <small class="field-error" th:errors="*{condition}"></small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a class="button" th:href="@{${base} + '/' + ${consignment.id}}">Hủy</a>
+        <button type="submit" class="button button-primary">Gửi yêu cầu rút</button>
+      </div>
+    </form>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

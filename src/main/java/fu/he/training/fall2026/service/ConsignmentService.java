@@ -1,11 +1,15 @@
 package fu.he.training.fall2026.service;
 
 import fu.he.training.fall2026.dto.consignment.ConsignmentForm;
+import fu.he.training.fall2026.dto.consignment.WithdrawCheck;
+import fu.he.training.fall2026.dto.consignment.WithdrawForm;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
+import fu.he.training.fall2026.entity.auth.Approval;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 
 public interface ConsignmentService {
@@ -31,4 +35,18 @@ public interface ConsignmentService {
 
     /** DRAFT → SUBMITTED; after this the content is locked. */
     void submit(Long id);
+
+    /** The conditions to check before withdrawing; the consignment can be withdrawn when every one passes. */
+    List<WithdrawCheck> withdrawChecks(Long id);
+
+    /** The latest withdraw request sent to the manager for this consignment, if any. */
+    Optional<Approval> findWithdrawRequest(Long id);
+
+    /**
+     * Sends a withdraw request to the manager: saves the reason, return date, condition and evidence on the
+     * consignment and creates a PENDING WITHDRAWAL approval. The consignment status is not changed here.
+     *
+     * @throws fu.he.training.fall2026.exception.BusinessException while any withdraw check fails
+     */
+    void requestWithdraw(Long id, WithdrawForm form, Long actorUserId);
 }

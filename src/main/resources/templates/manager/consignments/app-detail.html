@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Hồ sơ ' + consignment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Điều hành</p>
+      <h1 th:text="${'Hồ sơ ' + consignment.code}">Hồ sơ</h1>
+      <p class="page-description">Tổng hợp chủ xe, trạng thái lần ký gửi và hợp đồng.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:if="${withdrawRequest != null}" th:href="@{/manager/consignments/{id}/withdraw(id=${consignment.id})}">Yêu cầu rút ký gửi</a>
+      <a class="button" th:href="@{/manager/consignments}">Danh sách hồ sơ</a>
+    </div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Thông tin hồ sơ</h2>
+      <span class="badge" th:attr="data-status=${consignment.status}" th:text="${consignment.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Mã hồ sơ</dt><dd th:text="${consignment.code}"></dd></div>
+      <div><dt>Chủ xe pháp lý</dt><dd th:text="${consignment.consignor.fullName}"></dd></div>
+      <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + (consignment.vehicle.year != null ? ' · ' + consignment.vehicle.year : '')}"></dd></div>
+      <div><dt>VIN</dt><dd th:text="${consignment.vehicle.vin}"></dd></div>
+      <div><dt>Giá kỳ vọng</dt><dd th:text="${consignment.expectedPrice != null ? #numbers.formatDecimal(consignment.expectedPrice, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}"></dd></div>
+      <div><dt>Ngày tiếp nhận</dt><dd th:text="${consignment.intakeDate != null ? #temporals.format(consignment.intakeDate, 'dd/MM/yyyy') : '—'}"></dd></div>
+      <div><dt>Yêu cầu / điều khoản</dt><dd th:text="${consignment.termNotes ?: '—'}"></dd></div>
+    </dl>
+  </section>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Hợp đồng ký gửi</h2>
+      <span class="badge" th:if="${agreement != null}" th:attr="data-status=${agreement.status}" th:text="${agreement.status}"></span>
+    </div>
+    <p class="field-hint" style="padding:var(--space-4) var(--space-6)" th:if="${agreement == null}">Chưa có hợp đồng.</p>
+    <dl class="facts-grid" th:if="${agreement != null}">
+      <div><dt>Mã, phiên bản</dt><dd th:text="${agreement.code + ' · v' + agreement.versionNo}"></dd></div>
+      <div><dt>Hoa hồng</dt>
+        <dd th:text="${agreement.commissionRate != null and agreement.commissionRate.signum() > 0
+              ? #numbers.formatDecimal(agreement.commissionRate, 1, 'POINT', 2, 'COMMA') + ' % giá bán'
+              : #numbers.formatDecimal(agreement.fixedFee, 0, 'POINT', 0, 'COMMA') + ' ₫ (phí cố định)'}"></dd></div>
+      <div><dt>Giá sàn của chủ xe</dt><dd th:text="${#numbers.formatDecimal(agreement.priceFloor, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+      <div><dt>Hiệu lực</dt><dd th:text="${#temporals.format(agreement.validFrom, 'dd/MM/yyyy') + ' → ' + #temporals.format(agreement.validTo, 'dd/MM/yyyy')}"></dd></div>
+    </dl>
+  </section>
+
+  <section class="content-card" th:if="${withdrawRequest != null}">
+    <div class="content-card-header">
+      <h2>Yêu cầu rút hồ sơ</h2>
+      <span class="badge" th:attr="data-status=${withdrawRequest.status}" th:text="${withdrawRequest.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Lý do</dt><dd th:text="${withdrawRequest.reason}"></dd></div>
+      <div><dt>Người gửi</dt><dd th:text="${withdrawRequest.requestedBy.fullName}"></dd></div>
+      <div><dt>Thời điểm gửi</dt><dd th:text="${#temporals.format(withdrawRequest.createdAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+      <div><dt>Ngày trả xe</dt><dd th:text="${consignment.withdrawReturnDate != null ? #temporals.format(consignment.withdrawReturnDate, 'dd/MM/yyyy') : '—'}"></dd></div>
+      <div><dt>Tình trạng xe khi trả</dt><dd th:text="${consignment.withdrawCondition ?: '—'}"></dd></div>
+      <div><dt>Bằng chứng</dt><dd th:text="${consignment.withdrawEvidencePath ?: '—'}"></dd></div>
+    </dl>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>
