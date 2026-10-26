@@ -96,6 +96,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         requireDraft(consignment);
         ConsignmentForm form = new ConsignmentForm();
+        form.setId(consignment.getId());
         form.setConsignorId(consignment.getConsignor().getId());
         form.setVehicleId(consignment.getVehicle().getId());
         form.setExpectedPrice(consignment.getExpectedPrice());

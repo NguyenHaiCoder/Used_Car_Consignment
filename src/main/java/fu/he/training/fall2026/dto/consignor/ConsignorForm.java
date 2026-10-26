@@ -12,6 +12,9 @@ import lombok.Setter;
 @Setter
 public class ConsignorForm {
 
+    /** Hidden field: empty when creating, the consignor id when editing. */
+    private Long id;
+
     @NotBlank(message = "Vui lòng nhập họ và tên.")
     @Size(max = 160, message = "Họ và tên tối đa 160 ký tự.")
     private String fullName;

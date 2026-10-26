@@ -25,7 +25,9 @@
       <h2>Nhập thông tin</h2><span class="caption">* Thông tin bắt buộc</span>
     </div>
     <form id="agreement-form" method="post" novalidate
-          th:action="@{${formAction}}" th:object="${form}">
+          th:action="@{/consignment/agreements}" th:object="${form}">
+      <input type="hidden" th:field="*{id}">
+      <input type="hidden" th:field="*{consignmentId}">
       <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
       <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
       <div class="form-grid">

@@ -42,7 +42,8 @@
       <div><dt>Chủ xe đồng ý cung cấp thông tin</dt><dd th:text="${consignment.ownerConsent ? 'Đã xác nhận' : 'Chưa xác nhận'}"></dd></div>
     </dl>
     <form method="post" class="form-actions" th:if="${consignment.status.name() == 'DRAFT'}"
-          th:action="@{/consignment/consignments/{id}/submit(id=${consignment.id})}">
+          th:action="@{/consignment/consignments/submit}">
+      <input type="hidden" name="id" th:value="${consignment.id}">
       <p class="field-hint">Sau khi gửi duyệt, hồ sơ bị khóa và không sửa trực tiếp được nữa.</p>
       <button type="submit" class="button button-primary">Gửi duyệt</button>
     </form>

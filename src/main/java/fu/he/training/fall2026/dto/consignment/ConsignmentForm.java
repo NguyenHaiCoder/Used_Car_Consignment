@@ -14,6 +14,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Setter
 public class ConsignmentForm {
 
+    /** Hidden field: empty when creating, the consignment id when editing. */
+    private Long id;
+
     @NotNull(message = "Vui lòng chọn chủ xe.")
     private Long consignorId;
 

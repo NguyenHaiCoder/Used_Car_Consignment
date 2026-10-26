@@ -49,7 +49,8 @@
       <h2>Thông tin rút hồ sơ</h2><span class="caption">* Thông tin bắt buộc</span>
     </div>
     <form id="withdraw-form" method="post" novalidate
-          th:action="@{${base} + '/' + ${consignment.id} + '/withdraw'}" th:object="${form}">
+          th:action="@{${base} + '/withdraw'}" th:object="${form}">
+      <input type="hidden" th:field="*{id}">
       <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
       <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
       <div class="form-grid">

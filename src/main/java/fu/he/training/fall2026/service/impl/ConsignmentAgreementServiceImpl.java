@@ -47,6 +47,8 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
                 .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
         requireDraft(agreement);
         AgreementForm form = new AgreementForm();
+        form.setId(agreement.getId());
+        form.setConsignmentId(consignmentId);
         form.setCommissionRate(agreement.getCommissionRate());
         form.setFixedFee(agreement.getFixedFee());
         form.setPriceFloor(agreement.getPriceFloor());

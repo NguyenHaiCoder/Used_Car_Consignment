@@ -44,30 +44,6 @@ public class ConsignorWebController {
     @GetMapping("/new")
     public String createForm(Model model) {
         model.addAttribute("form", new ConsignorForm());
-        model.addAttribute("editing", false);
-        model.addAttribute("formAction", BASE);
-        model.addAttribute("cancelUrl", BASE);
-        return FORM_VIEW;
-    }
-
-    @PostMapping
-    public String create(
-            @Valid @ModelAttribute("form") ConsignorForm form,
-            BindingResult errors,
-            Model model,
-            RedirectAttributes flash) {
-        if (!errors.hasErrors()) {
-            try {
-                Long id = consignorService.create(form);
-                flash.addFlashAttribute("flashMessage", "Đã tạo hồ sơ chủ xe.");
-                return "redirect:" + BASE + "/" + id;
-            } catch (BusinessException ex) {
-                errors.reject("duplicate", ex.getMessage());
-            }
-        }
-        model.addAttribute("editing", false);
-        model.addAttribute("formAction", BASE);
-        model.addAttribute("cancelUrl", BASE);
         return FORM_VIEW;
     }
 
@@ -80,31 +56,29 @@ public class ConsignorWebController {
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         model.addAttribute("form", consignorService.formFor(id));
-        model.addAttribute("editing", true);
-        model.addAttribute("formAction", BASE + "/" + id);
-        model.addAttribute("cancelUrl", BASE + "/" + id);
         return FORM_VIEW;
     }
 
-    @PostMapping("/{id}")
-    public String update(
-            @PathVariable Long id,
+    /** Creates the consignor when the hidden id is empty, otherwise updates that consignor. */
+    @PostMapping
+    public String save(
             @Valid @ModelAttribute("form") ConsignorForm form,
             BindingResult errors,
-            Model model,
             RedirectAttributes flash) {
         if (!errors.hasErrors()) {
             try {
-                consignorService.update(id, form);
+                if (form.getId() == null) {
+                    Long id = consignorService.create(form);
+                    flash.addFlashAttribute("flashMessage", "Đã tạo hồ sơ chủ xe.");
+                    return "redirect:" + BASE + "/" + id;
+                }
+                consignorService.update(form.getId(), form);
                 flash.addFlashAttribute("flashMessage", "Đã cập nhật hồ sơ chủ xe.");
-                return "redirect:" + BASE + "/" + id;
+                return "redirect:" + BASE + "/" + form.getId();
             } catch (BusinessException ex) {
                 errors.reject("duplicate", ex.getMessage());
             }
         }
-        model.addAttribute("editing", true);
-        model.addAttribute("formAction", BASE + "/" + id);
-        model.addAttribute("cancelUrl", BASE + "/" + id);
         return FORM_VIEW;
     }
 }

@@ -15,6 +15,13 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Setter
 public class AgreementForm {
 
+    /** Hidden field: empty when creating, the agreement id when editing the draft. */
+    private Long id;
+
+    /** Hidden field: the consignment this agreement belongs to. */
+    @NotNull(message = "Thiếu hồ sơ ký gửi.")
+    private Long consignmentId;
+
     /** Commission as a percentage of the sale price; fill this or {@code fixedFee}, not both. */
     @DecimalMin(value = "0.0", message = "Hoa hồng không được âm.")
     @DecimalMax(value = "100.0", message = "Hoa hồng phải từ 0 đến 100%.")

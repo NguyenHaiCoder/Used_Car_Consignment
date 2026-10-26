@@ -53,6 +53,7 @@ public class ConsignorServiceImpl implements ConsignorService {
         Consignor consignor = consignorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
         ConsignorForm form = new ConsignorForm();
+        form.setId(consignor.getId());
         form.setFullName(consignor.getFullName());
         form.setPhone(consignor.getPhone());
         form.setEmail(consignor.getEmail());

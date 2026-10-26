@@ -3,6 +3,7 @@ package fu.he.training.fall2026.dto.consignment;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -10,6 +11,10 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Getter
 @Setter
 public class WithdrawForm {
+
+    /** Hidden field: the consignment to withdraw. */
+    @NotNull(message = "Thiếu hồ sơ ký gửi.")
+    private Long id;
 
     @NotBlank(message = "Vui lòng nhập lý do rút hồ sơ.")
     @Size(max = 2000, message = "Lý do tối đa 2000 ký tự.")
