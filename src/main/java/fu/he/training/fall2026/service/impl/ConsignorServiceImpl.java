@@ -36,7 +36,9 @@ public class ConsignorServiceImpl implements ConsignorService {
     @Override
     @Transactional(readOnly = true)
     public ConsignorResponse get(Long id) {
-        return toDto(find(id));
+        Consignor consignor = consignorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
+        return toDto(consignor);
     }
 
     @Override
@@ -48,17 +50,18 @@ public class ConsignorServiceImpl implements ConsignorService {
     @Override
     @Transactional(readOnly = true)
     public ConsignorForm formFor(Long id) {
-        Consignor c = find(id);
+        Consignor consignor = consignorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
         ConsignorForm form = new ConsignorForm();
-        form.setFullName(c.getFullName());
-        form.setPhone(c.getPhone());
-        form.setEmail(c.getEmail());
-        form.setIdNumber(c.getIdNumber());
-        form.setAddress(c.getAddress());
-        form.setBank(c.getBank());
-        form.setAccountNumber(c.getAccountNumber());
-        form.setAccountName(c.getAccountName());
-        form.setConsentStored(c.isConsentStored());
+        form.setFullName(consignor.getFullName());
+        form.setPhone(consignor.getPhone());
+        form.setEmail(consignor.getEmail());
+        form.setIdNumber(consignor.getIdNumber());
+        form.setAddress(consignor.getAddress());
+        form.setBank(consignor.getBank());
+        form.setAccountNumber(consignor.getAccountNumber());
+        form.setAccountName(consignor.getAccountName());
+        form.setConsentStored(consignor.isConsentStored());
         return form;
     }
 
@@ -74,15 +77,11 @@ public class ConsignorServiceImpl implements ConsignorService {
     @Override
     @Transactional
     public void update(Long id, ConsignorForm form) {
-        Consignor consignor = find(id);
+        Consignor consignor = consignorRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
         rejectDuplicate(form, id);
         apply(consignor, form);
         consignorRepository.save(consignor);
-    }
-
-    private Consignor find(Long id) {
-        return consignorRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
     }
 
     private static ConsignorResponse toDto(Consignor c) {

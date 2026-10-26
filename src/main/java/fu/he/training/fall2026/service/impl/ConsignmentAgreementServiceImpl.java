@@ -28,7 +28,8 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     @Override
     @Transactional(readOnly = true)
     public Optional<AgreementResponse> findLatest(Long consignmentId) {
-        return latest(consignmentId).map(ConsignmentAgreementServiceImpl::toDto);
+        return agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
+                .map(ConsignmentAgreementServiceImpl::toDto);
     }
 
     @Override
@@ -42,17 +43,19 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     @Override
     @Transactional(readOnly = true)
     public AgreementForm formFor(Long consignmentId) {
-        ConsignmentAgreement a = latestDraft(consignmentId);
+        ConsignmentAgreement agreement = agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
+                .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
+        requireDraft(agreement);
         AgreementForm form = new AgreementForm();
-        form.setCommissionRate(a.getCommissionRate());
-        form.setFixedFee(a.getFixedFee());
-        form.setPriceFloor(a.getPriceFloor());
-        form.setValidFrom(a.getValidFrom());
-        form.setValidTo(a.getValidTo());
-        form.setCustodyTerms(a.getCustodyTerms());
-        form.setTerminationTerms(a.getTerminationTerms());
-        form.setPayoutTerms(a.getPayoutTerms());
-        form.setSignatureEvidencePath(a.getSignatureEvidencePath());
+        form.setCommissionRate(agreement.getCommissionRate());
+        form.setFixedFee(agreement.getFixedFee());
+        form.setPriceFloor(agreement.getPriceFloor());
+        form.setValidFrom(agreement.getValidFrom());
+        form.setValidTo(agreement.getValidTo());
+        form.setCustodyTerms(agreement.getCustodyTerms());
+        form.setTerminationTerms(agreement.getTerminationTerms());
+        form.setPayoutTerms(agreement.getPayoutTerms());
+        form.setSignatureEvidencePath(agreement.getSignatureEvidencePath());
         return form;
     }
 
@@ -60,8 +63,9 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     @Transactional
     public void createDraft(Long consignmentId, AgreementForm form) {
         validateTerms(form);
-        Consignment consignment = consignment(consignmentId);
-        if (latest(consignmentId).isPresent()) {
+        Consignment consignment = consignmentRepository.findById(consignmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", consignmentId));
+        if (agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId).isPresent()) {
             throw new BusinessException("Hồ sơ này đã có hợp đồng.", HttpStatus.CONFLICT);
         }
         ConsignmentAgreement agreement = new ConsignmentAgreement();
@@ -77,7 +81,9 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     @Transactional
     public void updateDraft(Long consignmentId, AgreementForm form) {
         validateTerms(form);
-        ConsignmentAgreement agreement = latestDraft(consignmentId);
+        ConsignmentAgreement agreement = agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
+                .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
+        requireDraft(agreement);
         apply(agreement, form);
         agreementRepository.save(agreement);
     }
@@ -85,14 +91,16 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     @Override
     @Transactional
     public void submit(Long consignmentId) {
-        ConsignmentAgreement agreement = latestDraft(consignmentId);
+        ConsignmentAgreement agreement = agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
+                .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
+        requireDraft(agreement);
         agreement.setStatus(AgreementStatus.PENDING_SIGNATURE);
     }
 
     @Override
     @Transactional
     public void createAmendment(Long consignmentId) {
-        ConsignmentAgreement current = latest(consignmentId)
+        ConsignmentAgreement current = agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
                 .orElseThrow(() -> new BusinessException("Chưa có hợp đồng để sửa đổi."));
         if (current.getStatus() != AgreementStatus.ACTIVE) {
             throw new BusinessException("Chỉ hợp đồng ACTIVE mới tạo được phiên bản sửa đổi.", HttpStatus.CONFLICT);
@@ -113,10 +121,6 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
         agreementRepository.save(next);
     }
 
-    private Optional<ConsignmentAgreement> latest(Long consignmentId) {
-        return agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId);
-    }
-
     private static AgreementResponse toDto(ConsignmentAgreement a) {
         return AgreementResponse.builder()
                 .id(a.getId())
@@ -135,14 +139,6 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
                 .build();
     }
 
-    /** Newest version, which must exist and still be a DRAFT. */
-    private ConsignmentAgreement latestDraft(Long consignmentId) {
-        ConsignmentAgreement latest = latest(consignmentId)
-                .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
-        requireDraft(latest);
-        return latest;
-    }
-
     private static void apply(ConsignmentAgreement target, AgreementForm form) {
         target.setCommissionRate(form.getCommissionRate());
         target.setFixedFee(form.getFixedFee());
@@ -153,11 +149,6 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
         target.setTerminationTerms(form.getTerminationTerms().trim());
         target.setPayoutTerms(form.getPayoutTerms().trim());
         target.setSignatureEvidencePath(blankToNull(form.getSignatureEvidencePath()));
-    }
-
-    private Consignment consignment(Long id) {
-        return consignmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
     }
 
     /** Only a DRAFT may be edited or submitted; signed terms change only through a new version. */

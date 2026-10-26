@@ -78,7 +78,9 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional(readOnly = true)
     public ConsignmentResponse get(Long id) {
-        return toDto(find(id));
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
+        return toDto(consignment);
     }
 
     @Override
@@ -90,15 +92,16 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional(readOnly = true)
     public ConsignmentForm formFor(Long id) {
-        Consignment c = find(id);
-        requireDraft(c);
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
+        requireDraft(consignment);
         ConsignmentForm form = new ConsignmentForm();
-        form.setConsignorId(c.getConsignor().getId());
-        form.setVehicleId(c.getVehicle().getId());
-        form.setExpectedPrice(c.getExpectedPrice());
-        form.setIntakeDate(c.getIntakeDate());
-        form.setTermNotes(c.getTermNotes());
-        form.setOwnerConsent(c.isOwnerConsent());
+        form.setConsignorId(consignment.getConsignor().getId());
+        form.setVehicleId(consignment.getVehicle().getId());
+        form.setExpectedPrice(consignment.getExpectedPrice());
+        form.setIntakeDate(consignment.getIntakeDate());
+        form.setTermNotes(consignment.getTermNotes());
+        form.setOwnerConsent(consignment.isOwnerConsent());
         return form;
     }
 
@@ -117,7 +120,8 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional
     public void updateDraft(Long id, ConsignmentForm form) {
-        Consignment consignment = find(id);
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         requireDraft(consignment);
         applyForm(consignment, form);
     }
@@ -125,7 +129,8 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional
     public void submit(Long id) {
-        Consignment consignment = find(id);
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         requireDraft(consignment);
         consignment.setStatus(ConsignmentStatus.SUBMITTED);
     }
@@ -133,7 +138,8 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional(readOnly = true)
     public List<WithdrawCheck> withdrawChecks(Long id) {
-        Consignment consignment = find(id);
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         Long vehicleId = consignment.getVehicle().getId();
         ConsignmentStatus status = consignment.getStatus();
         boolean open = status != ConsignmentStatus.SOLD
@@ -170,7 +176,8 @@ public class ConsignmentServiceImpl implements ConsignmentService {
         if (!failed.isEmpty()) {
             throw new BusinessException("Chưa thể gửi yêu cầu rút: " + String.join(" ", failed), HttpStatus.CONFLICT);
         }
-        Consignment consignment = find(id);
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         consignment.setWithdrawReason(form.getReason().trim());
         consignment.setWithdrawReturnDate(form.getReturnDate());
         consignment.setWithdrawCondition(blankToNull(form.getCondition()));
@@ -190,7 +197,8 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     @Override
     @Transactional(readOnly = true)
     public Optional<WithdrawRequestResponse> findWithdrawRequest(Long id) {
-        Consignment consignment = find(id);
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         return approvalRepository.findRequests(ApprovalType.WITHDRAWAL, APPROVAL_TARGET, id).stream()
                 .findFirst()
                 .map(request -> WithdrawRequestResponse.builder()
@@ -202,11 +210,6 @@ public class ConsignmentServiceImpl implements ConsignmentService {
                         .condition(consignment.getWithdrawCondition())
                         .evidencePath(consignment.getWithdrawEvidencePath())
                         .build());
-    }
-
-    private Consignment find(Long id) {
-        return consignmentRepository.findDetailById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
     }
 
     private static ConsignmentResponse toDto(Consignment c) {
