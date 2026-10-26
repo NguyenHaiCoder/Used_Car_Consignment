@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Soạn hợp đồng · ' + consignment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${'Soạn hợp đồng · ' + consignment.code}">Soạn hợp đồng</h1>
+      <p class="page-description">Hoa hồng (% hoặc cố định), giá sàn, hiệu lực, giữ xe, chấm dứt, chi trả và bằng chứng ký.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/consignment/consignments/{id}/agreement(id=${consignment.id})}">Xem hợp đồng</a>
+    </div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Nhập thông tin</h2><span class="caption">* Thông tin bắt buộc</span>
+    </div>
+    <form id="agreement-form" method="post" novalidate
+          th:action="@{${formAction}}" th:object="${form}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="field-commissionRate">Hoa hồng (% giá bán)</label>
+          <input type="number" id="field-commissionRate" th:field="*{commissionRate}" min="0" max="100" step="any">
+          <small class="field-hint">Nhập hoa hồng % hoặc phí cố định, chỉ một trong hai.</small>
+          <small class="field-error" th:errors="*{commissionRate}"></small>
+        </div>
+        <div class="field">
+          <label for="field-fixedFee">Phí cố định (VNĐ)</label>
+          <input type="number" id="field-fixedFee" th:field="*{fixedFee}" min="0" step="any">
+          <small class="field-error" th:errors="*{fixedFee}"></small>
+        </div>
+        <div class="field">
+          <label for="field-priceFloor">Giá sàn của chủ xe (VNĐ)<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="number" id="field-priceFloor" th:field="*{priceFloor}" min="0" step="any" required>
+          <small class="field-error" th:errors="*{priceFloor}"></small>
+        </div>
+        <div class="field"></div>
+        <div class="field">
+          <label for="field-validFrom">Hiệu lực từ<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="date" id="field-validFrom" th:field="*{validFrom}" required>
+          <small class="field-error" th:errors="*{validFrom}"></small>
+        </div>
+        <div class="field">
+          <label for="field-validTo">Hiệu lực đến<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="date" id="field-validTo" th:field="*{validTo}" required>
+          <small class="field-error" th:errors="*{validTo}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-custodyTerms">Điều khoản giữ xe (nơi giữ, trách nhiệm)<span class="required" aria-label="bắt buộc"> *</span></label>
+          <textarea id="field-custodyTerms" th:field="*{custodyTerms}" rows="3" maxlength="4000" required></textarea>
+          <small class="field-error" th:errors="*{custodyTerms}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-terminationTerms">Điều khoản chấm dứt<span class="required" aria-label="bắt buộc"> *</span></label>
+          <textarea id="field-terminationTerms" th:field="*{terminationTerms}" rows="3" maxlength="4000" required></textarea>
+          <small class="field-error" th:errors="*{terminationTerms}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-payoutTerms">Điều khoản chi trả cho chủ xe (tài khoản nhận tiền)<span class="required" aria-label="bắt buộc"> *</span></label>
+          <textarea id="field-payoutTerms" th:field="*{payoutTerms}" rows="3" maxlength="4000" required></textarea>
+          <small class="field-error" th:errors="*{payoutTerms}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-signatureEvidencePath">Bằng chứng ký (số hiệu hoặc đường dẫn tài liệu)</label>
+          <input type="text" id="field-signatureEvidencePath" th:field="*{signatureEvidencePath}" maxlength="500">
+          <small class="field-error" th:errors="*{signatureEvidencePath}"></small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a class="button" th:href="@{/consignment/consignments/{id}/agreement(id=${consignment.id})}">Hủy</a>
+        <button type="submit" class="button button-primary">Lưu bản nháp</button>
+      </div>
+    </form>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

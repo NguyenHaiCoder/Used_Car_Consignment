@@ -1,0 +1,162 @@
+package fu.he.training.fall2026.service.impl;
+
+import fu.he.training.fall2026.dto.consignment.AgreementForm;
+import fu.he.training.fall2026.entity.consignment.Consignment;
+import fu.he.training.fall2026.entity.consignment.ConsignmentAgreement;
+import fu.he.training.fall2026.entity.enums.AgreementStatus;
+import fu.he.training.fall2026.exception.BusinessException;
+import fu.he.training.fall2026.exception.ResourceNotFoundException;
+import fu.he.training.fall2026.repository.ConsignmentAgreementRepository;
+import fu.he.training.fall2026.repository.ConsignmentRepository;
+import fu.he.training.fall2026.service.ConsignmentAgreementService;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementService {
+
+    private final ConsignmentAgreementRepository agreementRepository;
+    private final ConsignmentRepository consignmentRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ConsignmentAgreement> findLatest(Long consignmentId) {
+        return agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ConsignmentAgreement> versions(Long consignmentId) {
+        return agreementRepository.findByConsignmentIdOrderByVersionNoDesc(consignmentId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AgreementForm formFor(Long consignmentId) {
+        ConsignmentAgreement a = latestDraft(consignmentId);
+        AgreementForm form = new AgreementForm();
+        form.setCommissionRate(a.getCommissionRate());
+        form.setFixedFee(a.getFixedFee());
+        form.setPriceFloor(a.getPriceFloor());
+        form.setValidFrom(a.getValidFrom());
+        form.setValidTo(a.getValidTo());
+        form.setCustodyTerms(a.getCustodyTerms());
+        form.setTerminationTerms(a.getTerminationTerms());
+        form.setPayoutTerms(a.getPayoutTerms());
+        form.setSignatureEvidencePath(a.getSignatureEvidencePath());
+        return form;
+    }
+
+    @Override
+    @Transactional
+    public void createDraft(Long consignmentId, AgreementForm form) {
+        validateTerms(form);
+        Consignment consignment = consignment(consignmentId);
+        if (findLatest(consignmentId).isPresent()) {
+            throw new BusinessException("Hồ sơ này đã có hợp đồng.", HttpStatus.CONFLICT);
+        }
+        ConsignmentAgreement agreement = new ConsignmentAgreement();
+        agreement.setCode("HDKG-" + consignment.getId());
+        agreement.setVersionNo(1);
+        agreement.setConsignment(consignment);
+        agreement.setStatus(AgreementStatus.DRAFT);
+        apply(agreement, form);
+        agreementRepository.save(agreement);
+    }
+
+    @Override
+    @Transactional
+    public void updateDraft(Long consignmentId, AgreementForm form) {
+        validateTerms(form);
+        ConsignmentAgreement agreement = latestDraft(consignmentId);
+        apply(agreement, form);
+        agreementRepository.save(agreement);
+    }
+
+    @Override
+    @Transactional
+    public void submit(Long consignmentId) {
+        ConsignmentAgreement agreement = latestDraft(consignmentId);
+        agreement.setStatus(AgreementStatus.PENDING_SIGNATURE);
+    }
+
+    @Override
+    @Transactional
+    public void createAmendment(Long consignmentId) {
+        ConsignmentAgreement current = findLatest(consignmentId)
+                .orElseThrow(() -> new BusinessException("Chưa có hợp đồng để sửa đổi."));
+        if (current.getStatus() != AgreementStatus.ACTIVE) {
+            throw new BusinessException("Chỉ hợp đồng ACTIVE mới tạo được phiên bản sửa đổi.", HttpStatus.CONFLICT);
+        }
+        ConsignmentAgreement next = new ConsignmentAgreement();
+        next.setCode(current.getCode());
+        next.setVersionNo(current.getVersionNo() + 1);
+        next.setConsignment(current.getConsignment());
+        next.setStatus(AgreementStatus.DRAFT);
+        next.setCommissionRate(current.getCommissionRate());
+        next.setFixedFee(current.getFixedFee());
+        next.setPriceFloor(current.getPriceFloor());
+        next.setValidFrom(current.getValidFrom());
+        next.setValidTo(current.getValidTo());
+        next.setCustodyTerms(current.getCustodyTerms());
+        next.setTerminationTerms(current.getTerminationTerms());
+        next.setPayoutTerms(current.getPayoutTerms());
+        agreementRepository.save(next);
+    }
+
+    /** Newest version, which must exist and still be a DRAFT. */
+    private ConsignmentAgreement latestDraft(Long consignmentId) {
+        ConsignmentAgreement latest = findLatest(consignmentId)
+                .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
+        requireDraft(latest);
+        return latest;
+    }
+
+    private static void apply(ConsignmentAgreement target, AgreementForm form) {
+        target.setCommissionRate(form.getCommissionRate());
+        target.setFixedFee(form.getFixedFee());
+        target.setPriceFloor(form.getPriceFloor());
+        target.setValidFrom(form.getValidFrom());
+        target.setValidTo(form.getValidTo());
+        target.setCustodyTerms(form.getCustodyTerms().trim());
+        target.setTerminationTerms(form.getTerminationTerms().trim());
+        target.setPayoutTerms(form.getPayoutTerms().trim());
+        target.setSignatureEvidencePath(blankToNull(form.getSignatureEvidencePath()));
+    }
+
+    private Consignment consignment(Long id) {
+        return consignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
+    }
+
+    /** Only a DRAFT may be edited or submitted; signed terms change only through a new version. */
+    private static void requireDraft(ConsignmentAgreement agreement) {
+        if (agreement.getStatus() != AgreementStatus.DRAFT) {
+            throw new BusinessException(
+                    "Hợp đồng đã gửi duyệt hoặc đã ký không sửa trực tiếp được. Hãy tạo phiên bản sửa đổi.",
+                    HttpStatus.CONFLICT);
+        }
+    }
+
+    /** BR-03: a commission (rate or fixed fee) is required, and the validity period must make sense. */
+    private static void validateTerms(AgreementForm form) {
+        boolean hasRate = form.getCommissionRate() != null && form.getCommissionRate().signum() > 0;
+        boolean hasFee = form.getFixedFee() != null && form.getFixedFee().compareTo(BigDecimal.ZERO) > 0;
+        if (hasRate == hasFee) {
+            throw new BusinessException("Nhập hoa hồng theo % hoặc phí cố định (chỉ một trong hai).");
+        }
+        if (form.getValidTo().isBefore(form.getValidFrom())) {
+            throw new BusinessException("Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+}

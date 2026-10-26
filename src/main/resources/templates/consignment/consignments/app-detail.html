@@ -17,6 +17,7 @@
     <div class="page-actions">
       <a class="button" th:if="${consignment.status.name() == 'DRAFT'}"
          th:href="@{/consignment/consignments/{id}/edit(id=${consignment.id})}">Sửa draft</a>
+      <a class="button" th:href="@{/consignment/consignments/{id}/agreement(id=${consignment.id})}">Hợp đồng ký gửi</a>
       <a class="button" th:href="@{/consignment/consignments}">Danh sách hồ sơ</a>
     </div>
   </div>

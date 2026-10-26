@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Hợp đồng ký gửi · ' + consignment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${'Hợp đồng ký gửi · ' + consignment.code}">Hợp đồng ký gửi</h1>
+      <p class="page-description">Hợp đồng đã ký giữ nguyên nội dung; sửa đổi tạo phiên bản mới.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/consignment/consignments/{id}(id=${consignment.id})}">Hồ sơ ký gửi</a>
+    </div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <section class="content-card" th:if="${agreement == null}">
+    <div class="empty-state">
+      <h3>Chưa có hợp đồng</h3>
+      <p>Soạn hợp đồng gồm hoa hồng, giá sàn, hiệu lực và các điều khoản trước khi đăng bán.</p>
+      <a class="button button-primary" th:href="@{/consignment/consignments/{id}/agreement/new(id=${consignment.id})}">Soạn hợp đồng</a>
+    </div>
+  </section>
+
+  <section class="content-card" th:if="${agreement != null}">
+    <div class="content-card-header">
+      <h2 th:text="${agreement.code + ' · phiên bản ' + agreement.versionNo}">Hợp đồng</h2>
+      <span class="badge" th:attr="data-status=${agreement.status}" th:text="${agreement.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Hoa hồng</dt>
+        <dd th:text="${agreement.commissionRate != null and agreement.commissionRate.signum() > 0
+              ? #numbers.formatDecimal(agreement.commissionRate, 1, 'POINT', 2, 'COMMA') + ' % giá bán'
+              : #numbers.formatDecimal(agreement.fixedFee, 0, 'POINT', 0, 'COMMA') + ' ₫ (phí cố định)'}"></dd></div>
+      <div><dt>Giá sàn của chủ xe</dt><dd th:text="${#numbers.formatDecimal(agreement.priceFloor, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+      <div><dt>Hiệu lực</dt><dd th:text="${#temporals.format(agreement.validFrom, 'dd/MM/yyyy') + ' → ' + #temporals.format(agreement.validTo, 'dd/MM/yyyy')}"></dd></div>
+      <div><dt>Điều khoản giữ xe</dt><dd th:text="${agreement.custodyTerms}"></dd></div>
+      <div><dt>Điều khoản chấm dứt</dt><dd th:text="${agreement.terminationTerms}"></dd></div>
+      <div><dt>Điều khoản chi trả cho chủ xe</dt><dd th:text="${agreement.payoutTerms}"></dd></div>
+      <div><dt>Bằng chứng ký</dt><dd th:text="${agreement.signatureEvidencePath ?: '—'}"></dd></div>
+    </dl>
+
+    <div class="form-actions" th:if="${agreement.status.name() == 'DRAFT'}">
+      <a class="button" th:href="@{/consignment/consignments/{id}/agreement/edit(id=${consignment.id})}">Sửa hợp đồng</a>
+      <form method="post" th:action="@{/consignment/consignments/{id}/agreement/submit(id=${consignment.id})}" style="margin:0">
+        <button type="submit" class="button button-primary">Gửi duyệt</button>
+      </form>
+    </div>
+    <div class="form-actions" th:if="${agreement.status.name() == 'PENDING_SIGNATURE'}">
+      <p class="field-hint">Hợp đồng đã gửi duyệt, nội dung bị khóa và đang chờ ký.</p>
+    </div>
+    <div class="form-actions" th:if="${agreement.status.name() == 'ACTIVE'}">
+      <p class="field-hint">Hợp đồng đã ký không sửa trực tiếp. Muốn thay đổi, tạo phiên bản sửa đổi.</p>
+      <form method="post" th:action="@{/consignment/consignments/{id}/agreement/amend(id=${consignment.id})}" style="margin:0">
+        <button type="submit" class="button">Tạo phiên bản sửa đổi</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="content-card table-card" th:if="${#lists.size(versions) > 1}">
+    <div class="content-card-header"><h2>Các phiên bản</h2></div>
+    <div class="table-scroll">
+      <table class="custom-table">
+        <caption class="sr-only">Các phiên bản hợp đồng</caption>
+        <thead><tr><th scope="col">Phiên bản</th><th scope="col">Trạng thái</th><th scope="col">Hiệu lực</th><th scope="col">Giá sàn</th></tr></thead>
+        <tbody>
+          <tr th:each="v : ${versions}">
+            <td th:text="${'v' + v.versionNo}"></td>
+            <td><span class="badge" th:attr="data-status=${v.status}" th:text="${v.status}"></span></td>
+            <td th:text="${v.validFrom != null ? #temporals.format(v.validFrom, 'dd/MM/yyyy') + ' → ' + #temporals.format(v.validTo, 'dd/MM/yyyy') : '—'}"></td>
+            <td th:text="${v.priceFloor != null ? #numbers.formatDecimal(v.priceFloor, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>
