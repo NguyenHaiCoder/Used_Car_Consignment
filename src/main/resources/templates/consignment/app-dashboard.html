@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Tổng quan · Nhân viên ký gửi')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='dashboard')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1>Tổng quan · Nhân viên ký gửi</h1>
+      <p class="page-description">Công việc cần xử lý hôm nay và các bước tiếp theo.</p>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <article class="stat-card">
+      <span class="stat-icon" aria-hidden="true">1</span>
+      <h2>Hồ sơ nháp</h2>
+      <strong class="value" th:text="${draftCount}">0</strong>
+      <p>Draft chưa gửi duyệt</p>
+    </article>
+    <article class="stat-card">
+      <span class="stat-icon" aria-hidden="true">2</span>
+      <h2>Đã gửi duyệt</h2>
+      <strong class="value" th:text="${submittedCount}">0</strong>
+      <p>Hồ sơ đã submit, đang xử lý</p>
+    </article>
+    <article class="stat-card">
+      <span class="stat-icon" aria-hidden="true">3</span>
+      <h2>Đã rút</h2>
+      <strong class="value" th:text="${withdrawnCount}">0</strong>
+      <p>Hồ sơ đã đóng thành WITHDRAWN</p>
+    </article>
+  </div>
+
+  <section class="content-card">
+    <div class="content-card-header"><h2>Luồng công việc</h2></div>
+    <div class="workflow-links">
+      <a th:href="@{/consignment/consignors}"><span aria-hidden="true">→</span><strong>Chủ xe ký gửi</strong></a>
+      <a th:href="@{/consignment/consignments}"><span aria-hidden="true">→</span><strong>Hồ sơ ký gửi</strong></a>
+      <a th:href="@{/consignment/consignments/new}"><span aria-hidden="true">→</span><strong>Tạo draft ký gửi</strong></a>
+    </div>
+  </section>
+
+  <section class="content-card table-card">
+    <div class="content-card-header">
+      <h2>Hồ sơ gần đây</h2>
+      <span class="caption" th:text="${#lists.size(recent) + ' hồ sơ mới nhất'}"></span>
+    </div>
+    <div class="table-scroll" th:if="${!#lists.isEmpty(recent)}">
+      <table class="custom-table">
+        <caption class="sr-only">Hồ sơ ký gửi gần đây</caption>
+        <thead><tr>
+          <th scope="col">Mã · xe</th><th scope="col">Chủ xe</th><th scope="col">Ngày tiếp nhận</th>
+          <th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="c : ${recent}">
+            <td th:text="${c.code + ' · ' + c.vehicle.displayLabel}"></td>
+            <td th:text="${c.consignor.fullName}"></td>
+            <td th:text="${c.intakeDate != null ? #temporals.format(c.intakeDate, 'dd/MM/yyyy') : '—'}"></td>
+            <td><span class="badge" th:attr="data-status=${c.status}" th:text="${c.status}"></span></td>
+            <td class="action-cell">
+              <div class="row-actions">
+                <a class="action-icon action-view" th:href="@{/consignment/consignments/{id}(id=${c.id})}"
+                   th:attr="title=${'Xem chi tiết ' + c.code},aria-label=${'Xem chi tiết ' + c.code}">
+                  <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(recent)}">
+      <h3>Chưa có hồ sơ nào</h3>
+      <p>Tạo chủ xe rồi tạo draft ký gửi để bắt đầu.</p>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>
