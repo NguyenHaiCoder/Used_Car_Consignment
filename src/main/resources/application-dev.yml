@@ -4,9 +4,9 @@ spring:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=GarageProConsign1;encrypt=true;trustServerCertificate=true
+    url: jdbc:sqlserver://localhost:1433;databaseName=GarageProConsign;encrypt=true;trustServerCertificate=true
     username: sa
-    password: 123
+    password: 12345678
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     hikari:
       maximum-pool-size: 10
