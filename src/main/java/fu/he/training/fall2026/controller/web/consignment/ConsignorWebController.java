@@ -1,6 +1,6 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
-import fu.he.training.fall2026.dto.consignor.ConsignorForm;
+import fu.he.training.fall2026.dto.consignor.ConsignorRequest;
 import fu.he.training.fall2026.dto.consignor.ConsignorResponse;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignorService;
@@ -43,7 +43,7 @@ public class ConsignorWebController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("form", new ConsignorForm());
+        model.addAttribute("form", new ConsignorRequest());
         return FORM_VIEW;
     }
 
@@ -62,7 +62,7 @@ public class ConsignorWebController {
     /** Creates the consignor when the hidden id is empty, otherwise updates that consignor. */
     @PostMapping
     public String save(
-            @Valid @ModelAttribute("form") ConsignorForm form,
+            @Valid @ModelAttribute("form") ConsignorRequest form,
             BindingResult errors,
             RedirectAttributes flash) {
         if (!errors.hasErrors()) {

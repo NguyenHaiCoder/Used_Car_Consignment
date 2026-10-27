@@ -13,7 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
-public class AgreementForm {
+public class AgreementRequest {
 
     /** Hidden field: empty when creating, the agreement id when editing the draft. */
     private Long id;

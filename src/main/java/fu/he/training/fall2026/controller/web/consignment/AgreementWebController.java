@@ -1,6 +1,6 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
-import fu.he.training.fall2026.dto.consignment.AgreementForm;
+import fu.he.training.fall2026.dto.consignment.AgreementRequest;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignmentAgreementService;
 import fu.he.training.fall2026.service.ConsignmentService;
@@ -39,7 +39,7 @@ public class AgreementWebController {
 
     @GetMapping("/consignments/{consignmentId}/agreement/new")
     public String createForm(@PathVariable Long consignmentId, Model model) {
-        AgreementForm form = new AgreementForm();
+        AgreementRequest form = new AgreementRequest();
         form.setConsignmentId(consignmentId);
         model.addAttribute("consignment", consignmentService.get(consignmentId));
         model.addAttribute("form", form);
@@ -56,7 +56,7 @@ public class AgreementWebController {
     /** Creates the draft when the hidden agreement id is empty, otherwise updates the newest draft. */
     @PostMapping("/agreements")
     public String save(
-            @Valid @ModelAttribute("form") AgreementForm form,
+            @Valid @ModelAttribute("form") AgreementRequest form,
             BindingResult errors,
             Model model,
             RedirectAttributes flash) {

@@ -12,7 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
-public class ConsignmentForm {
+public class ConsignmentRequest {
 
     /** Hidden field: empty when creating, the consignment id when editing. */
     private Long id;

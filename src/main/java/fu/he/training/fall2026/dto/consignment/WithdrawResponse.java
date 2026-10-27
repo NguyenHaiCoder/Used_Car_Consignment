@@ -9,7 +9,7 @@ import lombok.Value;
 /** The withdraw request sent to the manager: its approval status plus what the staff entered. */
 @Value
 @Builder
-public class WithdrawRequestResponse {
+public class WithdrawResponse {
 
     ApprovalStatus status;
     String reason;

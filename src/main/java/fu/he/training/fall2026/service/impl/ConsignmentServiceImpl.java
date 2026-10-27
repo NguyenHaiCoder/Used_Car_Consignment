@@ -1,11 +1,11 @@
 package fu.he.training.fall2026.service.impl;
 
-import fu.he.training.fall2026.dto.consignment.ConsignmentForm;
+import fu.he.training.fall2026.dto.consignment.ConsignmentRequest;
 import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
-import fu.he.training.fall2026.dto.consignment.WithdrawCheck;
+import fu.he.training.fall2026.dto.consignment.WithdrawCheckResponse;
 import fu.he.training.fall2026.dto.consignment.VehicleResponse;
-import fu.he.training.fall2026.dto.consignment.WithdrawForm;
-import fu.he.training.fall2026.dto.consignment.WithdrawRequestResponse;
+import fu.he.training.fall2026.dto.consignment.WithdrawRequest;
+import fu.he.training.fall2026.dto.consignment.WithdrawResponse;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.consignment.Consignor;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
@@ -91,11 +91,11 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public ConsignmentForm formFor(Long id) {
+    public ConsignmentRequest formFor(Long id) {
         Consignment consignment = consignmentRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         requireDraft(consignment);
-        ConsignmentForm form = new ConsignmentForm();
+        ConsignmentRequest form = new ConsignmentRequest();
         form.setId(consignment.getId());
         form.setConsignorId(consignment.getConsignor().getId());
         form.setVehicleId(consignment.getVehicle().getId());
@@ -108,7 +108,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional
-    public Long createDraft(ConsignmentForm form) {
+    public Long createDraft(ConsignmentRequest form) {
         Consignment consignment = new Consignment();
         consignment.setCode("TMP-" + UUID.randomUUID().toString().substring(0, 12)); // replaced by KG-{id} below
         consignment.setStatus(ConsignmentStatus.DRAFT);
@@ -120,7 +120,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional
-    public void updateDraft(Long id, ConsignmentForm form) {
+    public void updateDraft(Long id, ConsignmentRequest form) {
         Consignment consignment = consignmentRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         requireDraft(consignment);
@@ -138,7 +138,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<WithdrawCheck> withdrawChecks(Long id) {
+    public List<WithdrawCheckResponse> withdrawChecks(Long id) {
         Consignment consignment = consignmentRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         Long vehicleId = consignment.getVehicle().getId();
@@ -159,17 +159,17 @@ public class ConsignmentServiceImpl implements ConsignmentService {
         boolean pending = hasPendingWithdrawRequest(id);
 
         return List.of(
-                new WithdrawCheck("Hồ sơ chưa bán hoặc đã đóng", open, open ? "" : "Trạng thái hiện tại: " + status + "."),
-                new WithdrawCheck("Không có reservation ACTIVE", reservations.isEmpty(), reservationDetail),
-                new WithdrawCheck("Không có tin đang đăng", listings.isEmpty(),
+                new WithdrawCheckResponse("Hồ sơ chưa bán hoặc đã đóng", open, open ? "" : "Trạng thái hiện tại: " + status + "."),
+                new WithdrawCheckResponse("Không có reservation ACTIVE", reservations.isEmpty(), reservationDetail),
+                new WithdrawCheckResponse("Không có tin đang đăng", listings.isEmpty(),
                         listings.isEmpty() ? "" : "Còn tin: " + String.join(", ", listings) + "."),
-                new WithdrawCheck("Chưa có yêu cầu rút đang chờ duyệt", !pending,
+                new WithdrawCheckResponse("Chưa có yêu cầu rút đang chờ duyệt", !pending,
                         pending ? "Đã có yêu cầu gửi quản lý, đang chờ duyệt." : ""));
     }
 
     @Override
     @Transactional
-    public void requestWithdraw(Long id, WithdrawForm form, Long actorUserId) {
+    public void requestWithdraw(Long id, WithdrawRequest form, Long actorUserId) {
         List<String> failed = withdrawChecks(id).stream()
                 .filter(check -> !check.isPassed())
                 .map(check -> check.getLabel() + ". " + check.getDetail())
@@ -197,12 +197,12 @@ public class ConsignmentServiceImpl implements ConsignmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<WithdrawRequestResponse> findWithdrawRequest(Long id) {
+    public Optional<WithdrawResponse> findWithdrawRequest(Long id) {
         Consignment consignment = consignmentRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
         return approvalRepository.findRequests(ApprovalType.WITHDRAWAL, APPROVAL_TARGET, id).stream()
                 .findFirst()
-                .map(request -> WithdrawRequestResponse.builder()
+                .map(request -> WithdrawResponse.builder()
                         .status(request.getStatus())
                         .reason(request.getReason())
                         .requestedByName(request.getRequestedBy().getFullName())
@@ -253,7 +253,7 @@ public class ConsignmentServiceImpl implements ConsignmentService {
         }
     }
 
-    private void applyForm(Consignment target, ConsignmentForm form) {
+    private void applyForm(Consignment target, ConsignmentRequest form) {
         Consignor consignor = consignorRepository.findById(form.getConsignorId())
                 .orElseThrow(() -> new BusinessException("Chủ xe không tồn tại."));
         Vehicle vehicle = vehicleRepository.findById(form.getVehicleId())

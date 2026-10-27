@@ -10,7 +10,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ConsignorForm {
+public class ConsignorRequest {
 
     /** Hidden field: empty when creating, the consignor id when editing. */
     private Long id;

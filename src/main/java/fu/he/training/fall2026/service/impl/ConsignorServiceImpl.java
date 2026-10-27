@@ -1,6 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
-import fu.he.training.fall2026.dto.consignor.ConsignorForm;
+import fu.he.training.fall2026.dto.consignor.ConsignorRequest;
 import fu.he.training.fall2026.dto.consignor.ConsignorResponse;
 import fu.he.training.fall2026.entity.consignment.Consignor;
 import fu.he.training.fall2026.exception.BusinessException;
@@ -49,10 +49,10 @@ public class ConsignorServiceImpl implements ConsignorService {
 
     @Override
     @Transactional(readOnly = true)
-    public ConsignorForm formFor(Long id) {
+    public ConsignorRequest formFor(Long id) {
         Consignor consignor = consignorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
-        ConsignorForm form = new ConsignorForm();
+        ConsignorRequest form = new ConsignorRequest();
         form.setId(consignor.getId());
         form.setFullName(consignor.getFullName());
         form.setPhone(consignor.getPhone());
@@ -68,7 +68,7 @@ public class ConsignorServiceImpl implements ConsignorService {
 
     @Override
     @Transactional
-    public Long create(ConsignorForm form) {
+    public Long create(ConsignorRequest form) {
         rejectDuplicate(form, -1L);
         Consignor consignor = new Consignor();
         apply(consignor, form);
@@ -77,7 +77,7 @@ public class ConsignorServiceImpl implements ConsignorService {
 
     @Override
     @Transactional
-    public void update(Long id, ConsignorForm form) {
+    public void update(Long id, ConsignorRequest form) {
         Consignor consignor = consignorRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ xe", id));
         rejectDuplicate(form, id);
@@ -100,14 +100,14 @@ public class ConsignorServiceImpl implements ConsignorService {
                 .build();
     }
 
-    private void rejectDuplicate(ConsignorForm form, Long excludeId) {
+    private void rejectDuplicate(ConsignorRequest form, Long excludeId) {
         if (consignorRepository.existsDuplicate(form.getPhone().trim(), form.getIdNumber().trim(), excludeId)) {
             throw new BusinessException(
                     "Số điện thoại hoặc CCCD này đã thuộc một chủ xe khác.", HttpStatus.CONFLICT);
         }
     }
 
-    private static void apply(Consignor target, ConsignorForm form) {
+    private static void apply(Consignor target, ConsignorRequest form) {
         target.setFullName(form.getFullName().trim());
         target.setPhone(form.getPhone().trim());
         target.setEmail(blankToNull(form.getEmail()));

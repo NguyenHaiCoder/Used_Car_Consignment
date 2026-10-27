@@ -1,8 +1,8 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
-import fu.he.training.fall2026.dto.consignment.ConsignmentForm;
+import fu.he.training.fall2026.dto.consignment.ConsignmentRequest;
 import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
-import fu.he.training.fall2026.dto.consignment.WithdrawForm;
+import fu.he.training.fall2026.dto.consignment.WithdrawRequest;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignmentService;
@@ -53,7 +53,7 @@ public class ConsignmentWebController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("form", new ConsignmentForm());
+        model.addAttribute("form", new ConsignmentRequest());
         model.addAttribute("consignors", consignorService.listAll());
         model.addAttribute("vehicles", consignmentService.listVehicles());
         return FORM_VIEW;
@@ -77,7 +77,7 @@ public class ConsignmentWebController {
     /** Creates the draft when the hidden id is empty, otherwise updates that draft. */
     @PostMapping
     public String save(
-            @Valid @ModelAttribute("form") ConsignmentForm form,
+            @Valid @ModelAttribute("form") ConsignmentRequest form,
             BindingResult errors,
             Model model,
             RedirectAttributes flash) {
@@ -109,7 +109,7 @@ public class ConsignmentWebController {
 
     @GetMapping("/{id}/withdraw")
     public String withdrawForm(@PathVariable Long id, Model model) {
-        WithdrawForm form = new WithdrawForm();
+        WithdrawRequest form = new WithdrawRequest();
         form.setId(id);
         model.addAttribute("form", form);
         model.addAttribute("consignment", consignmentService.get(id));
@@ -120,7 +120,7 @@ public class ConsignmentWebController {
 
     @PostMapping("/withdraw")
     public String withdraw(
-            @Valid @ModelAttribute("form") WithdrawForm form,
+            @Valid @ModelAttribute("form") WithdrawRequest form,
             BindingResult errors,
             HttpSession session,
             Model model,

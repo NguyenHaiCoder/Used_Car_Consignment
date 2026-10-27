@@ -10,7 +10,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
-public class WithdrawForm {
+public class WithdrawRequest {
 
     /** Hidden field: the consignment to withdraw. */
     @NotNull(message = "Thiếu hồ sơ ký gửi.")

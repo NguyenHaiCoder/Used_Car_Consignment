@@ -1,6 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
-import fu.he.training.fall2026.dto.consignment.AgreementForm;
+import fu.he.training.fall2026.dto.consignment.AgreementRequest;
 import fu.he.training.fall2026.dto.consignment.AgreementResponse;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.consignment.ConsignmentAgreement;
@@ -42,11 +42,11 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
 
     @Override
     @Transactional(readOnly = true)
-    public AgreementForm formFor(Long consignmentId) {
+    public AgreementRequest formFor(Long consignmentId) {
         ConsignmentAgreement agreement = agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
                 .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
         requireDraft(agreement);
-        AgreementForm form = new AgreementForm();
+        AgreementRequest form = new AgreementRequest();
         form.setId(agreement.getId());
         form.setConsignmentId(consignmentId);
         form.setCommissionRate(agreement.getCommissionRate());
@@ -63,7 +63,7 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
 
     @Override
     @Transactional
-    public void createDraft(Long consignmentId, AgreementForm form) {
+    public void createDraft(Long consignmentId, AgreementRequest form) {
         validateTerms(form);
         Consignment consignment = consignmentRepository.findById(consignmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", consignmentId));
@@ -81,7 +81,7 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
 
     @Override
     @Transactional
-    public void updateDraft(Long consignmentId, AgreementForm form) {
+    public void updateDraft(Long consignmentId, AgreementRequest form) {
         validateTerms(form);
         ConsignmentAgreement agreement = agreementRepository.findFirstByConsignmentIdOrderByVersionNoDesc(consignmentId)
                 .orElseThrow(() -> new BusinessException("Hồ sơ này chưa có hợp đồng."));
@@ -141,7 +141,7 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
                 .build();
     }
 
-    private static void apply(ConsignmentAgreement target, AgreementForm form) {
+    private static void apply(ConsignmentAgreement target, AgreementRequest form) {
         target.setCommissionRate(form.getCommissionRate());
         target.setFixedFee(form.getFixedFee());
         target.setPriceFloor(form.getPriceFloor());
@@ -163,7 +163,7 @@ public class ConsignmentAgreementServiceImpl implements ConsignmentAgreementServ
     }
 
     /** BR-03: a commission (rate or fixed fee) is required, and the validity period must make sense. */
-    private static void validateTerms(AgreementForm form) {
+    private static void validateTerms(AgreementRequest form) {
         boolean hasRate = form.getCommissionRate() != null && form.getCommissionRate().signum() > 0;
         boolean hasFee = form.getFixedFee() != null && form.getFixedFee().compareTo(BigDecimal.ZERO) > 0;
         if (hasRate == hasFee) {
