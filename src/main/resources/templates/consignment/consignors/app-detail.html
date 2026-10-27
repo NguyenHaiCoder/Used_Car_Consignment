@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Chủ xe · ' + consignor.fullName})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignors')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${'Chủ xe · ' + consignor.fullName}">Chủ xe</h1>
+      <p class="page-description">Thông tin chủ xe và thông tin nhận tiền.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/consignment/consignors/{id}/edit(id=${consignor.id})}">Sửa hồ sơ</a>
+      <a class="button" th:href="@{/consignment/consignors}">Danh sách chủ xe</a>
+    </div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <section class="content-card">
+    <div class="content-card-header"><h2>Thông tin chủ xe</h2></div>
+    <dl class="facts-grid">
+      <div><dt>Họ tên</dt><dd th:text="${consignor.fullName}"></dd></div>
+      <div><dt>Số điện thoại</dt><dd th:text="${consignor.phone}"></dd></div>
+      <div><dt>Email</dt><dd th:text="${consignor.email ?: '—'}"></dd></div>
+      <div><dt>Số CCCD</dt><dd th:text="${consignor.idNumber}"></dd></div>
+      <div><dt>Địa chỉ</dt><dd th:text="${consignor.address ?: '—'}"></dd></div>
+      <div><dt>Ngân hàng</dt><dd th:text="${consignor.bank}"></dd></div>
+      <div><dt>Số tài khoản</dt><dd th:text="${consignor.accountNumber}"></dd></div>
+      <div><dt>Chủ tài khoản</dt><dd th:text="${consignor.accountName}"></dd></div>
+      <div><dt>Đồng ý lưu thông tin</dt><dd th:text="${consignor.consentStored ? 'Đã xác nhận' : 'Chưa xác nhận'}"></dd></div>
+    </dl>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

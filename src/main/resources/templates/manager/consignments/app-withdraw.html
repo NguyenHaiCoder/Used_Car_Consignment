@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Yêu cầu rút ký gửi · ' + consignment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${'Yêu cầu rút ký gửi · ' + consignment.code}">Rút / đóng ký gửi</h1>
+      <p class="page-description">Kiểm tra listing, reservation và tiền cọc trước khi trả xe cho chủ sở hữu.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/manager/consignments/{id}(id=${consignment.id})}">Hồ sơ ký gửi</a>
+    </div>
+  </div>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Hồ sơ</h2>
+      <span class="badge" th:attr="data-status=${consignment.status}" th:text="${consignment.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Chủ xe</dt><dd th:text="${consignment.consignorName}"></dd></div>
+      <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + ' · ' + consignment.vehicle.vin}"></dd></div>
+    </dl>
+  </section>
+
+  <section class="content-card">
+    <div class="content-card-header"><h2>Điều kiện & kiểm tra</h2></div>
+    <ul class="checklist">
+      <li th:each="check : ${checks}" th:classappend="${check.passed ? 'passed' : 'blocked'}">
+        <span class="check-icon" aria-hidden="true" th:text="${check.passed ? '✓' : '!'}"></span>
+        <div>
+          <strong th:text="${check.label}"></strong>
+          <small th:text="${check.passed ? 'Đã đáp ứng' : 'Cần xử lý trước khi rút'}"></small>
+          <p th:if="${!check.passed and !#strings.isEmpty(check.detail)}" th:text="${check.detail}"></p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Yêu cầu rút hồ sơ</h2>
+      <span class="badge" th:if="${withdrawRequest != null}" th:attr="data-status=${withdrawRequest.status}" th:text="${withdrawRequest.status}"></span>
+    </div>
+    <dl class="facts-grid" th:if="${withdrawRequest != null}">
+      <div><dt>Lý do</dt><dd th:text="${withdrawRequest.reason}"></dd></div>
+      <div><dt>Người gửi</dt><dd th:text="${withdrawRequest.requestedByName}"></dd></div>
+      <div><dt>Thời điểm gửi</dt><dd th:text="${#temporals.format(withdrawRequest.createdAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+      <div><dt>Ngày trả xe</dt><dd th:text="${withdrawRequest.returnDate != null ? #temporals.format(withdrawRequest.returnDate, 'dd/MM/yyyy') : '—'}"></dd></div>
+      <div><dt>Tình trạng xe khi trả</dt><dd th:text="${withdrawRequest.condition ?: '—'}"></dd></div>
+      <div><dt>Bằng chứng</dt><dd th:text="${withdrawRequest.evidencePath ?: '—'}"></dd></div>
+    </dl>
+    <p th:if="${withdrawRequest == null}">Chưa có yêu cầu rút cho hồ sơ này.</p>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

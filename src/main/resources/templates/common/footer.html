@@ -1,9 +1,9 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
 <footer th:fragment="footer" class="app-footer">
   <span>GaragePro Consign · UCCMS</span>
-  <a th:unless="${appShell}" th:href="@{/ui/urls}">Danh mục URL kiểm tra</a>
-  <a th:if="${appShell}" th:href="@{/home}">Trang chủ</a>
-  <span th:unless="${appShell}">UI preview · 15/10/2026</span>
-  <span th:if="${appShell}">Phiên đăng nhập</span>
+  <a th:unless="${session.AUTH_USER_ID != null}" th:href="@{/ui/urls}">Danh mục URL kiểm tra</a>
+  <a th:if="${session.AUTH_USER_ID != null}" th:href="@{/home}">Trang chủ</a>
+  <span th:unless="${session.AUTH_USER_ID != null}">UI preview · 15/10/2026</span>
+  <span th:if="${session.AUTH_USER_ID != null}">Phiên đăng nhập</span>
 </footer>
 </body></html>

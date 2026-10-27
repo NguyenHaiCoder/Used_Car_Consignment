@@ -1,16 +1,33 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<!-- Ưu tiên người dùng trong session; không có session (bản preview /ui) thì dùng role trong Model.
+     Menu theo role: role CONSIGNMENT đăng nhập thật viết trực tiếp bên dưới (mục đang mở truyền qua tham số
+     active, ví dụ sidebar (active='consignors')); các trường hợp khác dùng danh sách navigation trong Model. -->
 <aside th:fragment="sidebar" class="sidebar" id="app-sidebar" aria-label="Điều hướng theo vai trò">
   <div th:replace="~{common/sidebar-header :: sidebarHeader}"></div>
-  <div class="user-profile"><span class="avatar" th:text="${role.initials}">VK</span><div class="user-info"><strong th:text="${role.userName}"></strong><small th:text="${role.label}"></small></div></div>
+  <div class="user-profile">
+    <span class="avatar" th:text="${session.AUTH_FULL_NAME != null ? #strings.substring(session.AUTH_FULL_NAME, 0, 1) : role.initials}">A</span>
+    <div class="user-info"><strong th:text="${session.AUTH_FULL_NAME ?: role.userName}"></strong><small th:text="${session.AUTH_ROLE_NAME ?: role.label}"></small></div>
+  </div>
   <nav class="nav-menu" aria-label="Nghiệp vụ">
-    <th:block th:each="module : ${ {'Quản trị','Điều hành','Ký gửi','Xe &amp; kiểm định','Kinh doanh','Tài chính','Bàn giao','Hồ sơ &amp; sang tên'} }">
-      <details class="nav-group" open th:if="${!#lists.isEmpty(navigation.?[module == #vars.module])}">
-        <summary th:text="${module}"></summary>
-        <a th:each="item : ${navigation}" th:if="${item.module == module}" class="nav-link" th:classappend="${activeNav == item.url ? 'active' : ''}" th:href="@{${item.url}}" th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:text="${item.label}"></a>
-      </details>
+    <details class="nav-group" open th:if="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
+      <summary>Ký gửi</summary>
+      <a class="nav-link" th:href="@{/consignment/dashboard}">Tổng quan</a>
+      <a class="nav-link" th:classappend="${active == 'consignors' ? 'active' : ''}"
+         th:attr="aria-current=${active == 'consignors' ? 'page' : null}"
+         th:href="@{/consignment/consignors}">Chủ xe ký gửi</a>
+      <a class="nav-link" th:classappend="${active == 'consignments' ? 'active' : ''}"
+         th:attr="aria-current=${active == 'consignments' ? 'page' : null}"
+         th:href="@{/consignment/consignments}">Hồ sơ ký gửi</a>
+    </details>
+    <th:block th:unless="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
+      <th:block th:each="module : ${ {'Quản trị','Điều hành','Ký gửi','Xe &amp; kiểm định','Kinh doanh','Tài chính','Bàn giao','Hồ sơ &amp; sang tên'} }">
+        <details class="nav-group" open th:if="${!#lists.isEmpty(navigation.?[module == #vars.module])}">
+          <summary th:text="${module}"></summary>
+          <a th:each="item : ${navigation}" th:if="${item.module == module}" class="nav-link" th:classappend="${activeNav == item.url ? 'active' : ''}" th:href="@{${item.url}}" th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:text="${item.label}"></a>
+        </details>
+      </th:block>
     </th:block>
   </nav>
-  <a class="sidebar-bottom" th:if="${appShell}" th:href="@{/home}">← Trang chủ</a>
-  <a class="sidebar-bottom" th:unless="${appShell}" th:href="@{/ui}">↔ Đổi role xem trước</a>
+  <a class="sidebar-bottom" th:href="@{/home}">← Trang chủ</a>
 </aside>
 </body></html>

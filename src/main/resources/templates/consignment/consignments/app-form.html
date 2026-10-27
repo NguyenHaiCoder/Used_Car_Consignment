@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${form.id != null ? 'Sửa draft ký gửi' : 'Tạo draft ký gửi'})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1 th:text="${form.id != null ? 'Sửa draft ký gửi' : 'Tạo draft ký gửi'}">Tạo draft ký gửi</h1>
+      <p class="page-description">Chọn chủ xe và xe vật lý; có thể sửa trước khi gửi duyệt.</p>
+    </div>
+    <div class="page-actions"><a class="button" th:href="@{/consignment/consignments}">Danh sách hồ sơ</a></div>
+  </div>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Nhập thông tin</h2><span class="caption">* Thông tin bắt buộc</span>
+    </div>
+    <form id="consignment-form" method="post" novalidate th:action="@{/consignment/consignments}" th:object="${form}">
+      <input type="hidden" th:field="*{id}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field full-width">
+          <label for="field-consignorId">Chủ xe<span class="required" aria-label="bắt buộc"> *</span></label>
+          <select id="field-consignorId" th:field="*{consignorId}" required>
+            <option value="">Chọn chủ xe</option>
+            <option th:each="c : ${consignors}" th:value="${c.id}" th:text="${c.fullName + ' · ' + c.phone}"></option>
+          </select>
+          <small class="field-hint">Chưa có chủ xe? <a th:href="@{/consignment/consignors/new}">Tạo hồ sơ chủ xe</a> trước.</small>
+          <small class="field-error" th:errors="*{consignorId}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-vehicleId">Xe vật lý<span class="required" aria-label="bắt buộc"> *</span></label>
+          <select id="field-vehicleId" th:field="*{vehicleId}" required>
+            <option value="">Chọn xe</option>
+            <option th:each="v : ${vehicles}" th:value="${v.id}"
+                    th:text="${v.displayLabel + (v.year != null ? ' ' + v.year : '') + ' · ' + v.vin}"></option>
+          </select>
+          <small class="field-hint" th:if="${#lists.isEmpty(vehicles)}">Chưa có xe nào trong hệ thống. Xe được đăng ký ở màn hình Tiếp nhận xe (Kiểm định).</small>
+          <small class="field-error" th:errors="*{vehicleId}"></small>
+        </div>
+        <div class="field">
+          <label for="field-expectedPrice">Giá kỳ vọng (VNĐ)<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="number" id="field-expectedPrice" th:field="*{expectedPrice}" min="0" step="any" required>
+          <small class="field-error" th:errors="*{expectedPrice}"></small>
+        </div>
+        <div class="field">
+          <label for="field-intakeDate">Ngày dự kiến tiếp nhận<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="date" id="field-intakeDate" th:field="*{intakeDate}" required>
+          <small class="field-error" th:errors="*{intakeDate}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-termNotes">Yêu cầu / điều khoản</label>
+          <textarea id="field-termNotes" th:field="*{termNotes}" rows="4" maxlength="2000"></textarea>
+          <small class="field-error" th:errors="*{termNotes}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-ownerConsent">
+            <input type="checkbox" id="field-ownerConsent" th:field="*{ownerConsent}">
+            Chủ xe đồng ý cung cấp thông tin<span class="required" aria-label="bắt buộc"> *</span>
+          </label>
+          <small class="field-error" th:errors="*{ownerConsent}"></small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a class="button" th:href="@{${form.id != null ? '/consignment/consignments/' + form.id : '/consignment/consignments'}}">Hủy</a>
+        <button type="submit" class="button button-primary" th:text="${form.id != null ? 'Lưu draft' : 'Tạo draft'}">Lưu</button>
+      </div>
+    </form>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>
