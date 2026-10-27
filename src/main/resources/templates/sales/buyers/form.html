@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{sales/buyers/layout :: shell(${editing ? 'Edit Buyer' : 'Add Buyer'}, 'Fields marked * are required.', ~{::content})}">
+<body>
+<section th:fragment="content" class="screen-content">
+  <link rel="stylesheet" th:href="@{/css/ui/buyers.css}">
+  <section class="content-card buyer-editor-shell">
+    <form id="buyer-create-form" method="post" th:action="${editing} ? @{/sales/buyers/{id}/edit(id=${buyerId})} : @{/sales/buyers}" th:object="${buyerForm}">
+      <p class="alert" role="alert" th:if="${error != null}" th:text="${error}"></p>
+      <input th:if="${editing}" type="hidden" th:field="*{revision}">
+      <p class="buyer-field-error" th:if="${#fields.hasErrors('revision')}" th:errors="*{revision}"></p>
+      <div class="buyer-editor-field">
+        <label for="fullName">Full Name *</label>
+        <input type="text" id="fullName" th:field="*{fullName}" required th:maxlength="${T(fu.he.training.fall2026.validation.BuyerValidation).FULL_NAME_MAX}" aria-describedby="fullName-error">
+        <small id="fullName-error" class="buyer-field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></small>
+      </div>
+      <div class="buyer-editor-field">
+        <label for="phone">Phone Number *</label>
+        <input type="tel" id="phone" th:field="*{phone}" required th:maxlength="${T(fu.he.training.fall2026.validation.BuyerValidation).PHONE_MAX}" aria-describedby="phone-error">
+        <small id="phone-error" class="buyer-field-error" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></small>
+      </div>
+      <div class="buyer-editor-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" th:field="*{email}"  th:maxlength="${T(fu.he.training.fall2026.validation.BuyerValidation).EMAIL_MAX}" aria-describedby="email-error">
+        <small id="email-error" class="buyer-field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></small>
+      </div>
+      <div class="buyer-editor-field">
+        <label for="address">Address</label>
+        <textarea rows="3" id="address" th:field="*{address}"  th:maxlength="${T(fu.he.training.fall2026.validation.BuyerValidation).ADDRESS_MAX}" aria-describedby="address-error"></textarea>
+        <small id="address-error" class="buyer-field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></small>
+      </div>
+      <div th:unless="${editing}">
+        <label class="buyer-consent-label"><input type="checkbox" th:field="*{consentStored}"> Buyer consent has been stored *</label>
+        <small>Confirm only after the buyer's actual consent has been recorded.</small>
+        <small class="buyer-field-error" th:if="${#fields.hasErrors('consentStored')}" th:errors="*{consentStored}"></small>
+      </div>
+      <div class="buyer-create-actions">
+        <a class="button" th:href="${editing} ? @{/sales/buyers/{id}(id=${buyerId})} : @{/sales/buyers}">Cancel</a>
+        <button class="button buyer-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </section>
+</section>
+</body>
+</html>

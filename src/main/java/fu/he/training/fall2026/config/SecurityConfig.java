@@ -21,6 +21,23 @@ public class SecurityConfig {
     private final SessionAuthenticationFilter sessionAuthenticationFilter;
 
     @Bean
+    @Order(0)
+    public SecurityFilterChain buyerSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http.securityMatcher("/sales/buyers", "/sales/buyers/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("SALES"))
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .logout(logout -> logout.disable())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, error) ->
+                                response.sendRedirect(request.getContextPath() + "/?loginRequired=1"))
+                        .accessDeniedHandler((request, response, error) ->
+                                response.sendRedirect(request.getContextPath() + "/?accessDenied=1")))
+                .addFilterAfter(sessionAuthenticationFilter, SecurityContextHolderFilter.class)
+                .build();
+    }
+
+    @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

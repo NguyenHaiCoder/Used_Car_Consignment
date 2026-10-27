@@ -45,6 +45,7 @@
         Landing hiện tại: <code th:text="${homePath}">/admin/dashboard</code>
       </p>
       <div class="actions">
+        <a class="btn-orange" th:if="${roleKey == 'sales'}" th:href="@{/sales/buyers}">Buyer Management</a>
         <a class="btn-orange" th:href="@{/}">Về trang chủ</a>
         <a class="btn-ghost" th:if="${roleKey == 'admin'}" th:href="@{/ui}">UI preview (dev)</a>
       </div>

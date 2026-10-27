@@ -19,7 +19,14 @@
          th:attr="aria-current=${active == 'consignments' ? 'page' : null}"
          th:href="@{/consignment/consignments}">Hồ sơ ký gửi</a>
     </details>
-    <th:block th:unless="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
+    <details class="nav-group" open th:if="${session.AUTH_ROLE_CODE == 'SALES'}">
+      <summary>Kinh doanh</summary>
+      <a class="nav-link" th:href="@{/sales/dashboard}">Dashboard</a>
+      <a class="nav-link" th:classappend="${active == 'buyers' ? 'active' : ''}"
+         th:attr="aria-current=${active == 'buyers' ? 'page' : null}"
+         th:href="@{/sales/buyers}">Buyer Management</a>
+    </details>
+    <th:block th:unless="${session.AUTH_ROLE_CODE == 'CONSIGNMENT' or session.AUTH_ROLE_CODE == 'SALES'}">
       <th:block th:each="module : ${ {'Quản trị','Điều hành','Ký gửi','Xe &amp; kiểm định','Kinh doanh','Tài chính','Bàn giao','Hồ sơ &amp; sang tên'} }">
         <details class="nav-group" open th:if="${!#lists.isEmpty(navigation.?[module == #vars.module])}">
           <summary th:text="${module}"></summary>

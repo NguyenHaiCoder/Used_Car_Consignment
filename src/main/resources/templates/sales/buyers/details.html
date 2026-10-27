@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{sales/buyers/layout :: shell('Buyer Details', 'View buyer information and inquiry history.', ~{::content})}">
+<body>
+<section th:fragment="content" class="screen-content" id="buyer-details">
+  <link rel="stylesheet" th:href="@{/css/ui/buyers.css}">
+  <div class="buyer-page-actions">
+    <a class="button" th:href="@{/sales/buyers}">Back to Buyer List</a>
+  </div>
+  <p class="alert" role="status" th:if="${success != null}" th:text="${success}"></p>
+  <p class="alert" role="alert" th:if="${error != null}" th:text="${error}"></p>
+  <th:block th:if="${buyer != null}">
+    <section class="content-card">
+      <div class="content-card-header">
+        <h2>Buyer Information</h2>
+      </div>
+      <div class="buyer-card-body">
+        <dl class="buyer-information">
+          <dt>Buyer ID</dt><dd th:text="${buyer.buyerId}"></dd>
+          <dt>Full Name</dt><dd th:text="${buyer.fullName}"></dd>
+          <dt>Phone Number</dt><dd th:text="${buyer.phone}"></dd>
+          <dt>Email</dt><dd th:text="${buyer.email ?: '—'}"></dd>
+          <dt>Address</dt><dd th:text="${buyer.address ?: '—'}"></dd>
+          <dt>Created Date</dt><dd th:text="${buyer.createdAt}"></dd>
+        </dl>
+        <div class="buyer-toolbar" th:unless="${confirmDelete == true}">
+          <a class="button" th:href="@{/sales/buyers/{id}/edit(id=${buyer.buyerId})}">Edit Buyer</a>
+          <a class="button buyer-danger" th:href="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}">Delete Buyer</a>
+        </div>
+        <form th:if="${confirmDelete == true}" method="post" th:action="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}">
+          <p>Are you sure you want to delete <strong th:text="${buyer.fullName}"></strong>?</p>
+          <a class="button" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId})}">Cancel</a>
+          <button class="button buyer-danger" type="submit">Confirm Delete</button>
+        </form>
+      </div>
+    </section>
+    <section class="content-card" th:if="${history != null}">
+      <div class="content-card-header">
+        <h2>Inquiry History</h2>
+      </div>
+      <div class="buyer-card-body">
+        <p th:if="${#lists.isEmpty(history.data)}">No inquiry history found</p>
+        <div class="buyer-table-wrap" th:unless="${#lists.isEmpty(history.data)}">
+          <table class="custom-table buyer-table">
+            <caption>Buyer inquiry history, newest first</caption>
+            <thead><tr><th>Inquiry ID</th><th>Vehicle (Make/Model)</th><th>Inquiry Date</th><th>Status</th><th>Sales Staff</th></tr></thead>
+            <tbody><tr th:each="inquiry : ${history.data}">
+              <td th:text="${inquiry.code ?: inquiry.inquiryId}"></td>
+              <td th:text="|${inquiry.make ?: ''} ${inquiry.model ?: ''}|"></td>
+              <td th:text="${inquiry.createdAt}"></td><td th:text="${inquiry.status}"></td>
+              <td th:text="${inquiry.salesStaff ?: '—'}"></td>
+            </tr></tbody>
+          </table>
+        </div>
+        <form class="buyer-history-form" method="get" th:action="@{/sales/buyers/{id}(id=${buyer.buyerId})}">
+          <label for="history-size">Rows per page</label>
+          <select id="history-size" name="size"><option th:each="size : ${ {10,25,50,100} }" th:value="${size}" th:text="${size}" th:selected="${size == history.pagination.size}"></option></select>
+          <button class="button" type="submit">Apply</button>
+        </form>
+        <nav class="pagination" aria-label="Inquiry pagination">
+          <a class="button" th:if="${history.pagination.page > 1}" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId},page=${history.pagination.page - 1},size=${history.pagination.size})}">Previous</a>
+          <span th:text="|Page ${history.pagination.page} of ${history.pagination.totalPages == 0 ? 1 : history.pagination.totalPages}|"></span>
+          <a class="button" th:if="${history.pagination.page < history.pagination.totalPages}" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId},page=${history.pagination.page + 1},size=${history.pagination.size})}">Next</a>
+        </nav>
+      </div>
+    </section>
+  </th:block>
+</section>
+</body>
+</html>

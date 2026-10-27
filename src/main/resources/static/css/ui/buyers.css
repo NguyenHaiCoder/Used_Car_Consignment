@@ -1,0 +1,159 @@
+.buyer-table-wrap { max-width: 100%; overflow-x: auto; }
+#buyer-delete-dialog { width: min(480px, 90vw); border: 1px solid #d0d5dd; border-radius: 12px; padding: 24px; }
+#buyer-delete-dialog::backdrop { background: rgb(16 24 40 / 45%); }
+#buyer-delete-dialog p { overflow-wrap: anywhere; }
+#buyer-delete-error, .button.buyer-danger { color: #b42318; }
+.button.buyer-danger { border-color: #fda29b; }
+#buyer-deleted { color: #067647; }
+#buyer-create-form { display: grid; gap: .5rem; }
+#buyer-create-form input { width: 100%; min-width: 0; box-sizing: border-box; }
+#buyer-create-form [hidden] { display: none !important; }
+.buyer-field-error, #buyer-create-error { color: #b42318; }
+.buyer-field-error { display: block; }
+.buyer-consent-label { display: flex; align-items: flex-start; gap: .5rem; }
+#buyer-create-form input[type="checkbox"] { width: auto; flex: 0 0 auto; margin-top: .25rem; }
+.buyer-create-actions { display: flex; justify-content: flex-end; gap: .75rem; margin-top: 1rem; }
+
+/* Buyer Details */
+#buyer-details { min-width: 0; display: flex; flex-direction: column; gap: 1.5rem; }
+#buyer-details [hidden] { display: none !important; }
+#buyer-details .content-card { padding: 20px 24px; }
+#buyer-details .content-card:has(.content-card-header) { padding: 0; }
+.buyer-card-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+#buyer-details .pagination { gap: 1rem; flex-wrap: wrap; margin-top: 12px; }
+.buyer-page-actions { margin-bottom: 0.5rem; }
+.buyer-information { display: grid; grid-template-columns: minmax(140px, 1fr) 3fr; gap: 1rem; }
+.buyer-information dt { font-weight: 600; color: #475467; }
+.buyer-information dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 480px) { .buyer-information { grid-template-columns: 1fr; gap: .5rem; } }
+.buyer-table { width: 100%; min-width: 700px; table-layout: fixed; }
+.buyer-table th, .buyer-table td { white-space: normal; overflow-wrap: anywhere; padding: 10px 12px; }
+.buyer-caption { text-align: left; padding: 1rem; color: var(--color-muted); }
+.buyer-history-form { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.buyer-history-form label { margin: 0; font-weight: 500; font-size: 14px; }
+#history-size { width: auto; min-width: 80px; display: inline-block; }
+
+#buyer-list { min-width: 0; }
+#buyer-list [hidden] { display: none !important; }
+#buyer-list .pagination { gap: 1rem; flex-wrap: wrap; }
+#buyer-size { width: auto; }
+.buyer-search { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; padding: 1rem; }
+.buyer-search input { flex: 1 1 240px; min-width: 0; max-width: 100%; }
+@media (max-width: 480px) { .buyer-search label { flex-basis: 100%; } }
+
+/* Buyer Management: scoped so the shared detail and dialog layouts stay intact. */
+.main-content:has(#buyer-list) {
+  --color-text: #101828;
+  --color-border: #dfe4ec;
+  --color-muted: #66758d;
+}
+.main-content:has(#buyer-list) .breadcrumbs { font-size: 13px; margin-bottom: 12px; }
+.main-content:has(#buyer-list) .eyebrow { font-size: 12px; letter-spacing: .6px; margin-bottom: 6px; }
+.main-content:has(#buyer-list) h1 { font-size: clamp(24px, 2vw, 28px); margin-bottom: 6px; }
+.main-content:has(#buyer-list) .page-description { font-size: 14px; }
+#buyer-list { padding: 16px 20px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgb(16 24 40 / 2%); }
+#buyer-list .buyer-toolbar { margin-bottom: 16px; }
+#buyer-list .button { min-height: 40px; border-radius: 7px; font-size: 14px; padding: 8px 14px; }
+#buyer-list .buyer-primary { background: #2169f5; border-color: #2169f5; color: #fff; box-shadow: inset 0 1px 2px rgb(255 255 255 / 15%); }
+#buyer-list .buyer-primary:hover { background: #1858d8; border-color: #1858d8; }
+#buyer-list .buyer-primary:disabled { background: var(--color-disabled); color: var(--color-muted); border-color: var(--color-border); }
+.buyer-icon { width: 22px; height: 22px; flex: 0 0 22px; }
+#buyer-list .buyer-search { gap: 10px; padding: 12px; margin: 0 0 16px; background: #f5f6f8; border: 1px solid #e3e8ef; border-radius: 7px; }
+#buyer-list .buyer-search > label { font-size: 14px; font-weight: 600; margin-right: 4px; }
+.buyer-search-field { position: relative; flex: 1 1 240px; min-width: 0; }
+.buyer-search-field .buyer-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #768398; pointer-events: none; }
+#buyer-list .buyer-search input { padding: 9px 12px 9px 44px; height: 42px; min-height: 42px; font-size: 14px; }
+#buyer-list .buyer-search input::placeholder { color: #727b8a; opacity: 1; }
+#buyer-list .buyer-search button[type="submit"] { min-width: 110px; }
+#buyer-clear { min-width: 92px; }
+#buyer-created { position: relative; padding: 16px 20px 16px 54px; margin: 0 0 18px; border: 1px solid #bbf0cf; border-radius: 7px; background: #f0fbf4; color: #078627; font-size: 16px; font-weight: 600; }
+#buyer-created::before { content: '\2713'; position: absolute; top: 19px; left: 20px; width: 19px; height: 19px; border-radius: 50%; color: white; background: #09932d; text-align: center; font-size: 13px; line-height: 19px; }
+#buyer-created a { color: #1764ed; text-decoration: underline; }
+#buyer-list .buyer-table-title { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
+#buyer-list .buyer-table-wrap { border: 1px solid #e3e8ef; border-radius: 7px; }
+#buyer-list .buyer-table { min-width: 920px; table-layout: auto; font-size: 14px; }
+#buyer-list .buyer-table th { background: #f5f6f8; color: #50617d; font-size: 13px; font-weight: 600; padding: 10px 12px; white-space: nowrap; }
+#buyer-list .buyer-table td { padding: 10px 12px; height: 54px; min-width: 0; overflow-wrap: normal; }
+#buyer-list .buyer-table tbody tr:last-child td { border-bottom: 0; }
+#buyer-list .buyer-table tbody tr:hover { background: #f8faff; }
+#buyer-list .buyer-table td:last-child { white-space: nowrap; }
+#buyer-list .buyer-table td:last-child .button + .button { margin-left: 6px; }
+#buyer-list .buyer-table td:nth-child(2) { min-width: 140px; max-width: 240px; overflow-wrap: anywhere; }
+#buyer-list .buyer-table td:is(:nth-child(1), :nth-child(3), :nth-child(4), :nth-child(5)) { white-space: nowrap; }
+#buyer-list .buyer-table td:last-child .button { padding: 8px 12px; font-weight: 500; }
+#buyer-list .pagination { padding: 14px 0 0; justify-content: flex-end; font-size: 14px; }
+#buyer-list .pagination label { margin-right: auto; }
+#buyer-list .pagination .button { font-size: 14px; }
+#buyer-list .panel-note { padding: 20px 0; font-size: 16px; }
+@media (max-width: 1200px) {
+  #buyer-list .buyer-search > label { flex-basis: 100%; margin-right: 0; }
+}
+@media (max-width: 600px) {
+  #buyer-list { padding: 14px; }
+  #buyer-list .buyer-search { padding: 14px; gap: 12px; }
+  .buyer-search-field { flex-basis: 100%; }
+  #buyer-list .buyer-search .button { flex: 1; }
+  #buyer-list .pagination { justify-content: flex-start; gap: 10px; }
+  #buyer-list .pagination label { margin-right: 0; }
+  #buyer-created { padding-right: 14px; }
+}
+
+/* Inline editor reuses the shell, keeping the sidebar and header interactive. */
+.main-content:has(#buyer-create-dialog[open]) > :is(.breadcrumbs, .page-header, .preview-note),
+#buyer-list:has(#buyer-create-dialog[open]) > :not(#buyer-create-dialog),
+#buyer-details:has(#buyer-create-dialog[open]) > :not(#buyer-create-dialog) { display: none !important; }
+#buyer-list:has(#buyer-create-dialog[open]) { padding: 0; border: 0; background: transparent; box-shadow: none; overflow: visible; }
+#buyer-create-dialog {
+  position: static;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #101828;
+  box-shadow: none;
+  overflow: visible;
+}
+.buyer-editor-shell { width: 100%; min-width: 0; }
+.buyer-editor-breadcrumbs { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; color: #60718d; font-size: 13px; }
+.buyer-editor-breadcrumbs a { color: #b64f08; }
+#buyer-create-back { padding: 0; border: 0; background: transparent; color: #60718d; font: inherit; }
+#buyer-create-back:hover { text-decoration: underline; }
+#buyer-create-back:disabled { opacity: .6; cursor: not-allowed; }
+.buyer-editor-eyebrow { color: #b64f08; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+#buyer-create-title { font-size: clamp(24px, 2vw, 28px); line-height: 1.25; font-weight: 700; margin: 0 0 12px; }
+#buyer-create-description { color: #50617d; font-size: 14px; margin: 0 0 16px; }
+#buyer-create-dialog .required { color: #e02a19; }
+#buyer-create-form { display: grid; gap: 16px; background: #fff; border: 1px solid #dfe4ec; border-radius: 7px; padding: 20px; }
+.buyer-editor-field { display: grid; gap: 5px; min-width: 0; }
+.buyer-editor-field > label { font-size: 14px; font-weight: 600; }
+#buyer-create-form input:not([type=checkbox]):not([type=hidden]),
+#buyer-create-form textarea { width: 100%; min-width: 0; border: 1px solid #cfd7e5; border-radius: 7px; padding: 9px 12px; background: white; color: #101828; font-size: 14px; min-height: 42px; }
+#buyer-create-form textarea { min-height: 80px; resize: vertical; }
+#buyer-create-form input::placeholder, #buyer-create-form textarea::placeholder { color: #77869e; opacity: 1; }
+#buyer-create-form small { color: #60718d; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+#buyer-create-form .buyer-field-error { color: #b42318; }
+#buyer-create-form .buyer-field-error:empty { display: none; }
+#buyer-create-error { margin: 0; padding: 12px 16px; border: 1px solid #f4c7c3; border-radius: 7px; background: #fff3f2; }
+.buyer-address-meta { display: flex; justify-content: space-between; gap: 16px; }
+#buyer-create-form .buyer-consent-label { gap: 10px; font-size: 14px; font-weight: 400; }
+#buyer-create-form input[type=checkbox] { width: 20px; height: 20px; margin: 4px 0 0; accent-color: #1769ef; }
+#buyer-consent-hint, #buyer-consentStored-error { display: block; margin: 5px 0 0 30px; }
+#buyer-create-form .buyer-create-actions { border-top: 1px solid #dfe4ec; padding-top: 14px; margin-top: 0; gap: 16px; }
+#buyer-create-dialog .button { min-width: 90px; min-height: 40px; padding: 8px 16px; border: 1px solid #cfd7e5; border-radius: 7px; background: white; color: #17253b; font-size: 14px; font-weight: 500; }
+#buyer-create-dialog .button:hover { background: #f3f6fa; border-color: #9eacc1; }
+#buyer-create-dialog #buyer-create-save { background: #126bea; border-color: #126bea; color: white; }
+#buyer-create-dialog #buyer-create-save:hover { background: #0d59ca; }
+#buyer-create-dialog .button:disabled { opacity: .6; cursor: not-allowed; }
+#buyer-create-dialog :is(input, textarea, button, a):focus-visible { outline: 3px solid #2169f5; outline-offset: 3px; }
+@media (max-width: 600px) {
+
+  .buyer-editor-breadcrumbs { font-size: 13px; gap: 7px; }
+  #buyer-create-description { font-size: 14px; }
+  #buyer-create-form { padding: 16px; gap: 14px; }
+  #buyer-create-dialog .buyer-create-actions .button { flex: 1; min-width: 0; }
+}

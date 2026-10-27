@@ -1,11 +1,63 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/buyers/layout :: shell('Buyer Management', 'View saved buyer profiles.', ~{::content})}">
+
 <body>
-<!-- Khách mua xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/buyers/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+    <section th:fragment="content" class="screen-content" data-template="sales/buyers/list">
+        <section th:if="${screen != null}" th:insert="~{common/fragments/table :: table}"></section>
+        <th:block th:if="${buyers != null}">
+            <link rel="stylesheet" th:href="@{/css/ui/buyers.css}">
+            <p class="alert" role="status" th:if="${success != null}" th:text="${success}"></p>
+            <section class="content-card" id="buyer-list">
+                <div class="buyer-toolbar"><a class="button buyer-primary" th:href="@{/sales/buyers/new}">Add Buyer</a></div>
+                <form class="buyer-search" role="search" method="get" th:action="@{/sales/buyers}">
+                    <label for="buyer-search">Search buyers</label>
+                    <input id="buyer-search" name="search" type="search" maxlength="180" th:value="${search}" placeholder="Buyer ID, full name, phone or email">
+                    <label for="buyer-size">Rows per page</label>
+                    <select id="buyer-size" name="size">
+          <option th:each="size : ${ {10,25,50,100} }" th:value="${size}" th:text="${size}" th:selected="${size == buyers.pagination.size}"></option>
+        </select>
+                    <button class="button buyer-primary" type="submit">Search</button>
+                    <a class="button" th:href="@{/sales/buyers}">Clear</a>
+                </form>
+                <p th:if="${#lists.isEmpty(buyers.data)}">No buyers found</p>
+                <div class="buyer-table-wrap" th:unless="${#lists.isEmpty(buyers.data)}">
+                    <table class="custom-table buyer-table">
+                        <thead>
+                            <tr>
+                                <th>Buyer ID</th>
+                                <th>Full Name</th>
+                                <th>Phone Number</th>
+                                <th>Email</th>
+                                <th>Created Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="buyer : ${buyers.data}">
+                                <td th:text="${buyer.buyerId}"></td>
+                                <td th:text="${buyer.fullName}"></td>
+                                <td th:text="${buyer.phone}"></td>
+                                <td th:text="${buyer.email ?: '—'}"></td>
+                                <td th:text="${buyer.createdAt}"></td>
+                                <td>
+                                    <a class="button" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId})}">Details</a>
+                                    <a class="button" th:href="@{/sales/buyers/{id}/edit(id=${buyer.buyerId})}">Edit</a>
+                                    <a class="button buyer-danger" th:href="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}">Delete</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <nav class="pagination" aria-label="Buyer pagination">
+                    <a class="button" th:if="${buyers.pagination.page > 1}" th:href="@{/sales/buyers(page=${buyers.pagination.page - 1},size=${buyers.pagination.size},search=${search})}">Previous</a>
+                    <span th:text="|Page ${buyers.pagination.page} of ${buyers.pagination.totalPages == 0 ? 1 : buyers.pagination.totalPages} · ${buyers.pagination.totalElements} buyers|"></span>
+                    <a class="button" th:if="${buyers.pagination.page < buyers.pagination.totalPages}" th:href="@{/sales/buyers(page=${buyers.pagination.page + 1},size=${buyers.pagination.size},search=${search})}">Next</a>
+                </nav>
+            </section>
+        </th:block>
+    </section>
 </body>
+
+</html>
+
 </html>
