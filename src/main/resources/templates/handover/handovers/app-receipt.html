@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Biên nhận bàn giao ' + handover.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Bàn giao</p>
+      <h1 th:text="${'Biên nhận bàn giao ' + handover.code}">Biên nhận bàn giao</h1>
+      <p class="page-description">Chứng từ được lưu từ biên bản đã ký; không chỉnh sửa sau khi phát hành.</p>
+    </div>
+    <div class="page-actions">
+      <button type="button" class="button button-primary" th:if="${handover.receiptIssued}" onclick="window.print()">In biên nhận</button>
+      <a class="button" th:href="@{/handover/handovers/{id}(id=${handover.id})}">Checklist</a>
+      <a class="button" th:href="@{/handover/handovers/{id}/close(id=${handover.id})}">Đóng sale</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <p class="alert" th:unless="${handover.receiptIssued}">Biên nhận chưa được phát hành: hoàn tất bàn giao ở checklist trước. Nội dung dưới đây là bản nháp.</p>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2 th:text="${'BIÊN NHẬN BÀN GIAO XE · ' + handover.code}">Biên nhận</h2>
+      <span class="badge" th:attr="data-status=${handover.receiptIssued ? 'COMPLETED' : 'DRAFT'}"
+            th:text="${handover.receiptIssued ? 'ĐÃ PHÁT HÀNH' : 'NHÁP'}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Hợp đồng bán</dt><dd th:text="${handover.contract.code}"></dd></div>
+      <div><dt>Thời điểm giao</dt><dd th:text="${handover.handedOverAt != null ? #temporals.format(handover.handedOverAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd></div>
+      <div><dt>Người nhận</dt><dd th:text="${handover.contract.buyerName}"></dd></div>
+      <div><dt>Chủ xe pháp lý (bên ký gửi)</dt><dd th:text="${handover.consignorName ?: '—'}"></dd></div>
+      <div><dt>Xe</dt><dd th:text="${handover.contract.vehicleLabel}"></dd></div>
+      <div><dt>VIN</dt><dd th:text="${handover.contract.vin}"></dd></div>
+      <div><dt>Số km</dt><dd th:text="${handover.odometerKm != null ? handover.odometerKm + ' km' : '—'}"></dd></div>
+      <div><dt>Số chìa khóa</dt><dd th:text="${handover.keyCount ?: '—'}"></dd></div>
+      <div><dt>Phụ kiện</dt><dd th:text="${handover.accessories ?: '—'}"></dd></div>
+      <div><dt>Ảnh tình trạng</dt><dd th:text="${handover.photoPaths ?: '—'}"></dd></div>
+      <div><dt>Chữ ký người nhận</dt><dd th:text="${handover.receiverSignaturePath ?: '—'}"></dd></div>
+      <div><dt>Chữ ký nhân viên giao</dt><dd th:text="${handover.staffSignaturePath ?: '—'}"></dd></div>
+    </dl>
+    <ul class="checklist">
+      <li th:each="item : ${handover.items}" th:classappend="${item.present ? 'passed' : 'blocked'}">
+        <span class="check-icon" aria-hidden="true" th:text="${item.present ? '✓' : '!'}"></span>
+        <div><strong th:text="${item.itemName}"></strong>
+          <small th:text="${item.present ? 'Đã giao' : 'Không giao'}"></small>
+          <p th:if="${item.notes != null}" th:text="${item.notes}"></p></div>
+      </li>
+    </ul>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

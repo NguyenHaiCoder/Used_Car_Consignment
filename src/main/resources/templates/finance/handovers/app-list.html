@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Hàng đợi bàn giao xe')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Bàn giao</p>
+      <h1>Hàng đợi bàn giao xe</h1>
+      <p class="page-description">Tài chính theo dõi hợp đồng nào còn bị chặn vì tiền; bàn giao do nhân viên bàn giao thực hiện.</p>
+    </div>
+    <div class="page-actions"><a class="button" th:href="@{/finance/receipts/new}">Ghi nhận khoản thu</a></div>
+  </div>
+
+  <section th:replace="~{finance/fragments :: queue(${queue}, false)}"></section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

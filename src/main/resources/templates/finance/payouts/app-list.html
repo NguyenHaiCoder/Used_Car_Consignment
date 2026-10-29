@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Chi trả chủ xe')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1>Chi trả chủ xe</h1>
+      <p class="page-description">Chi trả theo quyết toán đã duyệt; tài khoản nhận tiền được che bớt.</p>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <section class="content-card table-card">
+    <div class="content-card-header">
+      <h2>Lệnh chi</h2>
+      <span class="caption" th:text="${page.totalElements + ' lệnh chi'}"></span>
+    </div>
+    <div class="table-toolbar">
+      <a class="button" th:classappend="${status == null ? 'button-primary' : ''}" th:href="@{/finance/payouts}">Tất cả</a>
+      <a class="button" th:each="st : ${statuses}" th:classappend="${st == status ? 'button-primary' : ''}"
+         th:href="@{/finance/payouts(status=${st})}" th:text="${st}"></a>
+    </div>
+    <div class="table-scroll" th:if="${!page.empty}">
+      <table class="custom-table">
+        <thead><tr>
+          <th scope="col">Lệnh chi · quyết toán</th><th scope="col">Người nhận</th><th scope="col">Tài khoản</th>
+          <th scope="col">Số tiền</th><th scope="col">Ngày chi</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="p : ${page.content}">
+            <td th:text="${p.code + ' · ' + p.settlementCode}"></td>
+            <td th:text="${p.recipientName}"></td>
+            <td th:text="${p.bankName + ' ' + p.accountNumberMasked}"></td>
+            <td th:text="${#numbers.formatDecimal(p.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${p.paidAt != null ? #temporals.format(p.paidAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
+            <td><span class="badge" th:attr="data-status=${p.status}" th:text="${p.status}"></span></td>
+            <td class="action-cell">
+              <a class="action-icon action-view" th:href="@{/finance/payouts/{id}(id=${p.id})}"
+                 th:attr="title=${'Xem chi tiết ' + p.code},aria-label=${'Xem chi tiết ' + p.code}">
+                <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${page.empty}">
+      <span aria-hidden="true">⌕</span><h3>Chưa có lệnh chi</h3>
+      <p>Lệnh chi được lập từ quyết toán đã được Manager duyệt.</p>
+    </div>
+    <div class="pagination" th:if="${page.totalPages > 1}">
+      <p th:text="${'Trang ' + (page.number + 1) + ' / ' + page.totalPages}"></p>
+      <div>
+        <a class="button" th:if="${page.hasPrevious()}" th:href="@{/finance/payouts(status=${status},page=${page.number - 1})}">← Trước</a>
+        <a class="button" th:if="${page.hasNext()}" th:href="@{/finance/payouts(status=${status},page=${page.number + 1})}">Sau →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

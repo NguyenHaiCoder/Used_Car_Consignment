@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Đối soát giao dịch ' + payment.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1 th:text="${'Đối soát giao dịch ' + payment.code}">Đối soát giao dịch</h1>
+      <p class="page-description">Khoản thu đã ghi không sửa trực tiếp; điều chỉnh đi qua hoàn tiền hoặc phê duyệt.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:if="${payment.status.name() == 'PAID'}"
+         th:href="@{/finance/refunds/new(paymentId=${payment.id})}">Hoàn tiền</a>
+      <a class="button" th:href="@{/finance/settlements}">Quyết toán</a>
+      <a class="button" th:href="@{/finance/payments}">Danh sách giao dịch</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <div class="detail-grid">
+    <section class="content-card">
+      <div class="content-card-header">
+        <h2>Khoản thu</h2>
+        <span class="badge" th:attr="data-status=${payment.status}" th:text="${payment.status}"></span>
+      </div>
+      <dl class="facts-grid">
+        <div><dt>Số tiền</dt><dd th:text="${#numbers.formatDecimal(payment.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+        <div><dt>Người trả</dt><dd th:text="${payment.payerName ?: '—'}"></dd></div>
+        <div><dt>Phương thức</dt><dd th:text="${payment.method}"></dd></div>
+        <div><dt>Mã tham chiếu</dt><dd th:text="${payment.referenceCode ?: '—'}"></dd></div>
+        <div><dt>Thời gian thu</dt><dd th:text="${payment.paidAt != null ? #temporals.format(payment.paidAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd></div>
+        <div><dt>Bằng chứng</dt><dd th:text="${payment.evidencePath ?: '—'}"></dd></div>
+        <div><dt>Transaction payOS</dt>
+          <dd th:text="${payment.providerTxnId != null ? payment.providerTxnId + ' · ' + payment.transactionStatus : 'Không có (ghi nhận thủ công)'}"></dd></div>
+        <div><dt>Ghi nhận lúc</dt><dd th:text="${#temporals.format(payment.createdAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+      </dl>
+      <div class="form-actions" th:if="${payment.status.name() == 'PENDING' or payment.status.name() == 'PROCESSING'}">
+        <form method="post" th:action="@{/finance/payments/{id}/reconcile(id=${payment.id})}" style="margin:0">
+          <button type="submit" class="button button-primary">Xác nhận đối soát (PAID)</button>
+        </form>
+        <form method="post" th:action="@{/finance/payments/{id}/reject(id=${payment.id})}" class="table-toolbar" style="margin:0">
+          <label>Lý do từ chối <input type="text" name="reason" maxlength="500" required></label>
+          <button type="submit" class="button">Từ chối khoản thu</button>
+        </form>
+      </div>
+    </section>
+    <section th:replace="~{finance/fragments :: contract(${contract})}"></section>
+  </div>
+
+  <section th:replace="~{finance/fragments :: checks('Điều kiện đối soát', ${checks})}"></section>
+
+  <section class="content-card table-card">
+    <div class="content-card-header"><h2>Hoàn tiền từ khoản thu này</h2>
+      <span class="caption" th:text="${#lists.size(refunds) + ' khoản'}"></span></div>
+    <div class="table-scroll" th:if="${!#lists.isEmpty(refunds)}">
+      <table class="custom-table">
+        <thead><tr><th scope="col">Mã</th><th scope="col">Số tiền</th><th scope="col">Reservation</th>
+          <th scope="col">Lý do</th><th scope="col">Bằng chứng</th><th scope="col">Trạng thái</th><th scope="col">Xử lý</th></tr></thead>
+        <tbody>
+          <tr th:each="r : ${refunds}">
+            <td th:text="${r.code}"></td>
+            <td th:text="${#numbers.formatDecimal(r.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${r.reservationCode ?: '—'}"></td>
+            <td th:text="${r.reason}"></td>
+            <td th:text="${r.evidencePath ?: '—'}"></td>
+            <td><span class="badge" th:attr="data-status=${r.status}" th:text="${r.status}"></span></td>
+            <td>
+              <th:block th:if="${r.status.name() == 'PENDING'}">
+                <form method="post" th:action="@{/finance/refunds/{id}/process(id=${r.id})}" class="table-toolbar" style="margin:0">
+                  <input type="hidden" name="paymentId" th:value="${payment.id}">
+                  <input type="text" name="evidencePath" th:value="${r.evidencePath}" placeholder="Bằng chứng chuyển hoàn" maxlength="500">
+                  <button type="submit" class="button button-primary">Hoàn tất</button>
+                </form>
+                <form method="post" th:action="@{/finance/refunds/{id}/reject(id=${r.id})}" class="table-toolbar" style="margin:0">
+                  <input type="hidden" name="paymentId" th:value="${payment.id}">
+                  <input type="text" name="reason" placeholder="Lý do từ chối" maxlength="500">
+                  <button type="submit" class="button">Từ chối</button>
+                </form>
+              </th:block>
+              <span th:unless="${r.status.name() == 'PENDING'}"
+                    th:text="${r.processedAt != null ? #temporals.format(r.processedAt, 'dd/MM/yyyy HH:mm') : '—'}"></span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(refunds)}"><p>Chưa có yêu cầu hoàn tiền.</p></div>
+  </section>
+
+  <section th:replace="~{finance/fragments :: history(${history})}"></section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

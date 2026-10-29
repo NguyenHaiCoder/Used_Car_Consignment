@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Ghi nhận hoàn tiền')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1>Ghi nhận hoàn tiền</h1>
+      <p class="page-description">Hoàn tiền tham chiếu khoản thu gốc (và reservation khi hoàn cọc); không sửa lịch sử khoản thu.</p>
+    </div>
+    <div class="page-actions"><a class="button" th:href="@{/finance/payments}">Giao dịch</a></div>
+  </div>
+
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Nhập thông tin</h2><span class="caption">* Thông tin bắt buộc</span>
+    </div>
+    <form id="refund-form" method="post" novalidate th:action="@{/finance/refunds}" th:object="${form}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field full-width">
+          <label for="field-paymentId">Khoản thu gốc<span class="required" aria-label="bắt buộc"> *</span></label>
+          <select id="field-paymentId" th:field="*{paymentId}" required>
+            <option value="">Chọn khoản thu</option>
+            <option th:each="p : ${payments}" th:value="${p.id}"
+                    th:text="${p.code + ' · ' + p.contractCode + ' · ' + p.buyerName + ' · ' + #numbers.formatDecimal(p.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></option>
+          </select>
+          <small class="field-hint" th:if="${#lists.isEmpty(payments)}">Chỉ hoàn được từ khoản thu đã đối soát (PAID) còn số dư hoàn.</small>
+          <small class="field-error" th:errors="*{paymentId}"></small>
+        </div>
+        <div class="field">
+          <label for="field-amount">Số tiền hoàn (VNĐ)<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="number" id="field-amount" th:field="*{amount}" min="1" step="any" required>
+          <small class="field-hint">Tổng các khoản hoàn không vượt khoản thu gốc.</small>
+          <small class="field-error" th:errors="*{amount}"></small>
+        </div>
+        <div class="field">
+          <label for="field-evidencePath">Bằng chứng / quyết định xử lý cọc</label>
+          <input type="text" id="field-evidencePath" th:field="*{evidencePath}" maxlength="500">
+          <small class="field-error" th:errors="*{evidencePath}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-reason">Lý do hoàn<span class="required" aria-label="bắt buộc"> *</span></label>
+          <textarea id="field-reason" th:field="*{reason}" rows="3" maxlength="2000" required></textarea>
+          <small class="field-error" th:errors="*{reason}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-depositRefund">
+            <input type="checkbox" id="field-depositRefund" th:field="*{depositRefund}">
+            Hoàn tiền cọc của reservation (quyết định ở bước hủy / hết hạn giữ xe)
+          </label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a class="button" th:href="@{/finance/payments}">Hủy</a>
+        <button type="submit" class="button button-primary">Ghi nhận hoàn tiền</button>
+      </div>
+    </form>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

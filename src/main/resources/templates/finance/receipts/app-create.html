@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Ghi nhận khoản thu')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1>Ghi nhận khoản thu</h1>
+      <p class="page-description">Lưu mã tham chiếu và bằng chứng; khoản thu ở trạng thái PENDING cho tới khi được đối soát.</p>
+    </div>
+    <div class="page-actions"><a class="button" th:href="@{/finance/payments}">Giao dịch</a></div>
+  </div>
+
+  <p class="alert">Không gọi payOS hoặc tạo QR thanh toán thật. Khoản thu payOS chỉ chuyển PAID khi có transaction từ webhook đã xác minh.</p>
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Nhập thông tin</h2><span class="caption">* Thông tin bắt buộc</span>
+    </div>
+    <form id="receipt-form" method="post" novalidate th:action="@{/finance/payments}" th:object="${form}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field full-width">
+          <label for="field-contractId">Hợp đồng bán<span class="required" aria-label="bắt buộc"> *</span></label>
+          <select id="field-contractId" th:field="*{contractId}" required>
+            <option value="">Chọn hợp đồng</option>
+            <option th:each="c : ${contracts}" th:value="${c.id}"
+                    th:text="${c.code + ' · ' + c.buyerName + ' · ' + c.vehicleLabel + ' · còn phải thu ' + #numbers.formatDecimal(c.outstandingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></option>
+          </select>
+          <small class="field-hint" th:if="${#lists.isEmpty(contracts)}">Không có hợp đồng đã ký nào còn phải thu.</small>
+          <small class="field-error" th:errors="*{contractId}"></small>
+        </div>
+        <div class="field">
+          <label for="field-method">Phương thức<span class="required" aria-label="bắt buộc"> *</span></label>
+          <select id="field-method" th:field="*{method}" required>
+            <option value="">Chọn phương thức</option>
+            <option value="TRANSFER">Chuyển khoản</option>
+            <option value="CASH">Tiền mặt</option>
+            <option value="PAYOS">payOS</option>
+          </select>
+          <small class="field-error" th:errors="*{method}"></small>
+        </div>
+        <div class="field">
+          <label for="field-amount">Số tiền (VNĐ)<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="number" id="field-amount" th:field="*{amount}" min="1" step="any" required>
+          <small class="field-hint">Không vượt phần còn phải thu của hợp đồng.</small>
+          <small class="field-error" th:errors="*{amount}"></small>
+        </div>
+        <div class="field">
+          <label for="field-referenceCode">Mã tham chiếu<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="text" id="field-referenceCode" th:field="*{referenceCode}" maxlength="80" required>
+          <small class="field-hint">Mã giao dịch ngân hàng / số phiếu thu; không được trùng.</small>
+          <small class="field-error" th:errors="*{referenceCode}"></small>
+        </div>
+        <div class="field">
+          <label for="field-payerName">Người thanh toán<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="text" id="field-payerName" th:field="*{payerName}" maxlength="80" required>
+          <small class="field-error" th:errors="*{payerName}"></small>
+        </div>
+        <div class="field">
+          <label for="field-paidAt">Thời gian thu<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="datetime-local" id="field-paidAt" th:field="*{paidAt}" required>
+          <small class="field-error" th:errors="*{paidAt}"></small>
+        </div>
+        <div class="field">
+          <label for="field-evidencePath">Bằng chứng khoản thu (số hiệu hoặc đường dẫn)</label>
+          <input type="text" id="field-evidencePath" th:field="*{evidencePath}" maxlength="500">
+          <small class="field-hint">Bắt buộc trước khi đối soát khoản thu thủ công.</small>
+          <small class="field-error" th:errors="*{evidencePath}"></small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <a class="button" th:href="@{/finance/payments}">Hủy</a>
+        <button type="submit" class="button button-primary">Ghi nhận khoản thu</button>
+      </div>
+    </form>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

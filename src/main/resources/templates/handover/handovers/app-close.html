@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Đóng sale ' + handover.contract.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Bàn giao</p>
+      <h1 th:text="${'Đóng sale ' + handover.contract.code}">Đóng sale</h1>
+      <p class="page-description">Kiểm tra riêng ba mốc: thanh toán hoàn tất, sang tên hoàn tất, bàn giao thực tế hoàn tất.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/handover/handovers/{id}(id=${handover.id})}">Bàn giao</a>
+      <a class="button" th:if="${handover.receiptIssued}" th:href="@{/handover/handovers/{id}/receipt(id=${handover.id})}">Biên nhận</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <section class="content-card">
+    <div class="content-card-header"><h2 th:text="${handover.code + ' · ' + handover.contract.vehicleLabel}">Biên bản</h2>
+      <span class="badge" th:attr="data-status=${handover.status}" th:text="${handover.status}"></span></div>
+    <dl class="facts-grid">
+      <div><dt>Hợp đồng</dt><dd th:text="${handover.contract.code + ' · ' + handover.contract.status}"></dd></div>
+      <div><dt>Khách mua</dt><dd th:text="${handover.contract.buyerName}"></dd></div>
+    </dl>
+  </section>
+
+  <section th:replace="~{finance/fragments :: checks('Ba mốc đóng sale', ${checks})}"></section>
+
+  <section class="content-card" th:if="${handover.status.name() == 'COMPLETED'}">
+    <div class="content-card-header"><h2>Xác nhận đóng sale</h2></div>
+    <form method="post" th:action="@{/handover/handovers/{id}/close(id=${handover.id})}">
+      <div class="form-grid">
+        <div class="field full-width">
+          <label for="field-note">Ghi chú</label>
+          <textarea id="field-note" name="note" rows="3" maxlength="1000"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <p class="field-hint">Đóng sale chuyển hợp đồng sang CLOSED; lịch sử và chứng từ đã ký được giữ nguyên.</p>
+        <button type="submit" class="button button-primary">Đóng sale</button>
+      </div>
+    </form>
+  </section>
+  <p class="alert" th:if="${handover.status.name() == 'CLOSED'}">Sale đã được đóng.</p>
+  <p class="alert" th:if="${handover.status.name() != 'COMPLETED' and handover.status.name() != 'CLOSED'}">Hoàn tất bàn giao thực tế trước khi đóng sale.</p>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Lệnh chi ' + payout.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1 th:text="${'Lệnh chi ' + payout.code}">Lệnh chi</h1>
+      <p class="page-description">Đối chiếu quyết toán, người nhận, số tiền và tài khoản; ghi mã tham chiếu và bằng chứng sau khi chuyển khoản.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/finance/settlements/{id}(id=${payout.settlementId})}" th:text="${'Quyết toán ' + payout.settlementCode}"></a>
+      <a class="button" th:href="@{/finance/payouts}">Danh sách chi trả</a>
+    </div>
+  </div>
+
+  <p class="alert">Không thực hiện chuyển tiền từ hệ thống. Xác nhận ở đây chỉ ghi lại kết quả chuyển khoản đã làm.</p>
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <section class="content-card">
+    <div class="content-card-header">
+      <h2>Thông tin chi trả</h2>
+      <span class="badge" th:attr="data-status=${payout.status}" th:text="${payout.status}"></span>
+    </div>
+    <dl class="facts-grid">
+      <div><dt>Quyết toán · hợp đồng</dt><dd th:text="${payout.settlementCode + ' · ' + payout.contractCode}"></dd></div>
+      <div><dt>Số tiền</dt><dd th:text="${#numbers.formatDecimal(payout.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+      <div><dt>Người nhận</dt><dd th:text="${payout.recipientName}"></dd></div>
+      <div><dt>Tài khoản</dt><dd th:text="${payout.bankName + ' · ' + payout.accountNumberMasked}"></dd></div>
+      <div><dt>Mã tham chiếu</dt><dd th:text="${payout.referenceCode ?: '—'}"></dd></div>
+      <div><dt>Bằng chứng</dt><dd th:text="${payout.evidencePath ?: '—'}"></dd></div>
+      <div><dt>Lập lúc</dt><dd th:text="${#temporals.format(payout.createdAt, 'dd/MM/yyyy HH:mm')}"></dd></div>
+      <div><dt>Ngày chi</dt><dd th:text="${payout.paidAt != null ? #temporals.format(payout.paidAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd></div>
+    </dl>
+  </section>
+
+  <section class="content-card" th:if="${payout.status.name() == 'PENDING' or payout.status.name() == 'PROCESSING'}">
+    <div class="content-card-header"><h2>Xác nhận đã chi</h2><span class="caption">* Thông tin bắt buộc</span></div>
+    <form id="payout-form" method="post" novalidate th:action="@{/finance/payouts/complete}" th:object="${form}">
+      <input type="hidden" th:field="*{id}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="field-referenceCode">Mã tham chiếu chuyển khoản<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="text" id="field-referenceCode" th:field="*{referenceCode}" maxlength="80" required>
+          <small class="field-error" th:errors="*{referenceCode}"></small>
+        </div>
+        <div class="field">
+          <label for="field-evidencePath">Bằng chứng chi trả<span class="required" aria-label="bắt buộc"> *</span></label>
+          <input type="text" id="field-evidencePath" th:field="*{evidencePath}" maxlength="500" required>
+          <small class="field-error" th:errors="*{evidencePath}"></small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button button-primary">Xác nhận đã chi</button>
+      </div>
+    </form>
+    <form method="post" class="form-actions" th:action="@{/finance/payouts/{id}/fail(id=${payout.id})}">
+      <label>Lý do thất bại <input type="text" name="reason" maxlength="500" required></label>
+      <button type="submit" class="button">Đánh dấu thất bại</button>
+    </form>
+  </section>
+
+  <section th:replace="~{finance/fragments :: history(${history})}"></section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

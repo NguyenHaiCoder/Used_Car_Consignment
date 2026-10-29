@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Tổng quan · Nhân viên tài chính')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1>Tổng quan · Nhân viên tài chính</h1>
+      <p class="page-description">Công việc cần xử lý hôm nay: đối soát khoản thu, hoàn tiền, quyết toán và chi trả chủ xe.</p>
+    </div>
+    <div class="page-actions"><a class="button button-primary" th:href="@{/finance/receipts/new}">Ghi nhận khoản thu</a></div>
+  </div>
+
+  <div class="stats-grid">
+    <a class="stat-card" th:href="@{/finance/payments(status='PENDING')}">
+      <h2>Khoản thu chờ đối soát</h2><span class="value" th:text="${pendingPayments}">0</span><p>PENDING / PROCESSING</p></a>
+    <a class="stat-card" th:href="@{/finance/payments}">
+      <h2>Yêu cầu hoàn chờ xử lý</h2><span class="value" th:text="${pendingRefunds}">0</span><p>Hoàn tiền PENDING</p></a>
+    <a class="stat-card" th:href="@{/finance/settlements(status='DRAFT')}">
+      <h2>Quyết toán nháp / bị từ chối</h2><span class="value" th:text="${draftSettlements}">0</span><p>Cần hoàn thiện và gửi duyệt</p></a>
+    <a class="stat-card" th:href="@{/finance/settlements(status='PENDING_REVIEW')}">
+      <h2>Quyết toán chờ Manager</h2><span class="value" th:text="${reviewSettlements}">0</span><p>PENDING_REVIEW</p></a>
+    <a class="stat-card" th:href="@{/finance/payouts(status='PENDING')}">
+      <h2>Lệnh chi đang mở</h2><span class="value" th:text="${openPayouts}">0</span><p>Chưa xác nhận đã chi</p></a>
+  </div>
+
+  <section class="content-card table-card">
+    <div class="content-card-header"><h2>Hợp đồng còn phải thu</h2>
+      <span class="caption" th:text="${#lists.size(unpaidContracts) + ' hợp đồng'}"></span></div>
+    <div class="table-scroll" th:if="${!#lists.isEmpty(unpaidContracts)}">
+      <table class="custom-table">
+        <thead><tr><th scope="col">Hợp đồng</th><th scope="col">Khách mua</th><th scope="col">Giá bán</th>
+          <th scope="col">Đang chờ đối soát</th><th scope="col">Còn phải thu</th><th scope="col">Thao tác</th></tr></thead>
+        <tbody>
+          <tr th:each="q : ${unpaidContracts}">
+            <td th:text="${q.contract.code + ' · ' + q.contract.vehicleLabel}"></td>
+            <td th:text="${q.contract.buyerName}"></td>
+            <td th:text="${#numbers.formatDecimal(q.contract.salePrice, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${#numbers.formatDecimal(q.contract.pendingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${#numbers.formatDecimal(q.contract.outstandingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td><a class="button" th:href="@{/finance/receipts/new(contractId=${q.contract.id})}">Ghi nhận thu</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(unpaidContracts)}"><p>Không có hợp đồng nào còn phải thu.</p></div>
+  </section>
+
+  <section class="content-card table-card" th:if="${!#lists.isEmpty(readyToSettle)}">
+    <div class="content-card-header"><h2>Hợp đồng chưa lập quyết toán</h2>
+      <a class="button" th:href="@{/finance/settlements}">Mở quyết toán</a></div>
+    <ul class="checklist">
+      <li th:each="c : ${readyToSettle}">
+        <span class="check-icon" aria-hidden="true">₫</span>
+        <div><strong th:text="${c.code + ' · ' + c.vehicleLabel}"></strong>
+          <small th:text="${c.fullyPaid ? 'Đã thu đủ' : 'Còn phải thu ' + #numbers.formatDecimal(c.outstandingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></small></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="content-card table-card">
+    <div class="content-card-header"><h2>Khoản thu gần đây</h2><a class="button" th:href="@{/finance/payments}">Tất cả giao dịch</a></div>
+    <div class="table-scroll" th:if="${!#lists.isEmpty(recentPayments)}">
+      <table class="custom-table">
+        <thead><tr><th scope="col">Mã</th><th scope="col">Hợp đồng</th><th scope="col">Số tiền</th><th scope="col">Trạng thái</th></tr></thead>
+        <tbody>
+          <tr th:each="p : ${recentPayments}">
+            <td><a th:href="@{/finance/payments/{id}(id=${p.id})}" th:text="${p.code}"></a></td>
+            <td th:text="${p.contractCode + ' · ' + p.buyerName}"></td>
+            <td th:text="${#numbers.formatDecimal(p.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td><span class="badge" th:attr="data-status=${p.status}" th:text="${p.status}"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(recentPayments)}"><p>Chưa có khoản thu.</p></div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

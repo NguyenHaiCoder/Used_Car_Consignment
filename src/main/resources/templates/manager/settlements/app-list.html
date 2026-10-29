@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Hoa hồng & quyết toán chủ xe')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Điều hành</p>
+      <h1>Hoa hồng & quyết toán chủ xe</h1>
+      <p class="page-description">Review quyết toán do Tài chính lập; chỉ quyết toán đã duyệt mới được chi cho chủ xe.</p>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <section class="content-card table-card">
+    <div class="content-card-header">
+      <h2>Danh sách quyết toán</h2>
+      <span class="caption" th:text="${page.totalElements + ' quyết toán'}"></span>
+    </div>
+    <div class="table-toolbar">
+      <a class="button" th:classappend="${status == null ? 'button-primary' : ''}" th:href="@{/manager/settlements}">Tất cả</a>
+      <a class="button" th:each="entry : ${counts}"
+         th:classappend="${entry.key == status ? 'button-primary' : ''}"
+         th:href="@{/manager/settlements(status=${entry.key})}"
+         th:text="${entry.key + ' (' + entry.value + ')'}"></a>
+    </div>
+    <div class="table-scroll" th:if="${!page.empty}">
+      <table class="custom-table">
+        <thead><tr>
+          <th scope="col">Quyết toán · hợp đồng</th><th scope="col">Chủ xe</th><th scope="col">Giá bán</th>
+          <th scope="col">Hoa hồng</th><th scope="col">Số tiền ròng</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="s : ${page.content}">
+            <td th:text="${s.code + ' · ' + s.contractCode}"></td>
+            <td th:text="${s.consignorName}"></td>
+            <td th:text="${#numbers.formatDecimal(s.baseAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${#numbers.formatDecimal(s.commissionAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${#numbers.formatDecimal(s.netPayoutAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td><span class="badge" th:attr="data-status=${s.status}" th:text="${s.status}"></span></td>
+            <td class="action-cell">
+              <a class="action-icon action-view" th:href="@{/manager/settlements/{id}(id=${s.id})}"
+                 th:attr="title=${'Xem chi tiết ' + s.code},aria-label=${'Xem chi tiết ' + s.code}">
+                <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${page.empty}">
+      <span aria-hidden="true">⌕</span><h3>Không có quyết toán phù hợp</h3>
+      <p>Quyết toán do Tài chính lập và gửi duyệt sẽ xuất hiện ở đây.</p>
+    </div>
+    <div class="pagination" th:if="${page.totalPages > 1}">
+      <p th:text="${'Trang ' + (page.number + 1) + ' / ' + page.totalPages}"></p>
+      <div>
+        <a class="button" th:if="${page.hasPrevious()}" th:href="@{/manager/settlements(status=${status},page=${page.number - 1})}">← Trước</a>
+        <a class="button" th:if="${page.hasNext()}" th:href="@{/manager/settlements(status=${status},page=${page.number + 1})}">Sau →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

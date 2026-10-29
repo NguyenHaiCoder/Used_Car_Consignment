@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Quyết toán ' + settlement.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1 th:text="${'Quyết toán ' + settlement.code + ' · ' + settlement.contractCode}">Quyết toán</h1>
+      <p class="page-description">Hoa hồng tính từ agreement ACTIVE; chi trả cho chủ xe chỉ sau khi Manager duyệt và tiền đã đối soát đủ.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:href="@{/finance/settlements}">Danh sách quyết toán</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <div class="detail-grid">
+    <section th:replace="~{finance/settlements/formula :: formula(${settlement})}"></section>
+    <section th:replace="~{finance/fragments :: contract(${contract})}"></section>
+  </div>
+
+  <section class="content-card" th:if="${settlement.editable}">
+    <div class="content-card-header"><h2>Phí, chi phí và cọc giữ lại</h2><span class="caption">Lưu sẽ tính lại số tiền ròng</span></div>
+    <form id="settlement-form" method="post" novalidate th:action="@{/finance/settlements/adjust}" th:object="${form}">
+      <input type="hidden" th:field="*{id}">
+      <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+      <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="field-feeAmount">Phí được duyệt (VNĐ)</label>
+          <input type="number" id="field-feeAmount" th:field="*{feeAmount}" min="0" step="any">
+          <small class="field-error" th:errors="*{feeAmount}"></small>
+        </div>
+        <div class="field">
+          <label for="field-approvedCostAmount">Chi phí được duyệt (VNĐ)</label>
+          <input type="number" id="field-approvedCostAmount" th:field="*{approvedCostAmount}" min="0" step="any">
+          <small class="field-error" th:errors="*{approvedCostAmount}"></small>
+        </div>
+        <div class="field">
+          <label for="field-depositHeldAmount">Cọc giữ lại cho chủ xe (VNĐ)</label>
+          <input type="number" id="field-depositHeldAmount" th:field="*{depositHeldAmount}" min="0" step="any">
+          <small class="field-hint">Cọc bị khách bỏ ở lần giữ xe trước, nếu chính sách cho chủ xe hưởng.</small>
+          <small class="field-error" th:errors="*{depositHeldAmount}"></small>
+        </div>
+        <div class="field full-width">
+          <label for="field-notes">Ghi chú</label>
+          <textarea id="field-notes" th:field="*{notes}" rows="3" maxlength="2000"></textarea>
+          <small class="field-error" th:errors="*{notes}"></small>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button">Lưu & tính lại</button>
+      </div>
+    </form>
+    <form method="post" class="form-actions" th:action="@{/finance/settlements/{id}/submit(id=${settlement.id})}">
+      <p class="field-hint">Gửi duyệt sẽ khóa các số liệu; Manager phê duyệt, từ chối hoặc yêu cầu bổ sung.</p>
+      <button type="submit" class="button button-primary">Gửi Manager duyệt</button>
+    </form>
+  </section>
+
+  <section th:replace="~{finance/fragments :: checks('Điều kiện quyết toán', ${checks})}"></section>
+
+  <section class="content-card table-card">
+    <div class="content-card-header"><h2>Lệnh chi cho chủ xe</h2>
+      <form method="post" th:if="${settlement.status.name() == 'APPROVED'}" style="margin:0"
+            th:action="@{/finance/settlements/{id}/payout(id=${settlement.id})}">
+        <button type="submit" class="button button-primary">Lập lệnh chi</button>
+      </form>
+      <span class="caption" th:unless="${settlement.status.name() == 'APPROVED'}">Chỉ lập lệnh chi khi quyết toán APPROVED</span>
+    </div>
+    <div class="table-scroll" th:if="${!#lists.isEmpty(payouts)}">
+      <table class="custom-table">
+        <thead><tr><th scope="col">Lệnh chi</th><th scope="col">Người nhận</th><th scope="col">Số tiền</th>
+          <th scope="col">Trạng thái</th><th scope="col">Thao tác</th></tr></thead>
+        <tbody>
+          <tr th:each="p : ${payouts}">
+            <td th:text="${p.code}"></td>
+            <td th:text="${p.recipientName + ' · ' + p.bankName + ' ' + p.accountNumberMasked}"></td>
+            <td th:text="${#numbers.formatDecimal(p.amount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td><span class="badge" th:attr="data-status=${p.status}" th:text="${p.status}"></span></td>
+            <td><a class="button" th:href="@{/finance/payouts/{id}(id=${p.id})}">Xem</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${#lists.isEmpty(payouts)}"><p>Chưa có lệnh chi.</p></div>
+  </section>
+
+  <section th:replace="~{finance/fragments :: history(${history})}"></section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

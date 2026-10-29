@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<!-- Shared pieces of the WP05 screens (finance, manager settlements, handover). -->
+
+<!-- Success / business-rule messages passed through the redirect. -->
+<th:block th:fragment="flash">
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="alert" th:if="${flashError}" th:text="${flashError}" role="alert" style="border-color:var(--color-danger-text);background:var(--danger-soft);color:var(--color-danger-text)"></p>
+</th:block>
+
+<!-- Business-rule checks; failed ones show why. -->
+<section th:fragment="checks(title, checks)" class="content-card">
+  <div class="content-card-header"><h2 th:text="${title}">Điều kiện</h2>
+    <span class="caption" th:text="${#lists.size(checks.?[passed]) + '/' + #lists.size(checks) + ' đạt'}"></span></div>
+  <ul class="checklist">
+    <li th:each="check : ${checks}" th:classappend="${check.passed ? 'passed' : 'blocked'}">
+      <span class="check-icon" aria-hidden="true" th:text="${check.passed ? '✓' : '!'}"></span>
+      <div>
+        <strong th:text="${check.label}"></strong>
+        <small th:text="${check.passed ? 'Đã đáp ứng' : 'Chưa đáp ứng'}"></small>
+        <p th:if="${!check.passed and !#strings.isEmpty(check.detail)}" th:text="${check.detail}"></p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- Audit history of the record, newest first. -->
+<section th:fragment="history(history)" class="content-card">
+  <div class="content-card-header"><h2>Lịch sử</h2><span class="caption">Không sửa hoặc xóa được</span></div>
+  <ol class="timeline" th:if="${!#lists.isEmpty(history)}">
+    <li th:each="h : ${history}">
+      <strong th:text="${h.action + ' · ' + h.actorName}"></strong>
+      <time th:text="${#temporals.format(h.time, 'dd/MM/yyyy HH:mm')}"></time>
+      <small th:if="${h.detail != null}" th:text="${h.detail}"></small>
+    </li>
+  </ol>
+  <div class="empty-state" th:if="${#lists.isEmpty(history)}"><p>Chưa có thao tác nào.</p></div>
+</section>
+
+<!-- Money position of a sales contract. -->
+<section th:fragment="contract(contract)" class="content-card">
+  <div class="content-card-header"><h2 th:text="${'Hợp đồng bán ' + contract.code}">Hợp đồng bán</h2>
+    <span class="badge" th:attr="data-status=${contract.status}" th:text="${contract.status}"></span></div>
+  <dl class="facts-grid">
+    <div><dt>Khách mua</dt><dd th:text="${contract.buyerName}"></dd></div>
+    <div><dt>Xe</dt><dd th:text="${contract.vehicleLabel + ' · ' + contract.vin}"></dd></div>
+    <div><dt>Giá bán</dt><dd th:text="${#numbers.formatDecimal(contract.salePrice, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>Cọc theo hợp đồng</dt><dd th:text="${#numbers.formatDecimal(contract.depositAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>Đã thu (đã đối soát)</dt><dd th:text="${#numbers.formatDecimal(contract.paidAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>Đang chờ đối soát</dt><dd th:text="${#numbers.formatDecimal(contract.pendingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>Đã hoàn cho khách</dt><dd th:text="${#numbers.formatDecimal(contract.refundedAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>Còn phải thu</dt><dd th:text="${#numbers.formatDecimal(contract.outstandingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+  </dl>
+</section>
+
+<!-- 05.04 queue table; showActions = true adds the handover staff buttons. -->
+<section th:fragment="queue(queue, showActions)" class="content-card table-card">
+  <div class="content-card-header"><h2>Hợp đồng chờ bàn giao</h2>
+    <span class="caption" th:text="${#lists.size(queue) + ' hợp đồng'}"></span></div>
+  <div class="table-scroll" th:if="${!#lists.isEmpty(queue)}">
+    <table class="custom-table">
+      <caption class="sr-only">Hàng đợi bàn giao xe</caption>
+      <thead><tr>
+        <th scope="col">Hợp đồng · xe</th><th scope="col">Khách mua</th><th scope="col">Còn phải thu</th>
+        <th scope="col">Sang tên</th><th scope="col">Điều kiện</th><th scope="col">Bàn giao</th>
+        <th scope="col" th:if="${showActions}">Thao tác</th>
+      </tr></thead>
+      <tbody>
+        <tr th:each="q : ${queue}">
+          <td th:text="${q.contract.code + ' · ' + q.contract.vehicleLabel}"></td>
+          <td th:text="${q.contract.buyerName}"></td>
+          <td th:text="${#numbers.formatDecimal(q.contract.outstandingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+          <td><span class="badge" th:if="${q.transferStatus != null}" th:attr="data-status=${q.transferStatus}" th:text="${q.transferStatus}"></span>
+            <span th:if="${q.transferStatus == null}">—</span></td>
+          <td>
+            <span class="badge" th:if="${q.eligible}" data-status="APPROVED">Đủ điều kiện</span>
+            <th:block th:unless="${q.eligible}">
+              <span class="badge" data-status="BLOCKED">Bị chặn</span>
+              <small class="field-hint" th:each="b : ${q.blockers}" th:text="${b.detail}" style="display:block"></small>
+            </th:block>
+          </td>
+          <td><span class="badge" th:if="${q.handoverStatus != null}" th:attr="data-status=${q.handoverStatus}"
+                    th:text="${q.handoverCode + ' · ' + q.handoverStatus}"></span>
+            <span th:if="${q.handoverStatus == null}">Chưa mở</span></td>
+          <td class="action-cell" th:if="${showActions}">
+            <a class="button" th:if="${q.handoverId != null}" th:href="@{/handover/handovers/{id}(id=${q.handoverId})}">Checklist</a>
+            <form method="post" th:if="${q.handoverId == null}" th:action="@{/handover/handovers}" style="margin:0">
+              <input type="hidden" name="contractId" th:value="${q.contract.id}">
+              <button type="submit" class="button button-primary">Mở bàn giao</button>
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty-state" th:if="${#lists.isEmpty(queue)}">
+    <span aria-hidden="true">⌕</span><h3>Không có hợp đồng chờ bàn giao</h3>
+    <p>Hợp đồng bán đã ký (SIGNED/ACTIVE) và chưa đóng sale sẽ xuất hiện ở đây.</p>
+  </div>
+</section>
+</body></html>

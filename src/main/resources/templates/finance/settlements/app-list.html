@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Hoa hồng & quyết toán chủ xe')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Tài chính</p>
+      <h1>Hoa hồng & quyết toán chủ xe</h1>
+      <p class="page-description">Áp dụng đúng phiên bản agreement ACTIVE; theo dõi tiền ròng cho chủ xe riêng với hoa hồng.</p>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+
+  <section class="content-card table-card" th:if="${!#lists.isEmpty(readyContracts)}">
+    <div class="content-card-header"><h2>Hợp đồng chưa lập quyết toán</h2>
+      <span class="caption" th:text="${#lists.size(readyContracts) + ' hợp đồng'}"></span></div>
+    <div class="table-scroll">
+      <table class="custom-table">
+        <thead><tr><th scope="col">Hợp đồng</th><th scope="col">Xe</th><th scope="col">Giá bán</th>
+          <th scope="col">Còn phải thu</th><th scope="col">Thao tác</th></tr></thead>
+        <tbody>
+          <tr th:each="c : ${readyContracts}">
+            <td th:text="${c.code + ' · ' + c.buyerName}"></td>
+            <td th:text="${c.vehicleLabel}"></td>
+            <td th:text="${#numbers.formatDecimal(c.salePrice, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${#numbers.formatDecimal(c.outstandingAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td><form method="post" th:action="@{/finance/settlements}" style="margin:0">
+              <input type="hidden" name="contractId" th:value="${c.id}">
+              <button type="submit" class="button button-primary">Lập quyết toán</button>
+            </form></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="content-card table-card">
+    <div class="content-card-header">
+      <h2>Danh sách quyết toán</h2>
+      <span class="caption" th:text="${page.totalElements + ' quyết toán'}"></span>
+    </div>
+    <div class="table-toolbar">
+      <a class="button" th:classappend="${status == null ? 'button-primary' : ''}" th:href="@{/finance/settlements}">Tất cả</a>
+      <a class="button" th:each="entry : ${counts}"
+         th:classappend="${entry.key == status ? 'button-primary' : ''}"
+         th:href="@{/finance/settlements(status=${entry.key})}"
+         th:text="${entry.key + ' (' + entry.value + ')'}"></a>
+    </div>
+    <div class="table-scroll" th:if="${!page.empty}">
+      <table class="custom-table">
+        <thead><tr>
+          <th scope="col">Quyết toán · hợp đồng</th><th scope="col">Chủ xe</th><th scope="col">Agreement</th>
+          <th scope="col">Hoa hồng</th><th scope="col">Số tiền ròng</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="s : ${page.content}">
+            <td th:text="${s.code + ' · ' + s.contractCode}"></td>
+            <td th:text="${s.consignorName}"></td>
+            <td th:text="${s.agreementCode + ' · v' + s.agreementVersion}"></td>
+            <td th:text="${#numbers.formatDecimal(s.commissionAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td th:text="${#numbers.formatDecimal(s.netPayoutAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></td>
+            <td><span class="badge" th:attr="data-status=${s.status}" th:text="${s.status}"></span></td>
+            <td class="action-cell">
+              <a class="action-icon action-view" th:href="@{/finance/settlements/{id}(id=${s.id})}"
+                 th:attr="title=${'Xem chi tiết ' + s.code},aria-label=${'Xem chi tiết ' + s.code}">
+                <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${page.empty}">
+      <span aria-hidden="true">⌕</span><h3>Chưa có quyết toán</h3>
+      <p>Lập quyết toán từ hợp đồng bán đã ký ở bảng phía trên.</p>
+    </div>
+    <div class="pagination" th:if="${page.totalPages > 1}">
+      <p th:text="${'Trang ' + (page.number + 1) + ' / ' + page.totalPages}"></p>
+      <div>
+        <a class="button" th:if="${page.hasPrevious()}" th:href="@{/finance/settlements(status=${status},page=${page.number - 1})}">← Trước</a>
+        <a class="button" th:if="${page.hasNext()}" th:href="@{/finance/settlements(status=${status},page=${page.number + 1})}">Sau →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

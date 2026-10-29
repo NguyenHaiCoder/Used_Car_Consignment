@@ -33,16 +33,6 @@ public class RoleDashboardController {
         return render(session, model, "sales");
     }
 
-    @GetMapping("/finance/dashboard")
-    public String financeDashboard(HttpSession session, Model model) {
-        return render(session, model, "finance");
-    }
-
-    @GetMapping("/handover/dashboard")
-    public String handoverDashboard(HttpSession session, Model model) {
-        return render(session, model, "handover");
-    }
-
     @GetMapping("/documents/dashboard")
     public String documentsDashboard(HttpSession session, Model model) {
         return render(session, model, "documents");

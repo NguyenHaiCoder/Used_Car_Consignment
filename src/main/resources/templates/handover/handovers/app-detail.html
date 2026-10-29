@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${'Checklist bàn giao ' + handover.code})}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Bàn giao</p>
+      <h1 th:text="${'Checklist bàn giao ' + handover.code + ' · ' + handover.contract.code}">Checklist bàn giao</h1>
+      <p class="page-description">Đối chiếu thanh toán, giấy tờ, xe thực tế; ghi odo, chìa khóa, phụ kiện, ảnh và chữ ký hai bên.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" th:if="${handover.receiptIssued}" th:href="@{/handover/handovers/{id}/receipt(id=${handover.id})}">Biên nhận</a>
+      <a class="button" th:href="@{/handover/handovers/{id}/close(id=${handover.id})}">Đóng sale</a>
+      <a class="button" th:href="@{/handover/handovers}">Hàng đợi</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{finance/fragments :: flash}"></th:block>
+  <div class="detail-grid">
+    <section class="content-card">
+      <div class="content-card-header"><h2>Biên bản</h2>
+        <span class="badge" th:attr="data-status=${handover.status}" th:text="${handover.status}"></span></div>
+      <dl class="facts-grid">
+        <div><dt>Người nhận (khách mua)</dt><dd th:text="${handover.contract.buyerName}"></dd></div>
+        <div><dt>Chủ xe pháp lý</dt><dd th:text="${handover.consignorName ?: '—'}"></dd></div>
+        <div><dt>Xe</dt><dd th:text="${handover.contract.vehicleLabel + ' · ' + handover.contract.vin}"></dd></div>
+        <div><dt>Odo lúc tiếp nhận</dt><dd th:text="${handover.intakeOdometerKm != null ? handover.intakeOdometerKm + ' km' : '—'}"></dd></div>
+        <div><dt>Thời điểm giao</dt><dd th:text="${handover.handedOverAt != null ? #temporals.format(handover.handedOverAt, 'dd/MM/yyyy HH:mm') : 'Chưa giao'}"></dd></div>
+      </dl>
+    </section>
+    <section th:replace="~{finance/fragments :: contract(${handover.contract})}"></section>
+  </div>
+
+  <section class="content-card">
+    <div class="content-card-header"><h2>Checklist</h2>
+      <span class="caption" th:text="${handover.locked ? 'Đã ký, không sửa được' : 'Có thể lưu nháp nhiều lần'}"></span></div>
+    <form id="handover-form" method="post" novalidate th:action="@{/handover/handovers/checklist}" th:object="${form}">
+      <input type="hidden" th:field="*{id}">
+      <fieldset th:disabled="${handover.locked}" style="border:0;margin:0;padding:0">
+        <p class="field-error" th:if="${#fields.hasErrors('*')}" role="alert">Có thông tin chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.</p>
+        <p class="field-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="field-odometerKm">Số km khi giao</label>
+            <input type="number" id="field-odometerKm" th:field="*{odometerKm}" min="0" step="1">
+            <small class="field-error" th:errors="*{odometerKm}"></small>
+          </div>
+          <div class="field">
+            <label for="field-keyCount">Số chìa khóa</label>
+            <input type="number" id="field-keyCount" th:field="*{keyCount}" min="0" max="10" step="1">
+            <small class="field-error" th:errors="*{keyCount}"></small>
+          </div>
+          <div class="field full-width">
+            <label for="field-accessories">Phụ kiện kèm theo</label>
+            <textarea id="field-accessories" th:field="*{accessories}" rows="2" maxlength="2000"></textarea>
+            <small class="field-error" th:errors="*{accessories}"></small>
+          </div>
+          <div class="field full-width">
+            <label for="field-photoPaths">Ảnh tình trạng xe (đường dẫn, cách nhau bởi dấu phẩy)</label>
+            <input type="text" id="field-photoPaths" th:field="*{photoPaths}" maxlength="1000">
+            <small class="field-error" th:errors="*{photoPaths}"></small>
+          </div>
+          <div class="field">
+            <label for="field-receiverSignaturePath">Chữ ký người nhận (bằng chứng)</label>
+            <input type="text" id="field-receiverSignaturePath" th:field="*{receiverSignaturePath}" maxlength="500">
+            <small class="field-error" th:errors="*{receiverSignaturePath}"></small>
+          </div>
+          <div class="field">
+            <label for="field-staffSignaturePath">Chữ ký nhân viên giao (bằng chứng)</label>
+            <input type="text" id="field-staffSignaturePath" th:field="*{staffSignaturePath}" maxlength="500">
+            <small class="field-error" th:errors="*{staffSignaturePath}"></small>
+          </div>
+        </div>
+        <ul class="checklist">
+          <li th:each="item, st : *{items}">
+            <input type="hidden" th:field="*{items[__${st.index}__].id}">
+            <input type="hidden" th:field="*{items[__${st.index}__].itemName}">
+            <label style="display:flex;gap:var(--space-2);align-items:center;min-width:280px">
+              <input type="checkbox" th:field="*{items[__${st.index}__].present}">
+              <strong th:text="${item.itemName}"></strong>
+            </label>
+            <input type="text" th:field="*{items[__${st.index}__].notes}" placeholder="Ghi chú nếu thiếu / hư hỏng" maxlength="1000" style="flex:1">
+          </li>
+        </ul>
+        <div class="form-actions" th:unless="${handover.locked}">
+          <button type="submit" class="button">Lưu checklist</button>
+        </div>
+      </fieldset>
+    </form>
+    <form method="post" class="form-actions" th:unless="${handover.locked}"
+          th:action="@{/handover/handovers/{id}/complete(id=${handover.id})}">
+      <p class="field-hint">Hoàn tất sẽ khóa biên bản, phát hành biên nhận, chuyển tin đăng và hồ sơ ký gửi sang SOLD. Lưu checklist trước.</p>
+      <button type="submit" class="button button-primary">Hoàn tất bàn giao</button>
+    </form>
+  </section>
+
+  <section th:replace="~{finance/fragments :: checks('Điều kiện hoàn tất bàn giao', ${checks})}"></section>
+  <section th:replace="~{finance/fragments :: history(${history})}"></section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

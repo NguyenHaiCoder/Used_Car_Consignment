@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<!-- Settlement formula, shared by the Finance and Manager settlement screens. -->
+<section th:fragment="formula(s)" class="content-card">
+  <div class="content-card-header"><h2>Công thức quyết toán</h2>
+    <span class="badge" th:attr="data-status=${s.status}" th:text="${s.status}"></span></div>
+  <dl class="facts-grid">
+    <div><dt>Giá bán (cơ sở)</dt><dd th:text="${#numbers.formatDecimal(s.baseAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt th:text="${s.fixedFee != null and s.fixedFee.signum() > 0 ? '− Hoa hồng (phí cố định)' : '− Hoa hồng (' + s.commissionRate + '% × giá bán)'}">− Hoa hồng</dt>
+      <dd th:text="${#numbers.formatDecimal(s.commissionAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>− Phí được duyệt</dt><dd th:text="${#numbers.formatDecimal(s.feeAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>− Chi phí được duyệt</dt><dd th:text="${#numbers.formatDecimal(s.approvedCostAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>− Đã hoàn cho khách (PROCESSED)</dt><dd th:text="${#numbers.formatDecimal(s.refundHeldAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>+ Cọc giữ lại cho chủ xe</dt><dd th:text="${#numbers.formatDecimal(s.depositHeldAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>= Số tiền ròng cho chủ xe</dt><dd th:text="${#numbers.formatDecimal(s.netPayoutAmount, 0, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+    <div><dt>Agreement áp dụng</dt><dd th:text="${s.agreementCode + ' · v' + s.agreementVersion + ' · giá sàn ' + (s.priceFloor != null ? #numbers.formatDecimal(s.priceFloor, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—')}"></dd></div>
+    <div><dt>Chủ xe · hồ sơ ký gửi</dt><dd th:text="${s.consignorName + ' · ' + s.consignmentCode}"></dd></div>
+    <div><dt>Tài khoản nhận</dt><dd th:text="${s.payoutBank + ' · ' + s.payoutAccountName + ' · ' + s.payoutAccountMasked}"></dd></div>
+    <div th:if="${s.notes != null}"><dt>Ghi chú</dt><dd th:text="${s.notes}"></dd></div>
+  </dl>
+</section>
+</body></html>

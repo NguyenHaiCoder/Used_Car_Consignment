@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Tổng quan · Nhân viên bàn giao')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Bàn giao</p>
+      <h1>Tổng quan · Nhân viên bàn giao</h1>
+      <p class="page-description">Thanh toán, sang tên và bàn giao là các mốc riêng; chỉ giao xe khi đủ điều kiện.</p>
+    </div>
+    <div class="page-actions"><a class="button button-primary" th:href="@{/handover/handovers}">Hàng đợi bàn giao</a></div>
+  </div>
+
+  <div class="stats-grid">
+    <a class="stat-card" th:href="@{/handover/handovers}">
+      <h2>Đủ điều kiện bàn giao</h2><span class="value" th:text="${eligibleCount}">0</span><p>Đã thu đủ và giấy tờ đã nộp</p></a>
+    <a class="stat-card" th:href="@{/handover/handovers}">
+      <h2>Đang bị chặn</h2><span class="value" th:text="${blockedCount}">0</span><p>Thiếu tiền hoặc giấy tờ</p></a>
+    <div class="stat-card">
+      <h2>Đã giao, chờ đóng sale</h2><span class="value" th:text="${#lists.size(toClose)}">0</span><p>Bàn giao COMPLETED</p></div>
+  </div>
+
+  <section class="content-card table-card" th:if="${!#lists.isEmpty(toClose)}">
+    <div class="content-card-header"><h2>Chờ đóng sale</h2></div>
+    <ul class="checklist">
+      <li th:each="q : ${toClose}">
+        <span class="check-icon" aria-hidden="true">✓</span>
+        <div><strong th:text="${q.handoverCode + ' · ' + q.contract.code + ' · ' + q.contract.vehicleLabel}"></strong>
+          <small><a th:href="@{/handover/handovers/{id}/close(id=${q.handoverId})}">Kiểm tra đóng sale</a></small></div>
+      </li>
+    </ul>
+  </section>
+
+  <section th:replace="~{finance/fragments :: queue(${queue}, true)}"></section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>
