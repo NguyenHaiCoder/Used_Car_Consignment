@@ -17,7 +17,7 @@
   if (flashNotice && flashNotice.textContent.trim()) {
     toast(flashNotice.textContent.trim());
   }
-
+rd
   // Responsive navigation closes on Escape, outside click and route navigation.
   const sidebar = $('#app-sidebar');
   const menu = $('.menu-toggle');

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head('Chủ xe ký gửi')}"></head>
+<body class="ui-app">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+<div th:replace="~{common/sidebar :: sidebar (active='consignors')}"></div>
+<button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+
+<main id="main" class="main-content" tabindex="-1">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Ký gửi</p>
+      <h1>Chủ xe ký gửi</h1>
+      <p class="page-description">Quản lý chủ sở hữu pháp lý và thông tin chi trả, không coi shop là chủ xe.</p>
+    </div>
+    <div class="page-actions"><a class="button" th:href="@{/consignment/consignors/new}">Thêm chủ xe</a></div>
+  </div>
+
+  <p class="alert" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <section class="content-card table-card">
+    <div class="content-card-header">
+      <h2>Danh sách chủ xe</h2>
+      <span class="caption" th:text="${page.totalElements + ' chủ xe'}"></span>
+    </div>
+    <form class="table-toolbar" method="get" th:action="@{/consignment/consignors}">
+      <label>Tìm kiếm
+        <input type="search" name="q" th:value="${q}" placeholder="Tên, số điện thoại, CCCD hoặc email…">
+      </label>
+      <button type="submit" class="button button-primary">Tìm</button>
+      <a class="button" th:href="@{/consignment/consignors}">Xóa bộ lọc</a>
+    </form>
+    <div class="table-scroll" th:if="${!page.empty}">
+      <table class="custom-table">
+        <caption class="sr-only">Danh sách chủ xe ký gửi</caption>
+        <thead><tr>
+          <th scope="col">Chủ xe</th><th scope="col">Liên hệ</th><th scope="col">CCCD</th>
+          <th scope="col">Tài khoản nhận tiền</th><th scope="col">Thao tác</th>
+        </tr></thead>
+        <tbody>
+          <tr th:each="c : ${page.content}">
+            <td th:text="${c.fullName}"></td>
+            <td th:text="${c.phone}"></td>
+            <td th:text="${c.idNumber}"></td>
+            <td th:text="${c.bank + ' · ' + c.accountNumber}"></td>
+            <td class="action-cell">
+              <div class="row-actions">
+                <a class="action-icon action-view" th:href="@{/consignment/consignors/{id}(id=${c.id})}"
+                   th:attr="title=${'Xem chi tiết ' + c.fullName},aria-label=${'Xem chi tiết ' + c.fullName}">
+                  <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem chi tiết</span>
+                </a>
+                <a class="action-icon action-edit" th:href="@{/consignment/consignors/{id}/edit(id=${c.id})}"
+                   th:attr="title=${'Sửa ' + c.fullName},aria-label=${'Sửa ' + c.fullName}">
+                  <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg><span class="sr-only">Sửa</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty-state" th:if="${page.empty}">
+      <span aria-hidden="true">⌕</span><h3>Không có chủ xe phù hợp</h3>
+      <p>Thử đổi từ khóa hoặc thêm chủ xe mới.</p>
+    </div>
+    <div class="pagination" th:if="${page.totalPages > 1}">
+      <p th:text="${'Trang ' + (page.number + 1) + ' / ' + page.totalPages}"></p>
+      <div>
+        <a class="button" th:if="${page.hasPrevious()}"
+           th:href="@{/consignment/consignors(q=${q},page=${page.number - 1})}">← Trước</a>
+        <a class="button" th:if="${page.hasNext()}"
+           th:href="@{/consignment/consignors(q=${q},page=${page.number + 1})}">Sau →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script th:src="@{/js/ui/app.js}" defer></script>
+</body>
+</html>

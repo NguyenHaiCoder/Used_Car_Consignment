@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
  * Single entry for all UI preview routes.
  * Role screens are driven by {@link UiPreviewCatalog}; no per-role controller boilerplate.
  */
+// quyen
 @Controller
 @Profile("ui-preview")
 public class UiPreviewController {

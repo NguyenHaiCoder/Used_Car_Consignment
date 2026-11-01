@@ -10,18 +10,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * Landing stubs for non-admin roles (admin uses {@link fu.he.training.fall2026.controller.web.admin.AdminWebController}).
+ * Landing stubs for roles without a dedicated app controller yet.
+ * Admin → {@code AdminWebController}, Manager → {@code ManagerWebController},
+ * Consignment → {@code ConsignmentDashboardController}.
  */
 @Controller
 @RequiredArgsConstructor
 public class RoleDashboardController {
 
     private final AuthService authService;
-
-    @GetMapping("/consignment/dashboard")
-    public String consignmentDashboard(HttpSession session, Model model) {
-        return render(session, model, "consignment");
-    }
 
     @GetMapping("/inspector/dashboard")
     public String inspectorDashboard(HttpSession session, Model model) {
