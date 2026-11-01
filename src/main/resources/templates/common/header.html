@@ -5,10 +5,24 @@
   <link th:href="@{/css/ui/tokens.css}" rel="stylesheet">
   <link th:href="@{/css/ui/components.css}" rel="stylesheet">
   <link th:href="@{/css/ui/actions.css}" rel="stylesheet">
+  <th:block th:if="${appShell}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link th:href="@{/css/ui/app-shell.css}" rel="stylesheet">
+  </th:block>
 </head>
 <header th:fragment="header" class="main-header">
   <button class="icon-button menu-toggle" aria-label="Mở điều hướng" aria-controls="app-sidebar" aria-expanded="false">☰</button>
-  <div class="header-context"><strong>UCCMS</strong><span>Ký gửi ô tô đã qua sử dụng</span></div>
+  <div class="header-context">
+    <th:block th:if="${appShell}">
+      <nav th:replace="~{common/breadcrumbs :: breadcrumbs}"></nav>
+    </th:block>
+    <th:block th:unless="${appShell}">
+      <strong>UCCMS</strong>
+      <span>Ký gửi ô tô đã qua sử dụng</span>
+    </th:block>
+  </div>
   <div class="header-actions">
     <a class="button button-quiet" th:unless="${appShell}" th:href="@{/ui/urls}">URL theo role</a>
     <details class="user-menu"><summary><span class="avatar small" th:text="${role.initials}">VK</span><span th:text="${role.userName}">Nhân viên</span></summary>

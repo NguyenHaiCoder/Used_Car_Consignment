@@ -18,11 +18,6 @@ public class RoleDashboardController {
 
     private final AuthService authService;
 
-    @GetMapping("/manager/dashboard")
-    public String managerDashboard(HttpSession session, Model model) {
-        return render(session, model, "manager");
-    }
-
     @GetMapping("/consignment/dashboard")
     public String consignmentDashboard(HttpSession session, Model model) {
         return render(session, model, "consignment");

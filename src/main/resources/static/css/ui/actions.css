@@ -57,6 +57,30 @@
   border-color: var(--danger);
 }
 
+.action-lock {
+  color: #9a3f00;
+}
+
+.action-lock:hover {
+  background: #fff4eb;
+  border-color: #ff6a00;
+  color: #9a3f00;
+}
+
+.inline-action {
+  display: inline-flex;
+  margin: 0;
+}
+
+.row-actions--employee {
+  flex-wrap: nowrap;
+}
+
+.custom-table td.action-cell:has(.row-actions--employee) {
+  width: 220px;
+  min-width: 220px;
+}
+
 .action-icon:disabled {
   color: var(--color-muted);
   background: var(--color-disabled);

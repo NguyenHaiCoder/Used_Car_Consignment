@@ -9,8 +9,23 @@
     <small class="field-error" th:id="${'error-' + field.name}" aria-live="polite"></small>
   </div>
 </div>
-<section th:fragment="form" class="content-card" th:if="${!#lists.isEmpty(screen.fields)}"><div class="content-card-header"><h2 th:text="${screen.kind == 'agreement' and screen.status == 'ACTIVE' ? 'Tạo phiên bản sửa đổi' : 'Nhập thông tin'}"></h2><span class="caption">* Thông tin bắt buộc</span></div>
-  <form id="preview-form" class="preview-form" method="post" novalidate th:attr="data-key=${route}">
+
+<section th:fragment="form" class="content-card" th:if="${!#lists.isEmpty(screen.fields)}">
+  <div class="content-card-header">
+    <h2 th:text="${serverFormAction != null ? 'Nhập thông tin' : (screen.kind == 'agreement' and screen.status == 'ACTIVE' ? 'Tạo phiên bản sửa đổi' : 'Nhập thông tin')}"></h2>
+    <span class="caption" th:text="${serverFormAction != null ? '* Bắt buộc · gửi lên server' : '* Thông tin bắt buộc'}"></span>
+  </div>
+
+  <!-- App shell: POST thật -->
+  <form th:if="${serverFormAction != null}" class="preview-form" method="post" th:action="@{${serverFormAction}}">
+    <div th:replace="~{common/fragments/forms :: fields}"></div>
+    <div class="form-actions">
+      <button type="submit" class="button button-primary">Lưu</button>
+    </div>
+  </form>
+
+  <!-- Preview: mô phỏng tại chỗ -->
+  <form th:unless="${serverFormAction != null}" id="preview-form" class="preview-form" method="post" novalidate th:attr="data-key=${route}">
     <p class="form-message" id="form-message" role="status" hidden></p>
     <div th:replace="~{common/fragments/forms :: fields}"></div>
     <div th:replace="~{common/fragments/workflow-panels :: formExtras}"></div>
@@ -27,6 +42,6 @@
     </div>
     <div id="preview-result" class="result-panel" role="status" hidden></div>
   </form>
-  <noscript><p class="alert">Cần bật JavaScript để kiểm tra, lưu nháp và mô phỏng form. Form không gửi dữ liệu lên server.</p></noscript>
+  <noscript th:unless="${serverFormAction != null}"><p class="alert">Cần bật JavaScript để kiểm tra, lưu nháp và mô phỏng form. Form không gửi dữ liệu lên server.</p></noscript>
 </section>
 </body></html>

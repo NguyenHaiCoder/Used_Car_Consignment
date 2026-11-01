@@ -11,9 +11,13 @@ import fu.he.training.fall2026.entity.enums.RoleCode;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.repository.OtpVerificationRepository;
 import fu.he.training.fall2026.repository.UserRepository;
+import fu.he.training.fall2026.service.AuditService;
 import fu.he.training.fall2026.service.AuthService;
 import fu.he.training.fall2026.service.MailService;
+import fu.he.training.fall2026.service.SessionTokenService;
+import fu.he.training.fall2026.util.AuthMessages;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -37,6 +41,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final OtpVerificationRepository otpVerificationRepository;
     private final MailService mailService;
+    private final SessionTokenService sessionTokenService;
+    private final AuditService auditService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Value("${app.auth.otp.accept-master:false}")
@@ -54,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
                         "Email chưa được đăng ký trong hệ thống.", HttpStatus.NOT_FOUND));
 
         if (!user.isActive()) {
-            throw new BusinessException("Tài khoản đã bị vô hiệu hóa.", HttpStatus.FORBIDDEN);
+            throw new BusinessException(AuthMessages.ACCOUNT_LOCKED, HttpStatus.FORBIDDEN);
         }
 
         String code = generateOtp();
@@ -82,7 +88,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthSessionResponse verifyOtpAndLogin(VerifyOtpRequest request, HttpSession session) {
+    public AuthSessionResponse verifyOtpAndLogin(
+            VerifyOtpRequest request, HttpSession session, HttpServletRequest httpRequest) {
         String email = normalizeEmail(request.getEmail());
         String otpCode = request.getOtpCode() == null ? "" : request.getOtpCode().trim();
 
@@ -110,7 +117,7 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new BusinessException(
                         "Không tìm thấy người dùng.", HttpStatus.NOT_FOUND));
         if (!user.isActive()) {
-            throw new BusinessException("Tài khoản đã bị vô hiệu hóa.", HttpStatus.FORBIDDEN);
+            throw new BusinessException(AuthMessages.ACCOUNT_LOCKED, HttpStatus.FORBIDDEN);
         }
 
         otp.setConsumedAt(Instant.now());
@@ -120,14 +127,28 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         SessionAuthUtils.bindLogin(session, user);
+        sessionTokenService.createLoginSession(user, session, httpRequest);
+        auditService.record(user, "LOGIN", "User", user.getId(), "Đăng nhập OTP thành công");
+
         return toSessionResponse(user);
     }
 
     @Override
     public void logout(HttpSession session) {
-        if (session != null) {
-            SessionAuthUtils.clearLogin(session);
+        if (session == null) {
+            return;
         }
+        try {
+            sessionTokenService.revokeCurrentSession(session);
+            Long userId = SessionAuthUtils.getUserId(session);
+            if (userId != null) {
+                userRepository.findById(userId).ifPresent(user ->
+                        auditService.record(user, "LOGOUT", "User", userId, "Đăng xuất"));
+            }
+        } catch (Exception ignored) {
+            // still clear session
+        }
+        SessionAuthUtils.clearLogin(session);
     }
 
     @Override

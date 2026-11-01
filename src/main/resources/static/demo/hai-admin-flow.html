@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UCCMS · Demo luồng Hải — Admin &amp; Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14181f;
+      --muted: #5a6472;
+      --line: rgba(20, 24, 31, 0.14);
+      --paper: #f3f5f8;
+      --card: #ffffff;
+      --accent: #ff7a00;
+      --accent-deep: #c45300;
+      --teal: #0f766e;
+      --teal-deep: #115e59;
+      --dim: 0.16;
+      --glow-a: 0 0 0 2px rgba(255, 122, 0, 0.4), 0 14px 36px rgba(255, 122, 0, 0.2);
+      --glow-m: 0 0 0 2px rgba(15, 118, 110, 0.4), 0 14px 36px rgba(15, 118, 110, 0.18);
+      --font: "Be Vietnam Pro", system-ui, sans-serif;
+      --display: "Syne", "Be Vietnam Pro", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background:
+        radial-gradient(900px 500px at 0% 0%, rgba(255, 122, 0, 0.14), transparent 55%),
+        radial-gradient(800px 480px at 100% 10%, rgba(15, 118, 110, 0.12), transparent 50%),
+        var(--paper);
+    }
+
+    .top {
+      width: min(1400px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1.25rem 0 0.75rem;
+    }
+    .brand {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      letter-spacing: -0.03em;
+      margin: 0 0 0.4rem;
+    }
+    .brand span.a { color: var(--accent); }
+    .brand span.m { color: var(--teal); }
+    .lede { margin: 0; color: var(--muted); max-width: 70ch; line-height: 1.55; }
+    .hint {
+      display: inline-flex; margin-top: 0.75rem; padding: 0.45rem 0.85rem;
+      border-radius: 999px; background: rgba(20, 24, 31, 0.06);
+      font-size: 0.85rem; font-weight: 600; color: var(--muted);
+    }
+
+    /* ===== FULL-SCREEN TREE ===== */
+    .tree-stage {
+      width: 100%;
+      min-height: 100vh;
+      margin-top: 1rem;
+      padding: 1rem 0 2rem;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.2)),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(20,24,31,0.035) 80px);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .tree-stage-inner {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      padding: 1rem 1.25rem 2rem;
+    }
+    .tree-canvas {
+      width: max(1480px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .stage-label {
+      font-family: var(--display);
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+      align-self: flex-start;
+      padding-left: 0.5rem;
+    }
+
+    .node {
+      position: relative;
+      z-index: 2;
+      border: 1.5px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      padding: 0.85rem 1.1rem;
+      min-width: 168px;
+      max-width: 240px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform .22s ease, box-shadow .22s ease, opacity .28s ease, filter .28s ease, border-color .22s ease, background .22s ease;
+    }
+    .node:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .node .idx {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.7rem; height: 1.7rem; border-radius: 999px;
+      background: rgba(255,122,0,.12); color: var(--accent-deep);
+      font-weight: 800; font-size: .78rem; margin-bottom: .35rem;
+    }
+    .node.mgr .idx { background: rgba(15,118,110,.14); color: var(--teal-deep); }
+    .node strong { display: block; font-size: .95rem; line-height: 1.3; }
+    .node em {
+      display: block; margin-top: .3rem; font-style: normal; color: var(--muted);
+      font-size: .72rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .node.root {
+      min-width: 220px;
+      border-color: rgba(255,122,0,.45);
+      background: linear-gradient(165deg, #fff, #fff3e8);
+    }
+    .node.fork {
+      min-width: 260px;
+      border-color: rgba(20,24,31,.22);
+      background: linear-gradient(165deg, #fff, #f0f4f8);
+    }
+    .node.trunk-admin {
+      border-color: rgba(255,122,0,.5);
+      background: linear-gradient(165deg, #fff, #ffe9d4);
+      min-width: 200px;
+    }
+    .node.trunk-manager {
+      border-color: rgba(15,118,110,.5);
+      background: linear-gradient(165deg, #fff, #dff7f2);
+      min-width: 200px;
+    }
+    .node.leaf { border-style: dashed; min-width: 148px; max-width: 190px; padding: .7rem .85rem; }
+    .node.leaf strong { font-size: .86rem; }
+
+    .stem {
+      width: 2px; height: 36px;
+      background: linear-gradient(180deg, rgba(255,122,0,.5), rgba(20,24,31,.18));
+      transition: opacity .28s ease, filter .28s ease;
+    }
+    .stem.teal { background: linear-gradient(180deg, rgba(15,118,110,.55), rgba(20,24,31,.18)); }
+
+    /* Split into Admin | Manager */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      width: 100%;
+      position: relative;
+      padding-top: 28px;
+      margin-top: 0;
+    }
+    .split::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 25%; right: 25%;
+      height: 2px;
+      background: rgba(20,24,31,.16);
+    }
+    .lane {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      padding: 1.25rem 0.75rem 1.5rem;
+      border-radius: 20px;
+      min-height: 520px;
+    }
+    .lane::before {
+      content: "";
+      position: absolute;
+      top: -28px; left: 50%;
+      width: 2px; height: 28px;
+      background: rgba(20,24,31,.16);
+    }
+    .lane-admin {
+      background: linear-gradient(180deg, rgba(255,122,0,.07), rgba(255,122,0,.02));
+      border: 1px solid rgba(255,122,0,.22);
+    }
+    .lane-manager {
+      background: linear-gradient(180deg, rgba(15,118,110,.08), rgba(15,118,110,.02));
+      border: 1px solid rgba(15,118,110,.22);
+    }
+    .lane-title {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.05rem;
+      margin: 0 0 0.85rem;
+      letter-spacing: -0.02em;
+    }
+    .lane-admin .lane-title { color: var(--accent-deep); }
+    .lane-manager .lane-title { color: var(--teal-deep); }
+    .lane-sub {
+      margin: -0.5rem 0 1rem;
+      font-size: .8rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .fan {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.85rem 1rem;
+      width: 100%;
+      position: relative;
+      padding-top: 26px;
+    }
+    .fan::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 8%; right: 8%;
+      height: 2px;
+      background: rgba(20,24,31,.12);
+    }
+    .fan-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .fan-col::before {
+      content: "";
+      position: absolute;
+      top: -26px; left: 50%;
+      width: 2px; height: 26px;
+      background: rgba(20,24,31,.12);
+    }
+    .fan-leaves {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.55rem;
+      margin-top: 0;
+      padding-top: 22px;
+      position: relative;
+      max-width: 320px;
+    }
+    .fan-leaves::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 2px;
+      background: rgba(20,24,31,.1);
+    }
+    .fan-leaves .node::before {
+      content: "";
+      position: absolute;
+      top: -22px; left: 50%;
+      width: 2px; height: 22px;
+      background: rgba(20,24,31,.1);
+    }
+
+    /* filter states */
+    .is-filtering .node:not(.is-related),
+    .is-filtering .stem:not(.is-related),
+    .is-filtering .lane:not(.is-related) .lane-title,
+    .is-filtering .lane:not(.is-related) .lane-sub,
+    .is-filtering .matrix tbody tr:not(.is-related),
+    .is-filtering .legend-item:not(.is-related),
+    .is-filtering .account-card:not(.is-related) {
+      opacity: var(--dim);
+      filter: grayscale(.6);
+    }
+    .node.is-related {
+      opacity: 1 !important; filter: none !important;
+      transform: translateY(-3px); z-index: 5;
+    }
+    .node.is-related:not(.mgr):not(.trunk-manager) { box-shadow: var(--glow-a); border-color: rgba(255,122,0,.6); }
+    .node.is-related.mgr,
+    .node.is-related.trunk-manager { box-shadow: var(--glow-m); border-color: rgba(15,118,110,.55); }
+    .node.is-active { outline: 2px solid var(--accent); }
+    .lane.is-related { opacity: 1; filter: none; }
+    .matrix tbody tr.is-related td { background: rgba(255,122,0,.07); }
+    .matrix tbody tr.is-related.mgr-row td { background: rgba(15,118,110,.08); }
+
+    /* below tree */
+    .below {
+      width: min(1400px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 3.5rem;
+    }
+    .section-title {
+      font-family: var(--display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin: 0 0 1rem;
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: .7rem;
+      margin-bottom: 1.25rem;
+    }
+    .legend-item {
+      background: #fff; border: 1px solid var(--line); border-radius: 12px;
+      padding: .75rem .9rem; cursor: pointer;
+      transition: opacity .28s, filter .28s, box-shadow .22s;
+    }
+    .legend-item .num { font-family: var(--display); font-weight: 800; font-size: 1.25rem; color: var(--accent); }
+    .legend-item.mgr-leg .num { color: var(--teal); }
+    .legend-item small { display: block; color: var(--muted); margin-top: .3rem; font-size: .78rem; }
+    .legend-item.is-related { box-shadow: var(--glow-a); }
+    .legend-item.mgr-leg.is-related { box-shadow: var(--glow-m); }
+
+    .accounts {
+      display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: 1.75rem;
+    }
+    @media (max-width: 700px) { .accounts { grid-template-columns: 1fr; } }
+    .account-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem;
+      transition: opacity .28s, filter .28s, box-shadow .22s;
+    }
+    .account-card h3 { margin: 0 0 .35rem; font-size: 1rem; }
+    .account-card p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.45; }
+    .account-card.admin-only { border-color: rgba(255,122,0,.35); }
+    .account-card.manager-only { border-color: rgba(15,118,110,.35); }
+    .account-card.is-related { box-shadow: var(--glow-a); }
+    .account-card.manager-only.is-related { box-shadow: var(--glow-m); }
+
+    .matrix-board {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 1rem; overflow-x: auto;
+    }
+    table.matrix { width: 100%; border-collapse: collapse; min-width: 860px; }
+    .matrix th, .matrix td {
+      border-bottom: 1px solid var(--line); padding: .7rem .55rem; text-align: left; font-size: .86rem;
+      transition: opacity .28s, filter .28s, background .2s;
+    }
+    .matrix thead th {
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #fafbfc;
+    }
+    .matrix tbody tr { cursor: pointer; }
+    .matrix .stt { font-family: var(--display); font-weight: 800; color: var(--accent); width: 2.5rem; }
+    .matrix .stt.m { color: var(--teal); }
+    .tag {
+      display: inline-block; padding: .12rem .45rem; border-radius: 999px;
+      font-size: .7rem; font-weight: 700; background: rgba(255,122,0,.12); color: var(--accent-deep);
+    }
+    .tag.m { background: rgba(15,118,110,.12); color: var(--teal-deep); }
+    .tag.s { background: rgba(20,24,31,.08); color: var(--ink); }
+    .footnote { color: var(--muted); font-size: .88rem; margin-top: 1.25rem; line-height: 1.5; }
+    .footnote code { background: rgba(20,24,31,.06); padding: .1rem .35rem; border-radius: 5px; font-size: .82em; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1 class="brand">Garage<span class="a">Pro</span> · Luồng Hải — <span class="a">Admin</span> &amp; <span class="m">Manager</span></h1>
+    <p class="lede">
+      Sau OTP, session tách 2 tài khoản / 2 prefix URL. Hover bất kỳ node → sáng phần liên quan, tối phần còn lại.
+      Admin không vào được <code>/manager/**</code> và ngược lại (Interceptor + Security).
+    </p>
+    <p class="hint">Cây full màn hình bên dưới · cuộn ngang nếu màn hẹp · Esc / click trống để bỏ highlight</p>
+  </header>
+
+  <section class="tree-stage" aria-label="Cây luồng full màn hình">
+    <div class="tree-stage-inner">
+      <div class="tree-canvas" id="flowTree">
+        <p class="stage-label">Chung — xác thực</p>
+
+        <div class="node root" tabindex="0" data-groups="auth login" data-id="N1">
+          <span class="idx">1</span>
+          <strong>Trang chủ / Login email</strong>
+          <em>/ · /home</em>
+        </div>
+        <div class="stem" data-groups="auth login otp"></div>
+
+        <div class="node" tabindex="0" data-groups="auth otp mail" data-id="N2">
+          <span class="idx">2</span>
+          <strong>OTP 6 số + MailDev</strong>
+          <em>/verify-otp</em>
+        </div>
+        <div class="stem" data-groups="auth otp session"></div>
+
+        <div class="node fork" tabindex="0" data-groups="auth session security" data-id="N3">
+          <span class="idx">3</span>
+          <strong>SessionUser + RoleCode</strong>
+          <em>bindLogin · LOGIN_USER · Interceptor</em>
+        </div>
+        <div class="stem" data-groups="session security"></div>
+
+        <p class="stage-label" style="align-self:center;margin-top:.5rem">Rẽ nhánh theo đúng 1 role</p>
+
+        <div class="split">
+          <!-- ===== ADMIN LANE ===== -->
+          <div class="lane lane-admin" data-groups="admin">
+            <h3 class="lane-title">Nhánh A — ADMIN (Hải)</h3>
+            <p class="lane-sub"><code>hai@garagepro.example</code> → chỉ <code>/admin/**</code></p>
+
+            <div class="node trunk-admin" tabindex="0" data-groups="admin dashboard security" data-id="N4">
+              <span class="idx">4</span>
+              <strong>Admin Dashboard</strong>
+              <em>/admin/employees</em>
+            </div>
+            <div class="stem" data-groups="admin dashboard"></div>
+
+            <div class="fan">
+              <div class="fan-col">
+                <div class="node" tabindex="0" data-groups="admin employees" data-id="N5">
+                  <span class="idx">5</span>
+                  <strong>Nhân sự</strong>
+                  <em>/admin/employees</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf" tabindex="0" data-groups="admin employees" data-id="N6">
+                    <span class="idx">6</span><strong>Tạo NV</strong><em>POST</em>
+                  </div>
+                  <div class="node leaf" tabindex="0" data-groups="admin employees" data-id="N7">
+                    <span class="idx">7</span><strong>Hồ sơ</strong><em>/{id}</em>
+                  </div>
+                  <div class="node leaf" tabindex="0" data-groups="admin employees" data-id="N8">
+                    <span class="idx">8</span><strong>Khóa/mở</strong><em>toggle</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node" tabindex="0" data-groups="admin permissions" data-id="N9">
+                  <span class="idx">9</span>
+                  <strong>Quyền</strong>
+                  <em>/admin/permissions</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf" tabindex="0" data-groups="admin permissions" data-id="N10">
+                    <span class="idx">10</span><strong>Ma trận</strong><em>grants</em>
+                  </div>
+                  <div class="node leaf" tabindex="0" data-groups="admin permissions" data-id="N11">
+                    <span class="idx">11</span><strong>Lưu DB</strong><em>RolePermission</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node" tabindex="0" data-groups="admin sessions security" data-id="N12">
+                  <span class="idx">12</span>
+                  <strong>Phiên ĐN</strong>
+                  <em>/admin/sessions</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf" tabindex="0" data-groups="admin sessions security" data-id="N13">
+                    <span class="idx">13</span><strong>UserToken</strong><em>SESSION</em>
+                  </div>
+                  <div class="node leaf" tabindex="0" data-groups="admin sessions security" data-id="N14">
+                    <span class="idx">14</span><strong>Revoke</strong><em>logout</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node" tabindex="0" data-groups="admin audit" data-id="N15">
+                  <span class="idx">15</span>
+                  <strong>Audit</strong>
+                  <em>/admin/audit</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf" tabindex="0" data-groups="admin audit" data-id="N16">
+                    <span class="idx">16</span><strong>AuditEvent</strong><em>LOGIN·CRUD</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node" tabindex="0" data-groups="admin reports" data-id="N17">
+                  <span class="idx">17</span>
+                  <strong>Báo cáo</strong>
+                  <em>/admin/reports</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf" tabindex="0" data-groups="admin reports" data-id="N18">
+                    <span class="idx">18</span><strong>Metric DB</strong><em>SQL Server</em>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== MANAGER LANE ===== -->
+          <div class="lane lane-manager" data-groups="manager">
+            <h3 class="lane-title">Nhánh B — MANAGER</h3>
+            <p class="lane-sub"><code>manager@garagepro.example</code> → chỉ <code>/manager/**</code></p>
+
+            <div class="node trunk-manager mgr" tabindex="0" data-groups="manager dashboard security" data-id="N19">
+              <span class="idx">19</span>
+              <strong>Manager Dashboard</strong>
+              <em>/manager/dashboard</em>
+            </div>
+            <div class="stem teal" data-groups="manager dashboard"></div>
+
+            <div class="fan">
+              <div class="fan-col">
+                <div class="node mgr" tabindex="0" data-groups="manager approvals" data-id="N20">
+                  <span class="idx">20</span>
+                  <strong>Hàng đợi duyệt</strong>
+                  <em>/manager/approvals</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager approvals" data-id="N21">
+                    <span class="idx">21</span><strong>PD-101</strong><em>detail</em>
+                  </div>
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager approvals" data-id="N22">
+                    <span class="idx">22</span><strong>PD-102</strong><em>detail</em>
+                  </div>
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager approvals" data-id="N23">
+                    <span class="idx">23</span><strong>PD-103</strong><em>detail</em>
+                  </div>
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager approvals" data-id="N24">
+                    <span class="idx">24</span><strong>Decide</strong><em>POST decide</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node mgr" tabindex="0" data-groups="manager audit" data-id="N25">
+                  <span class="idx">25</span>
+                  <strong>Audit Manager</strong>
+                  <em>/manager/audit</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager audit" data-id="N26">
+                    <span class="idx">26</span><strong>Xem sự kiện</strong><em>AuditEvent</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node mgr" tabindex="0" data-groups="manager reports" data-id="N27">
+                  <span class="idx">27</span>
+                  <strong>Báo cáo vận hành</strong>
+                  <em>/manager/reports</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager reports" data-id="N28">
+                    <span class="idx">28</span><strong>Metric</strong><em>pending…</em>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fan-col">
+                <div class="node mgr" tabindex="0" data-groups="manager security separate" data-id="N29">
+                  <span class="idx">29</span>
+                  <strong>Chặn chéo role</strong>
+                  <em>Interceptor</em>
+                </div>
+                <div class="fan-leaves">
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager security separate admin" data-id="N30">
+                    <span class="idx">30</span><strong>Admin ✗ /manager</strong><em>accessDenied</em>
+                  </div>
+                  <div class="node leaf mgr" tabindex="0" data-groups="manager security separate" data-id="N31">
+                    <span class="idx">31</span><strong>Manager ✗ /admin</strong><em>accessDenied</em>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="below">
+    <div class="accounts">
+      <article class="account-card admin-only" data-groups="admin auth employees permissions sessions audit reports dashboard security" data-id="A1">
+        <h3>① Admin — Nguyễn Việt Hải</h3>
+        <p><code>hai@garagepro.example</code> · RoleCode.<strong>ADMIN</strong> · home <code>/admin/employees</code></p>
+      </article>
+      <article class="account-card manager-only" data-groups="manager auth approvals audit reports dashboard security separate" data-id="A2">
+        <h3>② Manager — Demo Manager</h3>
+        <p><code>manager@garagepro.example</code> · RoleCode.<strong>MANAGER</strong> · home <code>/manager/dashboard</code></p>
+      </article>
+    </div>
+
+    <h2 class="section-title">Lớp đánh số nhanh</h2>
+    <div class="legend">
+      <div class="legend-item" data-groups="auth login otp mail session" data-id="L1"><div class="num">01–03</div><strong>Auth chung</strong><small>Login · OTP · Session</small></div>
+      <div class="legend-item" data-groups="admin employees permissions sessions audit reports dashboard" data-id="L2"><div class="num">04–18</div><strong>Admin</strong><small>Nhân sự → Báo cáo</small></div>
+      <div class="legend-item mgr-leg" data-groups="manager approvals audit reports dashboard" data-id="L3"><div class="num">19–28</div><strong>Manager</strong><small>Duyệt · Audit · Report</small></div>
+      <div class="legend-item mgr-leg" data-groups="security separate" data-id="L4"><div class="num">29–31</div><strong>Tách quyền</strong><small>Interceptor chặn chéo</small></div>
+    </div>
+
+    <h2 class="section-title">Ma trận class / URL</h2>
+    <div class="matrix-board">
+      <table class="matrix" id="flowMatrix">
+        <thead>
+          <tr>
+            <th>#</th><th>Thành phần</th><th>Nhóm</th><th>Class / file</th><th>URL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-groups="auth login" data-id="M01"><td class="stt">01</td><td>Home + login email</td><td><span class="tag">auth</span></td><td><code>HomeController</code></td><td><code>/</code></td></tr>
+          <tr data-groups="auth otp mail" data-id="M02"><td class="stt">02</td><td>OTP + MailDev</td><td><span class="tag">otp</span></td><td><code>MailServiceImpl</code></td><td><code>/verify-otp</code></td></tr>
+          <tr data-groups="auth session security" data-id="M03"><td class="stt">03</td><td>SessionUser + Interceptor</td><td><span class="tag s">security</span></td><td><code>RoleAuthInterceptor</code></td><td><code>loginUser</code></td></tr>
+          <tr data-groups="admin employees" data-id="M04"><td class="stt">04</td><td>Nhân sự &amp; tài khoản (home Admin)</td><td><span class="tag">admin</span></td><td><code>AdminWebController</code></td><td><code>/admin/employees</code></td></tr>
+          <tr data-groups="admin employees" data-id="M05"><td class="stt">05</td><td>Nhân sự CRUD</td><td><span class="tag">admin</span></td><td><code>AdminEmployeeService</code></td><td><code>/admin/employees*</code></td></tr>
+          <tr data-groups="admin permissions" data-id="M06"><td class="stt">06</td><td>Ma trận quyền</td><td><span class="tag">admin</span></td><td><code>AdminPermissionService</code></td><td><code>/admin/permissions</code></td></tr>
+          <tr data-groups="admin sessions" data-id="M07"><td class="stt">07</td><td>Phiên đăng nhập</td><td><span class="tag">admin</span></td><td><code>UserToken</code></td><td><code>/admin/sessions</code></td></tr>
+          <tr data-groups="admin audit reports" data-id="M08"><td class="stt">08</td><td>Audit + Reports Admin</td><td><span class="tag">admin</span></td><td><code>AuditEvent</code></td><td><code>/admin/audit|reports</code></td></tr>
+          <tr class="mgr-row" data-groups="manager dashboard" data-id="M09"><td class="stt m">09</td><td>Manager dashboard</td><td><span class="tag m">manager</span></td><td><code>ManagerWebController</code></td><td><code>/manager/dashboard</code></td></tr>
+          <tr class="mgr-row" data-groups="manager approvals" data-id="M10"><td class="stt m">10</td><td>Approvals + decide</td><td><span class="tag m">manager</span></td><td><code>ManagerApprovalService</code></td><td><code>/manager/approvals*</code></td></tr>
+          <tr class="mgr-row" data-groups="manager audit reports" data-id="M11"><td class="stt m">11</td><td>Audit + Reports Manager</td><td><span class="tag m">manager</span></td><td><code>ManagerWebController</code></td><td><code>/manager/audit|reports</code></td></tr>
+          <tr class="mgr-row" data-groups="security separate manager admin" data-id="M12"><td class="stt m">12</td><td>Chặn Admin↔Manager</td><td><span class="tag s">security</span></td><td><code>SecurityConfig</code> hasRole riêng</td><td>sai role → accessDenied</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="footnote">
+      Demo: <code>http://localhost:8080/demo/hai-admin-flow.html</code>
+      · Live: login Hải rồi thử mở <code>/manager/dashboard</code> (bị chặn) · login Manager rồi thử <code>/admin/employees</code> (bị chặn).
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.body;
+      const items = [...document.querySelectorAll("[data-groups]")];
+
+      const groupsOf = (el) => (el.getAttribute("data-groups") || "").trim().split(/\s+/).filter(Boolean);
+
+      const clear = () => {
+        root.classList.remove("is-filtering");
+        items.forEach((el) => el.classList.remove("is-related", "is-active"));
+      };
+
+      const activate = (source) => {
+        const set = new Set(groupsOf(source));
+        if (!set.size) return;
+        root.classList.add("is-filtering");
+        items.forEach((el) => {
+          const hit = groupsOf(el).some((g) => set.has(g));
+          el.classList.toggle("is-related", hit);
+          el.classList.toggle("is-active", el === source);
+        });
+      };
+
+      items.forEach((el) => {
+        el.addEventListener("mouseenter", () => activate(el));
+        el.addEventListener("focus", () => activate(el));
+        el.addEventListener("click", (e) => { e.stopPropagation(); activate(el); });
+      });
+
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") clear(); });
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest("[data-groups]")) clear();
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -13,6 +13,10 @@
     box.textContent = message; box.hidden = false;
     clearTimeout(toastTimer); toastTimer = setTimeout(() => { box.hidden = true; }, 5000);
   }
+  const flashNotice = $('.screen-content > .alert');
+  if (flashNotice && flashNotice.textContent.trim()) {
+    toast(flashNotice.textContent.trim());
+  }
 
   // Responsive navigation closes on Escape, outside click and route navigation.
   const sidebar = $('#app-sidebar');
@@ -80,11 +84,30 @@
   }
   function renderTable() {
     if (!table) return;
-    const selected = filteredRows(); const size = Number($('#table-size').value);
+    const tbody = $('tbody', table);
+    const selected = filteredRows(); const size = Number($('#table-size').value) || 5;
     if (sortIndex >= 0) selected.sort((a, b) => a.cells[sortIndex].textContent.localeCompare(b.cells[sortIndex].textContent, 'vi', {numeric:true}) * sortDirection);
     const pages = Math.max(1, Math.ceil(selected.length / size)); page = Math.min(page, pages);
+    $$('tr.table-pad', tbody).forEach(row => row.remove());
     rows.forEach(row => { row.hidden = true; });
-    selected.slice((page - 1) * size, page * size).forEach(row => { row.hidden = false; $('tbody',table).append(row); });
+    const pageRows = selected.slice((page - 1) * size, page * size);
+    pageRows.forEach(row => { row.hidden = false; tbody.append(row); });
+    // Keep table height stable across pages (pad empty slots up to page size).
+    if (selected.length) {
+      const colCount = $$('thead th', table).length || 1;
+      for (let i = pageRows.length; i < size; i += 1) {
+        const pad = document.createElement('tr');
+        pad.className = 'table-pad';
+        pad.setAttribute('aria-hidden', 'true');
+        for (let c = 0; c < colCount; c += 1) {
+          const td = document.createElement('td');
+          td.innerHTML = '&nbsp;';
+          pad.append(td);
+        }
+        tbody.append(pad);
+      }
+    }
+    table.dataset.pageSize = String(size);
     $('#table-empty').hidden = selected.length !== 0;
     $('#table-count').textContent = selected.length ? `${(page-1)*size+1}–${Math.min(page*size,selected.length)} / ${selected.length} hồ sơ` : '0 hồ sơ';
     $('#page-number').textContent = `${page} / ${pages}`;

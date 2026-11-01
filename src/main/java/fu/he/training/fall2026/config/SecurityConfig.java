@@ -11,7 +11,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 
 /**
- * Session + role-based access (Hải = ADMIN → /admin/**).
+ * Spring Security: mỗi prefix chỉ đúng 1 role (Admin ≠ Manager).
+ * {@link RoleAuthInterceptor} chặn thêm theo session {@code loginUser}.
  */
 @Configuration
 @EnableWebSecurity
@@ -58,8 +59,29 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendRedirect("/?loginRequired=1"))
-                        .accessDeniedHandler((request, response, accessDeniedException) ->
-                                response.sendRedirect("/?accessDenied=1")))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            // Sai role: cố gắng đẩy về dashboard đúng role nếu đã login
+                            var auth = org.springframework.security.core.context.SecurityContextHolder
+                                    .getContext().getAuthentication();
+                            if (auth != null && auth.getAuthorities() != null) {
+                                for (var a : auth.getAuthorities()) {
+                                    String role = a.getAuthority();
+                                    if (role != null && role.startsWith("ROLE_")) {
+                                        try {
+                                            var code = fu.he.training.fall2026.entity.enums.RoleCode
+                                                    .valueOf(role.substring(5));
+                                            response.sendRedirect(
+                                                    fu.he.training.fall2026.util.SessionAuthUtils.homePathForRole(code)
+                                                            + "?accessDenied=1");
+                                            return;
+                                        } catch (Exception ignored) {
+                                            // fall through
+                                        }
+                                    }
+                                }
+                            }
+                            response.sendRedirect("/?accessDenied=1");
+                        }))
                 .csrf(csrf -> csrf.disable())
                 .addFilterAfter(sessionAuthenticationFilter, SecurityContextHolderFilter.class);
 

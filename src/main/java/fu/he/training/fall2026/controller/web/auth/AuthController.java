@@ -6,6 +6,7 @@ import fu.he.training.fall2026.dto.auth.OtpIssuedResponse;
 import fu.he.training.fall2026.dto.auth.VerifyOtpRequest;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.AuthService;
+import fu.he.training.fall2026.util.AuthMessages;
 import fu.he.training.fall2026.util.SessionAuthUtils;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -65,6 +66,10 @@ public class AuthController {
             return "redirect:/verify-otp?mode=login&email=" + encode(issued.getEmail());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("authError", ex.getMessage());
+            // Locked account: stay on home + toast, never send OTP / never open OTP page.
+            if (AuthMessages.ACCOUNT_LOCKED.equals(ex.getMessage())) {
+                return "redirect:/?accountLocked=1";
+            }
             return "redirect:/?openLogin=1";
         }
     }
@@ -74,6 +79,7 @@ public class AuthController {
             @Valid @ModelAttribute("verifyOtpRequest") VerifyOtpRequest verifyOtpRequest,
             BindingResult bindingResult,
             HttpSession session,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("otpError",
@@ -83,9 +89,13 @@ public class AuthController {
             return "redirect:/verify-otp?mode=login&email=" + encode(verifyOtpRequest.getEmail());
         }
         try {
-            AuthSessionResponse auth = authService.verifyOtpAndLogin(verifyOtpRequest, session);
+            AuthSessionResponse auth = authService.verifyOtpAndLogin(verifyOtpRequest, session, httpRequest);
             return "redirect:" + auth.getHomePath();
         } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("authError", ex.getMessage());
+            if (AuthMessages.ACCOUNT_LOCKED.equals(ex.getMessage())) {
+                return "redirect:/?accountLocked=1";
+            }
             redirectAttributes.addFlashAttribute("otpError", ex.getMessage());
             return "redirect:/verify-otp?mode=login&email=" + encode(verifyOtpRequest.getEmail());
         }
@@ -102,6 +112,10 @@ public class AuthController {
             redirectAttributes.addFlashAttribute("authInfo", "Đã gửi lại OTP.");
             return "redirect:/verify-otp?mode=login&email=" + encode(issued.getEmail());
         } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("authError", ex.getMessage());
+            if (AuthMessages.ACCOUNT_LOCKED.equals(ex.getMessage())) {
+                return "redirect:/?accountLocked=1";
+            }
             redirectAttributes.addFlashAttribute("otpError", ex.getMessage());
             return "redirect:/verify-otp?mode=login&email=" + encode(email);
         }

@@ -1,5 +1,7 @@
 package fu.he.training.fall2026.util;
 
+import fu.he.training.fall2026.config.SessionConstants;
+import fu.he.training.fall2026.dto.auth.SessionUser;
 import fu.he.training.fall2026.entity.auth.Role;
 import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.enums.RoleCode;
@@ -10,8 +12,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * Reusable helpers to bind / clear authenticated user data on {@link HttpSession}
- * and sync Spring Security context for role-based routing.
+ * Gắn / xóa session login + đồng bộ SecurityContext.
+ * Object chính trong session: {@link SessionConstants#LOGIN_USER} ({@link SessionUser}).
  */
 public final class SessionAuthUtils {
 
@@ -27,6 +29,16 @@ public final class SessionAuthUtils {
     public static void bindLogin(HttpSession session, User user) {
         Role role = user.getRole();
         RoleCode roleCode = role.getCode();
+
+        SessionUser sessionUser = SessionUser.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .roleCode(roleCode)
+                .roleName(role.getName())
+                .build();
+        session.setAttribute(SessionConstants.LOGIN_USER, sessionUser);
+
         session.setAttribute(USER_ID, user.getId());
         session.setAttribute(EMAIL, user.getEmail());
         session.setAttribute(FULL_NAME, user.getFullName());
@@ -36,6 +48,10 @@ public final class SessionAuthUtils {
     }
 
     public static void clearLogin(HttpSession session) {
+        if (session == null) {
+            return;
+        }
+        session.removeAttribute(SessionConstants.LOGIN_USER);
         session.removeAttribute(USER_ID);
         session.removeAttribute(EMAIL);
         session.removeAttribute(FULL_NAME);
@@ -45,27 +61,51 @@ public final class SessionAuthUtils {
         session.invalidate();
     }
 
+    public static SessionUser getLoginUser(HttpSession session) {
+        if (session == null) {
+            return null;
+        }
+        Object value = session.getAttribute(SessionConstants.LOGIN_USER);
+        return value instanceof SessionUser user ? user : null;
+    }
+
     public static boolean isLoggedIn(HttpSession session) {
-        return session != null && session.getAttribute(USER_ID) != null;
+        return getLoginUser(session) != null || (session != null && session.getAttribute(USER_ID) != null);
     }
 
     public static Long getUserId(HttpSession session) {
-        Object value = session.getAttribute(USER_ID);
+        SessionUser user = getLoginUser(session);
+        if (user != null) {
+            return user.getUserId();
+        }
+        Object value = session != null ? session.getAttribute(USER_ID) : null;
         return value instanceof Long id ? id : null;
     }
 
     public static String getEmail(HttpSession session) {
-        Object value = session.getAttribute(EMAIL);
+        SessionUser user = getLoginUser(session);
+        if (user != null) {
+            return user.getEmail();
+        }
+        Object value = session != null ? session.getAttribute(EMAIL) : null;
         return value != null ? value.toString() : null;
     }
 
     public static String getFullName(HttpSession session) {
-        Object value = session.getAttribute(FULL_NAME);
+        SessionUser user = getLoginUser(session);
+        if (user != null) {
+            return user.getFullName();
+        }
+        Object value = session != null ? session.getAttribute(FULL_NAME) : null;
         return value != null ? value.toString() : null;
     }
 
     public static RoleCode getRoleCode(HttpSession session) {
-        Object value = session.getAttribute(ROLE_CODE);
+        SessionUser user = getLoginUser(session);
+        if (user != null) {
+            return user.getRoleCode();
+        }
+        Object value = session != null ? session.getAttribute(ROLE_CODE) : null;
         if (value == null) {
             return null;
         }
@@ -73,19 +113,20 @@ public final class SessionAuthUtils {
     }
 
     public static String getRoleName(HttpSession session) {
-        Object value = session.getAttribute(ROLE_NAME);
+        SessionUser user = getLoginUser(session);
+        if (user != null) {
+            return user.getRoleName();
+        }
+        Object value = session != null ? session.getAttribute(ROLE_NAME) : null;
         return value != null ? value.toString() : null;
     }
 
-    /**
-     * Home URL after successful login — one landing page per primary role (Hải = ADMIN).
-     */
     public static String homePathForRole(RoleCode roleCode) {
         if (roleCode == null) {
             return "/";
         }
         return switch (roleCode) {
-            case ADMIN -> "/admin/dashboard";
+            case ADMIN -> "/admin/employees";
             case MANAGER -> "/manager/dashboard";
             case CONSIGNMENT -> "/consignment/dashboard";
             case INSPECTOR -> "/inspector/dashboard";
@@ -108,7 +149,6 @@ public final class SessionAuthUtils {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
-    /** Restore SecurityContext from an existing HTTP session (filter / interceptor). */
     public static void restoreSecurityContext(HttpSession session) {
         if (!isLoggedIn(session)) {
             return;

@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
 <section th:fragment="table" class="content-card table-card" th:if="${!#lists.isEmpty(screen.columns)}">
   <div class="content-card-header"><h2 th:text="${screen.kind == 'dashboard' ? 'Công việc cần xử lý' : 'Danh sách hồ sơ'}"></h2><span class="caption" th:text="${#lists.size(screen.rows) + ' bản ghi mẫu'}"></span></div>
-  <div class="table-toolbar"><div class="toolbar-field"><label for="table-search">Tìm kiếm</label><input type="search" id="table-search" placeholder="Tìm mã, tên, xe hoặc liên hệ…"></div><div class="toolbar-field"><label for="table-status">Trạng thái</label><select id="table-status"><option value="">Tất cả trạng thái</option><option th:each="status : ${#sets.toSet(screen.rows.![status])}" th:value="${status}" th:text="${status}"></option></select></div><div class="toolbar-field"><label for="table-size">Mỗi trang</label><select id="table-size"><option>2</option><option selected>5</option><option>10</option><option>20</option></select></div><button type="button" class="button" data-action="export">Xuất CSV mẫu</button></div>
+  <div class="table-toolbar"><div class="toolbar-field"><label for="table-search">Tìm kiếm</label><input type="search" id="table-search" placeholder="Tìm mã, tên, xe hoặc liên hệ…"></div><div class="toolbar-field"><label for="table-status">Trạng thái</label><select id="table-status"><option value="">Tất cả trạng thái</option><option th:each="status : ${#sets.toSet(screen.rows.![status])}" th:value="${status}" th:text="${status}"></option></select></div><div class="toolbar-field"><label for="table-size">Mỗi trang</label><select id="table-size"><option selected value="5">5</option><option value="10">10</option><option value="20">20</option></select></div><button type="button" class="button" data-action="export">Xuất CSV mẫu</button></div>
   <p class="table-hint">Trên màn hình nhỏ, cuộn ngang bảng để xem đầy đủ thông tin và thao tác.</p>
   <div class="table-scroll">
     <table class="custom-table" id="records-table">
@@ -14,8 +14,13 @@
         <td th:each="cell : ${row.cells}" th:text="${cell}"></td>
         <td><span class="badge" th:attr="data-status=${row.status}" th:text="${row.status}"></span></td>
         <td class="action-cell">
-          <div th:replace="~{common/fragments/components :: rowActions(${row.cells[0]}, ${row.url})}"></div>
-          <span th:if="${#strings.isEmpty(row.url)}">Chỉ số tổng hợp</span>
+          <th:block th:if="${appShell and route == '/admin/employees'}">
+            <div th:replace="~{common/fragments/components :: employeeRowActions(${row.id}, ${row.cells[0]}, ${row.status == 'ACTIVE'})}"></div>
+          </th:block>
+          <th:block th:unless="${appShell and route == '/admin/employees'}">
+            <div th:replace="~{common/fragments/components :: rowActions(${row.cells[0]}, ${row.url})}"></div>
+            <span th:if="${#strings.isEmpty(row.url)}">Chỉ số tổng hợp</span>
+          </th:block>
         </td>
       </tr></tbody>
     </table>

@@ -2,14 +2,107 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{common/layout :: shell(~{::content})}">
 <body>
-<!-- Vai trò &amp; quyền truy cập: edit this page composition here; data comes from Spring Model. -->
 <section th:fragment="content" class="screen-content" data-template="admin/permissions/list">
   <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
-  </div>
+
+  <th:block th:if="${appShell}">
+    <aside class="perm-legend" aria-label="Giải thích quyền">
+      <article class="perm-legend-item" th:each="perm : ${permissionRows}">
+        <strong th:text="${perm.name}">Quyền</strong>
+        <code th:text="${perm.code}">CODE</code>
+        <p th:text="${perm.description}">Mô tả</p>
+      </article>
+    </aside>
+
+    <form method="post" th:action="@{/admin/permissions}" class="perm-board" id="perm-matrix-form">
+      <div class="perm-board-toolbar">
+        <div>
+          <h2>Ma trận gán quyền</h2>
+          <p>Mỗi ô là một grant Role → Permission. Lưu sẽ ghi đè toàn bộ bảng RolePermission.</p>
+        </div>
+        <div class="perm-board-meta">
+          <span><strong id="perm-grant-count" th:text="${permissionGrants != null ? permissionGrants.size() : 0}">0</strong> grant đang chọn</span>
+        </div>
+      </div>
+
+      <div class="perm-matrix-scroll">
+        <table class="perm-matrix">
+          <thead>
+          <tr>
+            <th scope="col" class="perm-col-role">Vai trò</th>
+            <th scope="col" th:each="perm : ${permissionRows}">
+              <span class="perm-col-name" th:text="${perm.name}">Quyền</span>
+              <span class="perm-col-code" th:text="${perm.code}">CODE</span>
+            </th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="role : ${permissionRoles}">
+            <th scope="row" class="perm-col-role">
+              <span class="perm-role-name" th:text="${role.name}">Role</span>
+              <span class="perm-role-code" th:text="${role.code}">ADMIN</span>
+              <span class="perm-role-count"><span>0</span>/<span th:text="${#lists.size(permissionRows)}">4</span></span>
+            </th>
+            <td th:each="perm : ${permissionRows}"
+                th:with="gkey=${role.code.name() + '|' + perm.code},
+                         on=${permissionGrants != null and permissionGrants.contains(gkey)}">
+              <label class="perm-cell" th:classappend="${on} ? 'is-on' : ''">
+                <input type="checkbox" name="grants"
+                       th:value="${gkey}"
+                       th:checked="${on}"
+                       th:attr="aria-label=${'Gán ' + perm.name + ' cho ' + role.name}"/>
+                <span class="perm-switch" aria-hidden="true"><span class="perm-knob"></span></span>
+                <span class="perm-cell-state" th:text="${on} ? 'Bật' : 'Tắt'">Tắt</span>
+              </label>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="perm-board-footer">
+        <p>Thay đổi chỉ có hiệu lực sau khi lưu.</p>
+        <button type="submit" class="button button-primary">Lưu ma trận</button>
+      </div>
+    </form>
+  </th:block>
+
+  <th:block th:unless="${appShell}">
+    <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
+    <div class="detail-grid">
+      <section th:replace="~{common/fragments/components :: facts}"></section>
+      <section th:replace="~{common/fragments/components :: checks}"></section>
+    </div>
+  </th:block>
+
+  <script th:if="${appShell}">
+    (function () {
+      const form = document.getElementById('perm-matrix-form');
+      if (!form) return;
+      const countEl = document.getElementById('perm-grant-count');
+      const sync = () => {
+        const boxes = form.querySelectorAll('input[name="grants"]');
+        let n = 0;
+        boxes.forEach((box) => {
+          const cell = box.closest('.perm-cell');
+          const on = box.checked;
+          if (cell) cell.classList.toggle('is-on', on);
+          const state = cell && cell.querySelector('.perm-cell-state');
+          if (state) state.textContent = on ? 'Bật' : 'Tắt';
+          if (on) n += 1;
+        });
+        form.querySelectorAll('tbody tr').forEach((row) => {
+          const total = row.querySelectorAll('input[name="grants"]').length;
+          const on = row.querySelectorAll('input[name="grants"]:checked').length;
+          const badge = row.querySelector('.perm-role-count');
+          if (badge) badge.innerHTML = '<span>' + on + '</span>/<span>' + total + '</span>';
+        });
+        if (countEl) countEl.textContent = String(n);
+      };
+      form.addEventListener('change', sync);
+      sync();
+    })();
+  </script>
 </section>
 </body>
 </html>

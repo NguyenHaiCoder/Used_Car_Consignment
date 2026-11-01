@@ -13,6 +13,30 @@
     <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg><span class="sr-only">Xóa</span>
   </button>
 </div>
+<div th:fragment="employeeRowActions(id, label, active)" class="row-actions row-actions--employee">
+  <a class="action-icon action-view" th:href="@{'/admin/employees/' + ${id}}"
+     th:attr="title=${'Xem ' + label},aria-label=${'Xem ' + label}">
+    <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg><span class="sr-only">Xem</span>
+  </a>
+  <a class="action-icon action-edit" th:href="@{'/admin/employees/' + ${id} + '/edit'}"
+     th:attr="title=${'Sửa ' + label},aria-label=${'Sửa ' + label}">
+    <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg><span class="sr-only">Sửa</span>
+  </a>
+  <form th:action="@{'/admin/employees/' + ${id} + '/toggle-active'}" method="post" class="inline-action">
+    <button type="submit" class="action-icon action-lock"
+            th:attr="title=${active ? 'Khóa tài khoản ' + label : 'Mở khóa tài khoản ' + label},
+                     aria-label=${active ? 'Khóa tài khoản ' + label : 'Mở khóa tài khoản ' + label}">
+      <svg th:replace="~{common/fragments/icons :: actionIcon(${active ? 'lock' : 'unlock'})}"></svg>
+      <span class="sr-only" th:text="${active ? 'Khóa' : 'Mở khóa'}">Khóa</span>
+    </button>
+  </form>
+  <form th:action="@{'/admin/employees/' + ${id} + '/delete'}" method="post" class="inline-action">
+    <button type="submit" class="action-icon action-delete"
+            th:attr="title=${'Xóa vĩnh viễn ' + label},aria-label=${'Xóa vĩnh viễn ' + label}">
+      <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg><span class="sr-only">Xóa</span>
+    </button>
+  </form>
+</div>
 <div th:fragment="actions" class="page-actions">
   <th:block th:each="action : ${screen.actions}"
             th:with="iconName=${#strings.startsWith(action.label, 'Xem') ? 'view' : (#strings.startsWith(action.label, 'Sửa') or #strings.startsWith(action.label, 'Thay thế') ? 'edit' : (#strings.startsWith(action.label, 'Xóa') ? 'delete' : ''))}">

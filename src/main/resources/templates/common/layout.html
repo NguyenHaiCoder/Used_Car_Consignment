@@ -7,7 +7,9 @@
   <button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
   <header th:replace="~{common/header :: header}"></header>
   <main id="main" class="main-content" tabindex="-1">
-    <nav th:replace="~{common/breadcrumbs :: breadcrumbs}"></nav>
+    <th:block th:unless="${appShell}">
+      <nav th:replace="~{common/breadcrumbs :: breadcrumbs}"></nav>
+    </th:block>
     <div th:replace="~{common/page-header :: pageHeader}"></div>
     <p class="preview-note" th:unless="${appShell}"><strong>Bản xem trước UI</strong> · Dữ liệu mẫu. Thao tác chỉ diễn ra trong trình duyệt, chưa gửi đến hệ thống.</p>
     <section th:replace="${content}"></section>

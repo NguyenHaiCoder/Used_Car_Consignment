@@ -768,7 +768,7 @@
               <h3>Đăng nhập</h3>
               <p>Nhập email để tiếp tục quản lý ký gửi</p>
             </div>
-            <p class="text-danger small" th:if="${authError}" th:text="${authError}"></p>
+            <p class="text-danger small" th:if="${authError != null and param.accountLocked == null}" th:text="${authError}"></p>
             <p class="text-success small" th:if="${authInfo}" th:text="${authInfo}"></p>
             <form id="loginForm" th:action="@{/auth/login}" th:object="${loginOtpRequest}" method="post">
               <div class="floating-label-group">
@@ -1129,9 +1129,19 @@ if (footer) {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const params = new URLSearchParams(window.location.search);
+    const accountLocked = params.get('accountLocked') === '1';
+    const authFlash = document.getElementById('auth-flash');
 
-    if (params.get('openLogin') === '1' || params.get('loginRequired') === '1'
-        || document.querySelector('.text-danger.small')) {
+    // Locked account: stay on home + toast only (no login modal, no OTP page).
+    if (accountLocked && authFlash && authFlash.textContent.trim() && window.bootstrap) {
+      const toastEl = document.getElementById('home-auth-toast');
+      const toastBody = document.getElementById('home-auth-toast-body');
+      if (toastEl && toastBody) {
+        toastBody.textContent = authFlash.textContent.trim();
+        bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 7000 }).show();
+      }
+    } else if (params.get('openLogin') === '1' || params.get('loginRequired') === '1'
+        || document.querySelector('#login-modal .text-danger.small')) {
       const modalEl = document.getElementById('login-modal');
       if (modalEl && window.bootstrap) {
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -1287,5 +1297,14 @@ if (footer) {
   });
 </script>
 
+  <div id="auth-flash" th:if="${authError}" th:text="${authError}" hidden></div>
+  <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2100">
+    <div id="home-auth-toast" class="toast align-items-center text-bg-danger border-0" role="status" aria-live="polite">
+      <div class="d-flex">
+        <div class="toast-body" id="home-auth-toast-body"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Đóng"></button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{common/layout :: shell(~{::content})}">
+<body>
+<section th:fragment="content" class="screen-content" data-template="admin/employees/edit">
+  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+  <section th:replace="~{common/fragments/forms :: form}"></section>
+</section>
+</body>
+</html>

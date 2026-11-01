@@ -78,6 +78,7 @@ public class UiPageRenderer {
         model.addAttribute("route", route);
         model.addAttribute("appShell", appShell);
         model.addAttribute("roleHome", appShell ? "/" + roleKey + "/dashboard" : "/ui/" + roleKey);
+        model.addAttribute("serverFormAction", null);
         return UiPreviewCatalog.template(roleKey, pageKey);
     }
 
@@ -157,7 +158,7 @@ public class UiPageRenderer {
         return appRoute(roleKey, key);
     }
 
-    static String appRoute(String roleKey, String pageKey) {
+    public static String appRoute(String roleKey, String pageKey) {
         if (("dashboard-" + roleKey).equals(pageKey) || "dashboard".equals(pageKey)) {
             return "/" + roleKey + "/dashboard";
         }
