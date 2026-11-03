@@ -19,6 +19,10 @@ public class Buyer extends BaseEntity {
     private java.time.Instant deletedAt;
 
     @Nationalized
+    @Column(name = "delete_reason", length = 500)
+    private String deleteReason;
+
+    @Nationalized
     @Column(nullable = false, length = 160)
     private String fullName;
 

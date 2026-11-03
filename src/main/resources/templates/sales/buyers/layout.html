@@ -1,18 +1,26 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" th:fragment="shell(title, description, content)">
+
+<html lang="en" th:fragment="shell(title, description, content)" xmlns:th="http://www.thymeleaf.org">
+
 <head th:replace="~{common/header :: head(${title})}"></head>
+
 <body class="ui-app" data-app="1" data-role="sales">
-  <a class="skip-link" href="#main">Skip navigation</a>
-  <div th:replace="~{common/sidebar :: sidebar(active='buyers')}"></div>
-  <button class="nav-overlay" aria-label="Close navigation" hidden></button>
-  <header th:replace="~{common/header :: header}"></header>
-  <main id="main" class="main-content" tabindex="-1">
-    <div class="page-header">
-      <div><p class="eyebrow">Kinh doanh</p><h1 th:text="${title}"></h1><p class="page-description" th:text="${description}"></p></div>
-    </div>
-    <section th:replace="${content}"></section>
-    <footer th:replace="~{common/footer :: footer}"></footer>
-  </main>
-  <script th:src="@{/js/ui/app.js}" defer></script>
+    <a class="skip-link" href="#main">Skip navigation</a>
+    <div th:replace="~{common/sidebar :: sidebar(active='buyers')}"></div>
+    <button aria-label="Close navigation" class="nav-overlay" hidden></button>
+    <header th:replace="~{common/header :: header}"></header>
+    <main class="main-content" id="main" tabindex="-1">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Kinh doanh</p>
+                <h1 th:text="${title}"></h1>
+                <p class="page-description" th:text="${description}"></p>
+            </div>
+        </div>
+        <section th:replace="${content}"></section>
+        <footer th:replace="~{common/footer :: footer}"></footer>
+    </main>
+    <script defer th:src="@{/js/ui/app.js}"></script>
 </body>
+
 </html>

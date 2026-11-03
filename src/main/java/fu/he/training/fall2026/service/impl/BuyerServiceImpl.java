@@ -1,19 +1,21 @@
 package fu.he.training.fall2026.service.impl;
 
-import fu.he.training.fall2026.dto.buyer.BuyerDetailsResponse;
-import fu.he.training.fall2026.dto.buyer.BuyerItemResponse;
+import fu.he.training.fall2026.dto.buyer.BuyerResponse;
+import fu.he.training.fall2026.dto.buyer.BuyerRequest;
 import fu.he.training.fall2026.dto.buyer.BuyerListResponse;
-import fu.he.training.fall2026.dto.buyer.CreateBuyerRequest;
 import fu.he.training.fall2026.dto.buyer.InquiryHistoryItemResponse;
 import fu.he.training.fall2026.dto.buyer.InquiryHistoryResponse;
-import fu.he.training.fall2026.dto.buyer.UpdateBuyerRequest;
 import fu.he.training.fall2026.entity.sales.Buyer;
 import fu.he.training.fall2026.entity.sales.Inquiry;
+import fu.he.training.fall2026.entity.enums.ContractStatus;
+import fu.he.training.fall2026.entity.enums.ReservationStatus;
 import fu.he.training.fall2026.exception.BuyerCreateException;
 import fu.he.training.fall2026.exception.BuyerException;
 import fu.he.training.fall2026.exception.BuyerException.Reason;
 import fu.he.training.fall2026.repository.BuyerRepository;
 import fu.he.training.fall2026.repository.InquiryRepository;
+import fu.he.training.fall2026.repository.ReservationRepository;
+import fu.he.training.fall2026.repository.SalesContractRepository;
 import fu.he.training.fall2026.service.BuyerConsentRecorder;
 import fu.he.training.fall2026.service.BuyerService;
 import fu.he.training.fall2026.validation.BuyerValidation;
@@ -26,7 +28,9 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -37,66 +41,77 @@ public class BuyerServiceImpl implements BuyerService {
 
     private final BuyerRepository buyerRepository;
     private final InquiryRepository inquiryRepository;
+    private final ReservationRepository reservationRepository;
+    private final SalesContractRepository salesContractRepository;
     private final BuyerConsentRecorder consentRecorder;
 
     @Override
     @Transactional(readOnly = true)
-    public BuyerDetailsResponse getDetails(long id) {
+    public BuyerResponse getDetails(long id) {
         validateId(id);
         Buyer buyer = buyerRepository.findById(id)
                 .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
-        return toDetails(buyer);
+        return toResponse(buyer);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BuyerRequest formFor(long id) {
+        validateId(id);
+        BuyerResponse buyer = toResponse(buyerRepository.findById(id)
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found.")));
+        BuyerRequest form = new BuyerRequest();
+        form.setFullName(buyer.getFullName());
+        form.setPhone(buyer.getPhone());
+        form.setEmail(buyer.getEmail());
+        form.setAddress(buyer.getAddress());
+        form.setRevision(buyer.getRevision() == null ? null : buyer.getRevision().toString());
+        form.setStatus(buyer.isActive() ? "active" : "inactive");
+        return form;
     }
 
     @Override
     @Transactional
-    public BuyerDetailsResponse create(CreateBuyerRequest input) {
-        Map<String, String> errors = BuyerValidation.errors(input);
-        if (!Boolean.TRUE.equals(input.getConsentStored())) {
+    public BuyerResponse create(BuyerRequest form) {
+        Map<String, String> errors = BuyerValidation.errors(
+                form.getFullName(), form.getPhone(), form.getEmail(), form.getAddress());
+        if (!form.isConsentStored()) {
             errors.put("consentStored", BuyerValidation.CONSENT_REQUIRED);
         }
         if (!errors.isEmpty()) {
             throw new BuyerCreateException(Reason.VALIDATION, errors);
         }
 
-        CreateBuyerRequest request = BuyerValidation.normalize(input);
-
         buyerRepository.lockForCreate();
-        checkDuplicates(request, null);
+        String email = BuyerValidation.clean(form.getEmail());
+        email = email == null ? null : email.toLowerCase(Locale.ROOT);
+        checkDuplicates(form.getPhone(), email, null);
 
         Buyer buyer = new Buyer();
-        buyer.setFullName(request.getFullName());
-        buyer.setPhone(request.getPhone());
-        buyer.setEmail(request.getEmail());
-        buyer.setAddress(request.getAddress());
+        buyer.setFullName(BuyerValidation.name(form.getFullName()));
+        buyer.setPhone(form.getPhone());
+        buyer.setEmail(email);
+        buyer.setAddress(BuyerValidation.clean(form.getAddress()));
         buyer.setConsentStored(true);
         buyerRepository.saveAndFlush(buyer);
 
         consentRecorder.record(buyer.getId());
-
-
-        return toPersistedDetails(buyer);
+        return toResponse(buyer);
     }
 
     @Override
     @Transactional
-    public BuyerDetailsResponse update(long id, UpdateBuyerRequest input) {
+    public BuyerResponse update(long id, BuyerRequest form) {
         validateId(id);
-        Map<String, Object> patch = input.getFields();
-
-        Map<String, String> errors = new LinkedHashMap<>();
-        Set<String> allowed = Set.of("fullName", "phone", "email", "address", "revision");
-        patch.forEach((field, value) -> {
-            if (!allowed.contains(field)) {
-                errors.put(field, "This field cannot be edited.");
-            } else if (value != null && !(value instanceof String)) {
-                errors.put(field, "Expected a string or null.");
-            }
-        });
+        Map<String, String> errors = BuyerValidation.errors(
+                form.getFullName(), form.getPhone(), form.getEmail(), form.getAddress());
+        if (!"active".equals(form.getStatus()) && !"inactive".equals(form.getStatus())) {
+            errors.put("status", "Select a valid buyer status.");
+        }
 
         Instant revision = null;
         try {
-            revision = Instant.parse((String) patch.get("revision"));
+            revision = Instant.parse(form.getRevision());
         } catch (RuntimeException ex) {
             errors.put("revision", "Reload the buyer before editing; a valid revision is required.");
         }
@@ -106,7 +121,6 @@ public class BuyerServiceImpl implements BuyerService {
 
         buyerRepository.lockForCreate();
         Buyer buyer = buyerRepository.findById(id)
-                .filter(b -> b.getDeletedAt() == null)
                 .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
 
         if (!revision.equals(buyer.getUpdatedAt())) {
@@ -114,44 +128,54 @@ public class BuyerServiceImpl implements BuyerService {
                     "This buyer was changed by another request. Copy your input, cancel and reopen Edit to review the latest data.");
         }
 
-        CreateBuyerRequest request = new CreateBuyerRequest(
-                patch.containsKey("fullName") ? (String) patch.get("fullName") : buyer.getFullName(),
-                patch.containsKey("phone") ? (String) patch.get("phone") : buyer.getPhone(),
-                patch.containsKey("email") ? (String) patch.get("email") : buyer.getEmail(),
-                patch.containsKey("address") ? (String) patch.get("address") : buyer.getAddress(),
-                buyer.isConsentStored());
-        errors.putAll(BuyerValidation.errors(request));
-        if (!errors.isEmpty()) {
-            throw new BuyerCreateException(Reason.VALIDATION, errors);
+        boolean reactivating = buyer.getDeletedAt() != null && "active".equals(form.getStatus());
+        if (buyer.getDeletedAt() == null && "inactive".equals(form.getStatus())) {
+            throw new BuyerCreateException(Reason.VALIDATION,
+                    Map.of("status", "Use Delete Buyer to deactivate this buyer and record a reason."));
         }
-        request = BuyerValidation.normalize(request);
+        if (reactivating && !buyer.isConsentStored()) {
+            throw new BuyerCreateException(Reason.VALIDATION,
+                    Map.of("status", "Cannot reactivate this buyer without stored consent."));
+        }
 
-        checkDuplicates(request, id);
+        String email = BuyerValidation.clean(form.getEmail());
+        email = email == null ? null : email.toLowerCase(Locale.ROOT);
+        checkDuplicates(form.getPhone(), email, id);
 
-        if (patch.containsKey("fullName")) buyer.setFullName(request.getFullName());
-        if (patch.containsKey("phone")) buyer.setPhone(request.getPhone());
-        if (patch.containsKey("email")) buyer.setEmail(request.getEmail());
-        if (patch.containsKey("address")) buyer.setAddress(request.getAddress());
+        buyer.setFullName(BuyerValidation.name(form.getFullName()));
+        buyer.setPhone(form.getPhone());
+        buyer.setEmail(email);
+        buyer.setAddress(BuyerValidation.clean(form.getAddress()));
+        if (reactivating) {
+            buyer.setDeletedAt(null);
+        }
         buyerRepository.saveAndFlush(buyer);
 
-        return toPersistedDetails(buyer);
+        return toResponse(buyer);
     }
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    public void delete(long id) {
+    public void delete(long id, String reason) {
         validateId(id);
+        String deleteReason = reason == null ? null : reason.strip();
+        if (deleteReason == null || deleteReason.isEmpty() || deleteReason.length() > 500
+                || deleteReason.codePoints().anyMatch(Character::isISOControl)) {
+            throw new BuyerException(Reason.VALIDATION, "Vui lòng nhập lý do xóa hợp lệ, tối đa 500 ký tự.");
+        }
 
         buyerRepository.lockForCreate();
-        Buyer buyer = buyerRepository.findById(id)
-                .filter(b -> b.getDeletedAt() == null)
+        Buyer buyer = buyerRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
 
-        if (buyerRepository.hasActiveReservation(id) || buyerRepository.hasProcessingContract(id)) {
+        if (reservationRepository.existsByBuyer_IdAndStatus(id, ReservationStatus.ACTIVE)
+                || salesContractRepository.existsByReservation_Buyer_IdAndStatusNotIn(
+                        id, Set.of(ContractStatus.CLOSED, ContractStatus.CANCELLED))) {
             throw new BuyerException(Reason.CONFLICT,
                     "Cannot delete buyer with an ACTIVE reservation or a processing sales contract.");
         }
 
+        buyer.setDeleteReason(deleteReason);
         buyer.setDeletedAt(Instant.now());
         buyerRepository.saveAndFlush(buyer);
     }
@@ -165,28 +189,48 @@ public class BuyerServiceImpl implements BuyerService {
     @Override
     @Transactional(readOnly = true)
     public BuyerListResponse list(int page, int size, String search) {
-        // 1. Validate phân trang
-        validatePagination(page, size);
+        return list(page, size, search, "desc", "all", "default");
+    }
 
-        // 2. Xử lý keyword tìm kiếm
+    @Override
+    @Transactional(readOnly = true)
+    public BuyerListResponse list(int page, int size, String search, String idSort, String status, String createdSort) {
+        validatePagination(page, size);
+        if (!Set.of("asc", "desc").contains(idSort)
+                || !Set.of("all", "active", "inactive").contains(status)
+                || !Set.of("default", "newest", "oldest").contains(createdSort)) {
+            throw new IllegalArgumentException("Invalid buyer list filter or sort option.");
+        }
+
         String keyword = search == null ? "" : search.strip();
         if (keyword.length() > 180 || keyword.codePoints().anyMatch(Character::isISOControl)) {
             throw new IllegalArgumentException(
                     "Search must be at most 180 characters without control characters.");
         }
 
-        PageRequest pageable = PageRequest.of(page - 1, size, Sort.by("id").descending());
-        Page<Buyer> result;
-        if (keyword.isEmpty()) {
-            result = buyerRepository.findBuyerList(pageable);
-        } else {
-            String pattern = buildSearchPattern(keyword);
-            result = buyerRepository.searchBuyerList(pattern, pageable);
+        Sort.Direction idDirection = "asc".equals(idSort) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(new Sort.Order(idDirection, "id"));
+        if (!"default".equals(createdSort)) {
+            Sort.Direction dateDirection = "newest".equals(createdSort) ? Sort.Direction.DESC : Sort.Direction.ASC;
+            sort = Sort.by(new Sort.Order(dateDirection, "createdAt"), new Sort.Order(idDirection, "id"));
         }
+        PageRequest pageable = PageRequest.of(page - 1, size, sort);
+        String pattern = "%" + keyword.toLowerCase(Locale.ROOT)
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_")
+                .replace("[", "![") + "%";
+        Page<Buyer> result = buyerRepository.searchBuyerList(pattern, keyword.isEmpty(), status, pageable);
 
         return new BuyerListResponse(
-                result.getContent().stream().map(this::toListItem).toList(),
-                new BuyerListResponse.Pagination(page, size, result.getTotalElements(), result.getTotalPages()));
+                result.getContent().stream().map(this::toResponse).toList(),
+                new BuyerListResponse.Pagination(
+                        page,
+                        size,
+                        result.getTotalElements(),
+                        result.getTotalPages(),
+                        buildPageItems(page, result.getTotalPages())
+                ));
     }
 
     @Override
@@ -195,7 +239,7 @@ public class BuyerServiceImpl implements BuyerService {
         validateId(buyerId);
         validatePagination(page, size);
 
-        if (!buyerRepository.existsIncludingDeleted(buyerId)) {
+        if (buyerRepository.findById(buyerId).isEmpty()) {
             throw new BuyerException(Reason.NOT_FOUND, "Buyer not found.");
         }
 
@@ -205,11 +249,20 @@ public class BuyerServiceImpl implements BuyerService {
 
         return new InquiryHistoryResponse(
                 result.getContent().stream().map(this::toInquiryHistoryItem).toList(),
-                new BuyerListResponse.Pagination(page, size, result.getTotalElements(), result.getTotalPages()));
+                new BuyerListResponse.Pagination(
+                        page,
+                        size,
+                        result.getTotalElements(),
+                        result.getTotalPages(),
+                        buildPageItems(page, result.getTotalPages())
+                ));
     }
 
+
     private void validateId(long id) {
-        if (id <= 0) throw new IllegalArgumentException("Buyer ID must be a positive integer.");
+        if (id <= 0) {
+            throw new IllegalArgumentException("Buyer ID must be a positive integer.");
+        }
     }
 
     private void validatePagination(int page, int size) {
@@ -219,19 +272,19 @@ public class BuyerServiceImpl implements BuyerService {
         }
     }
 
-    private void checkDuplicates(CreateBuyerRequest request, Long id) {
+    private void checkDuplicates(String phone, String email, Long id) {
         Map<String, String> errors = new LinkedHashMap<>();
         boolean phoneExists = (id == null)
-                ? buyerRepository.contactPhoneExists(request.getPhone())
-                : buyerRepository.otherPhoneExists(request.getPhone(), id);
+                ? buyerRepository.contactPhoneExists(phone)
+                : buyerRepository.otherPhoneExists(phone, id);
         if (phoneExists) {
             errors.put("phone", "This phone number already belongs to a buyer.");
         }
 
-        if (request.getEmail() != null) {
+        if (email != null) {
             boolean emailExists = (id == null)
-                    ? buyerRepository.contactEmailExists(request.getEmail())
-                    : buyerRepository.otherEmailExists(request.getEmail(), id);
+                    ? buyerRepository.contactEmailExists(email)
+                    : buyerRepository.otherEmailExists(email, id);
             if (emailExists) {
                 errors.put("email", "This email already belongs to a buyer.");
             }
@@ -242,45 +295,45 @@ public class BuyerServiceImpl implements BuyerService {
         }
     }
 
-    /** Xây dựng LIKE pattern cho tìm kiếm (escape ký tự đặc biệt). */
-    private String buildSearchPattern(String keyword) {
-        return "%" + keyword.toLowerCase(Locale.ROOT)
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_")
-                .replace("[", "![") + "%";
+    private List<Integer> buildPageItems(int page, int totalPages) {
+        List<Integer> items = new ArrayList<>();
+        if (totalPages <= 0) {
+            return items;
+        }
+        items.add(1);
+        int start = Math.max(2, page - 2);
+        int end = Math.min(totalPages - 1, page + 2);
+        if (start > 2) {
+            items.add(-1);
+        }
+        for (int number = start; number <= end; number++) {
+            items.add(number);
+        }
+        if (end < totalPages - 1) {
+            items.add(-1);
+        }
+        if (totalPages > 1) {
+            items.add(totalPages);
+        }
+        return items;
     }
 
-   private BuyerDetailsResponse toDetails(Buyer buyer) {
-        return new BuyerDetailsResponse(
+    private BuyerResponse toResponse(Buyer buyer) {
+        return new BuyerResponse(
                 buyer.getId(),
                 buyer.getFullName(),
                 buyer.getPhone(),
                 buyer.getEmail(),
                 buyer.getAddress(),
                 buyer.getCreatedAt(),
-                buyer.getUpdatedAt());
-    }
-
-      private BuyerDetailsResponse toPersistedDetails(Buyer buyer) {
-        return buyerRepository.findById(buyer.getId())
-                .map(this::toDetails)
-                .orElseGet(() -> toDetails(buyer));
-    }
-
-    private BuyerItemResponse toListItem(Buyer buyer) {
-        return new BuyerItemResponse(
-                buyer.getId(),
-                buyer.getFullName(),
-                buyer.getPhone(),
-                buyer.getEmail(),
-                buyer.getCreatedAt());
+                buyer.getUpdatedAt(),
+                buyer.getDeletedAt() == null,
+                buyer.getDeleteReason());
     }
 
     private InquiryHistoryItemResponse toInquiryHistoryItem(Inquiry inquiry) {
         return new InquiryHistoryItemResponse(
                 inquiry.getId(),
-                inquiry.getCode(),
                 inquiry.getVehicle() != null ? inquiry.getVehicle().getMake() : null,
                 inquiry.getVehicle() != null ? inquiry.getVehicle().getModel() : null,
                 inquiry.getCreatedAt(),

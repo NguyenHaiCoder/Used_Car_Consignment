@@ -15,17 +15,6 @@ public final class BuyerValidation {
     public static final String CONSENT_REQUIRED = "Vui lòng xác nhận đã lưu sự đồng ý của người mua.";
     private BuyerValidation() { }
 
-    public static Map<String, String> errors(fu.he.training.fall2026.dto.buyer.CreateBuyerRequest input) {
-        return errors(input.getFullName(), input.getPhone(), input.getEmail(), input.getAddress());
-    }
-
-    public static fu.he.training.fall2026.dto.buyer.CreateBuyerRequest normalize(
-            fu.he.training.fall2026.dto.buyer.CreateBuyerRequest input) {
-        String email = clean(input.getEmail());
-        return new fu.he.training.fall2026.dto.buyer.CreateBuyerRequest(name(input.getFullName()), input.getPhone(),
-                email == null ? null : email.toLowerCase(java.util.Locale.ROOT), clean(input.getAddress()), input.getConsentStored());
-    }
-
     public static String clean(String value) {
         return value == null || value.strip().isEmpty() ? null : value.strip();
     }
@@ -36,7 +25,7 @@ public final class BuyerValidation {
 
     public static Map<String, String> errors(String fullName, String phone, String email, String address) {
         Map<String, String> errors = new LinkedHashMap<>();
-        check(errors, "fullName", fullName, FULL_NAME_MAX, true);
+        check(errors, "fullName", name(fullName), FULL_NAME_MAX, true);
         check(errors, "phone", phone, PHONE_MAX, true);
         check(errors, "email", email, EMAIL_MAX, false);
         check(errors, "address", address, ADDRESS_MAX, false);

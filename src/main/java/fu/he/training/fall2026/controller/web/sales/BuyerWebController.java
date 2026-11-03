@@ -1,20 +1,24 @@
 package fu.he.training.fall2026.controller.web.sales;
 
-import fu.he.training.fall2026.dto.buyer.BuyerForm;
-import fu.he.training.fall2026.dto.buyer.CreateBuyerRequest;
-import fu.he.training.fall2026.dto.buyer.UpdateBuyerRequest;
+import fu.he.training.fall2026.dto.buyer.BuyerResponse;
+import fu.he.training.fall2026.dto.buyer.BuyerRequest;
+import fu.he.training.fall2026.dto.buyer.DeleteBuyerRequest;
 import fu.he.training.fall2026.exception.BuyerException;
 import fu.he.training.fall2026.service.BuyerService;
-import jakarta.servlet.http.HttpServletResponse;
+import fu.he.training.fall2026.validation.BuyerValidation;
+import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,15 +29,21 @@ public class BuyerWebController {
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
                        @RequestParam(defaultValue = "10") int size,
-                       @RequestParam(required = false) String search, Model model) {
-        model.addAttribute("buyers", buyerService.list(page, size, search));
+                       @RequestParam(required = false) String search,
+                       @RequestParam(defaultValue = "desc") String idSort,
+                       @RequestParam(defaultValue = "all") String status,
+                       @RequestParam(defaultValue = "default") String createdSort, Model model) {
+        model.addAttribute("buyers", buyerService.list(page, size, search, idSort, status, createdSort));
         model.addAttribute("search", search);
+        model.addAttribute("idSort", idSort);
+        model.addAttribute("status", status);
+        model.addAttribute("createdSort", createdSort);
         return "sales/buyers/list";
     }
 
     @GetMapping("/{id}")
-    public String details(@PathVariable long id, @RequestParam(defaultValue = "1") int page,
-                          @RequestParam(defaultValue = "10") int size, Model model) {
+    public String detail(@PathVariable long id, @RequestParam(defaultValue = "1") int page,
+                         @RequestParam(defaultValue = "10") int size, Model model) {
         model.addAttribute("buyer", buyerService.getDetails(id));
         model.addAttribute("history", buyerService.getInquiryHistory(id, page, size));
         return "sales/buyers/details";
@@ -41,103 +51,140 @@ public class BuyerWebController {
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("buyerForm", new BuyerForm());
-        return form(model, null);
+        model.addAttribute("form", new BuyerRequest());
+        model.addAttribute("buyerId", null);
+        model.addAttribute("editing", false);
+        return "sales/buyers/form";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable long id, Model model) {
-        var buyer = buyerService.getDetails(id);
-        var input = new BuyerForm();
-        input.setFullName(buyer.getFullName());
-        input.setPhone(buyer.getPhone());
-        input.setEmail(buyer.getEmail());
-        input.setAddress(buyer.getAddress());
-        input.setRevision(buyer.getRevision() == null ? null : buyer.getRevision().toString());
-        model.addAttribute("buyerForm", input);
-        return form(model, id);
+        model.addAttribute("form", buyerService.formFor(id));
+        model.addAttribute("buyerId", id);
+        model.addAttribute("editing", true);
+        return "sales/buyers/form";
     }
 
     @PostMapping
-    public String create(@ModelAttribute("buyerForm") BuyerForm input, BindingResult binding,
+    public String create(@Valid @ModelAttribute("form") BuyerRequest input, BindingResult binding,
                          Model model, RedirectAttributes redirect) {
-        if (binding.hasErrors()) return form(model, null);
+        validateFields(input, binding, false);
+        if (binding.hasErrors()) {
+            model.addAttribute("buyerId", null);
+            model.addAttribute("editing", false);
+            return "sales/buyers/form";
+        }
         try {
-            var buyer = buyerService.create(new CreateBuyerRequest(input.getFullName(), input.getPhone(),
-                    input.getEmail(), input.getAddress(), input.isConsentStored()));
-            redirect.addFlashAttribute("success", "Buyer created successfully.");
+            BuyerResponse buyer = buyerService.create(input);
+            redirect.addFlashAttribute("flashMessage", "Buyer created successfully.");
             return "redirect:/sales/buyers/" + buyer.getBuyerId();
         } catch (BuyerException ex) {
-            formErrors(ex, binding, model);
-            return form(model, null);
+            if (ex.getReason() == BuyerException.Reason.NOT_FOUND) {
+                throw ex;
+            }
+            rejectBuyerError(binding, ex);
+            model.addAttribute("buyerId", null);
+            model.addAttribute("editing", false);
+            return "sales/buyers/form";
+        } catch (Exception ex) {
+            binding.reject("buyer.persistence", "Không thể lưu Buyer lúc này. Vui lòng kiểm tra thông tin và thử lại.");
+            model.addAttribute("buyerId", null);
+            model.addAttribute("editing", false);
+            return "sales/buyers/form";
         }
     }
 
     @PostMapping("/{id}/edit")
-    public String update(@PathVariable long id, @ModelAttribute("buyerForm") BuyerForm input,
+    public String update(@PathVariable long id, @Valid @ModelAttribute("form") BuyerRequest input,
                          BindingResult binding, Model model, RedirectAttributes redirect) {
-        if (binding.hasErrors()) return form(model, id);
-        Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put("fullName", input.getFullName());
-        fields.put("phone", input.getPhone());
-        fields.put("email", input.getEmail());
-        fields.put("address", input.getAddress());
-        fields.put("revision", input.getRevision());
+        validateFields(input, binding, true);
+        if (binding.hasErrors()) {
+            model.addAttribute("buyerId", id);
+            model.addAttribute("editing", true);
+            return "sales/buyers/form";
+        }
         try {
-            buyerService.update(id, new UpdateBuyerRequest(fields));
-            redirect.addFlashAttribute("success", "Buyer updated successfully.");
+            buyerService.update(id, input);
+            redirect.addFlashAttribute("flashMessage", "Buyer updated successfully.");
             return "redirect:/sales/buyers/" + id;
         } catch (BuyerException ex) {
-            formErrors(ex, binding, model);
-            return form(model, id);
+            if (ex.getReason() == BuyerException.Reason.NOT_FOUND) {
+                throw ex;
+            }
+            if (ex.getReason() == BuyerException.Reason.CONFLICT && ex.getErrors().isEmpty()) {
+                model.addAttribute("revisionConflict", true);
+            }
+            rejectBuyerError(binding, ex);
+            model.addAttribute("buyerId", id);
+            model.addAttribute("editing", true);
+            return "sales/buyers/form";
+        } catch (Exception ex) {
+            binding.reject("buyer.persistence", "Không thể lưu Buyer lúc này. Vui lòng kiểm tra thông tin và thử lại.");
+            model.addAttribute("buyerId", id);
+            model.addAttribute("editing", true);
+            return "sales/buyers/form";
         }
     }
 
     @GetMapping("/{id}/delete")
     public String deleteConfirmation(@PathVariable long id, Model model) {
-        model.addAttribute("buyer", buyerService.getDetails(id));
-        model.addAttribute("confirmDelete", true);
+        model.addAttribute("deleteForm", new DeleteBuyerRequest());
+        prepareDeleteModel(id, model);
         return "sales/buyers/details";
     }
 
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable long id, Model model, RedirectAttributes redirect) {
+    public String delete(@PathVariable long id, @Valid @ModelAttribute("deleteForm") DeleteBuyerRequest form,
+                         BindingResult binding, Model model, RedirectAttributes redirect) {
+        if (binding.hasErrors()) {
+            prepareDeleteModel(id, model);
+            return "sales/buyers/details";
+        }
         try {
-            buyerService.delete(id);
-            redirect.addFlashAttribute("success", "Buyer deleted successfully.");
+            buyerService.delete(id, form.getReason());
+            redirect.addFlashAttribute("flashMessage", "Buyer deleted successfully.");
             return "redirect:/sales/buyers";
         } catch (BuyerException ex) {
-            model.addAttribute("error", ex.getMessage());
+            if (ex.getReason() == BuyerException.Reason.NOT_FOUND) {
+                throw ex;
+            }
+            if (ex.getReason() == BuyerException.Reason.VALIDATION) {
+                binding.rejectValue("reason", "buyer.invalid", ex.getMessage());
+            } else {
+                model.addAttribute("error", ex.getMessage());
+            }
+            prepareDeleteModel(id, model);
+            return "sales/buyers/details";
+        } catch (Exception ex) {
+            model.addAttribute("error", "Không thể xóa Buyer lúc này. Vui lòng tải lại trang và thử lại.");
+            prepareDeleteModel(id, model);
             return "sales/buyers/details";
         }
     }
 
-    private String form(Model model, Long id) {
-        model.addAttribute("buyerId", id);
-        model.addAttribute("editing", id != null);
-        return "sales/buyers/form";
+    private void validateFields(BuyerRequest input, BindingResult binding, boolean editing) {
+        for (Map.Entry<String, String> error : BuyerValidation.errors(
+                input.getFullName(), input.getPhone(), input.getEmail(), input.getAddress()).entrySet()) {
+            if (!binding.hasFieldErrors(error.getKey())) {
+                binding.rejectValue(error.getKey(), "buyer.invalid", error.getValue());
+            }
+        }
+        if (!editing && !binding.hasFieldErrors("consentStored") && !input.isConsentStored()) {
+            binding.rejectValue("consentStored", "buyer.invalid", BuyerValidation.CONSENT_REQUIRED);
+        }
     }
 
-    private void formErrors(BuyerException ex, BindingResult binding, Model model) {
-        model.addAttribute("error", ex.getMessage());
-        ex.getErrors().forEach((field, message) -> binding.rejectValue(field, "buyer.invalid", message));
+    private void rejectBuyerError(BindingResult binding, BuyerException ex) {
+        if (ex.getErrors().isEmpty()) {
+            binding.reject("buyer.business", ex.getMessage());
+        } else {
+            ex.getErrors().forEach((field, message) -> binding.rejectValue(field, "buyer.invalid", message));
+        }
     }
 
-    @ExceptionHandler(BuyerException.class)
-    public String buyerError(BuyerException ex, Model model, HttpServletResponse response) {
-        response.setStatus(switch (ex.getReason()) {
-            case NOT_FOUND -> 404;
-            case CONFLICT -> 409;
-            case VALIDATION -> 400;
-        });
-        model.addAttribute("error", ex.getMessage());
-        return "sales/buyers/details";
-    }
-
-    @ExceptionHandler({IllegalArgumentException.class, MethodArgumentTypeMismatchException.class})
-    public String invalidRequest(Exception ex, Model model, HttpServletResponse response) {
-        response.setStatus(400);
-        model.addAttribute("error", "Invalid request. Please check the buyer ID, search and pagination parameters.");
-        return "sales/buyers/details";
+    private void prepareDeleteModel(long id, Model model) {
+        model.addAttribute("buyer", buyerService.getDetails(id));
+        model.addAttribute("history", buyerService.getInquiryHistory(id, 1, 10));
+        model.addAttribute("confirmDelete", true);
     }
 }
