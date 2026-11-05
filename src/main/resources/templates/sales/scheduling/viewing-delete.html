@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Delete Viewing / Test Drive', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="screen-content" id="viewing-delete" th:fragment="content">
+    <link rel="stylesheet" th:href="@{/css/ui/viewing-form.css}">
+    <section class="content-card viewing-card">
+        <h2>Delete appointment</h2>
+        <p th:text="|Delete viewing #${viewing.id}?|"></p>
+        <dl class="viewing-delete-facts">
+            <dt>Buyer</dt><dd th:text="${viewing.buyer}"></dd>
+            <dt>Vehicle</dt><dd th:text="${viewing.vehicle}"></dd>
+            <dt>Type</dt><dd th:text="${viewing.type}"></dd>
+            <dt>Start (ICT)</dt><dd th:text="${#temporals.format(viewing.startTime, 'dd/MM/yyyy HH:mm')}"></dd>
+        </dl>
+        <p>This appointment will be removed from active lists. Its stored record will be retained.</p>
+        <p class="alert buyer-field-error" role="alert" th:if="${error != null}" th:text="${error}"></p>
+        <p th:if="${error != null}"><a th:href="@{/sales/viewings/{id}/delete(id=${viewing.id})}">Reload appointment</a></p>
+        <form method="post" th:action="@{/sales/viewings/{id}/delete(id=${viewing.id})}">
+            <input type="hidden" name="revision" th:value="${revision}">
+            <div class="viewing-actions">
+                <a class="button" th:href="@{/sales/viewings}">Cancel</a>
+                <button class="button viewing-delete-button" type="submit" th:disabled="${error != null}">Confirm Delete</button>
+            </div>
+        </form>
+    </section>
+</section>
+</body>
+</html>

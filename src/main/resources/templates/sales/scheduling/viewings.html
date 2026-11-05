@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Viewings / Test Drive', ~{::content})}" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="screen-content" id="viewings-list" th:fragment="content">
+    <link rel="stylesheet" th:href="@{/css/ui/viewings-list.css}">
+    <script defer th:src="@{/js/sales/viewings-list.js}"></script>
+    <section class="content-card viewings-card" aria-label="Viewings and test drives">
+        <div class="viewings-card-header">
+            <a class="button viewings-create" th:href="@{/sales/inquiries}"><span aria-hidden="true">+</span> Schedule Viewing / Test Drive</a>
+        </div>
+        <form id="viewings-filter-form" class="viewings-filters" method="get" th:action="@{/sales/viewings}">
+            <div class="viewings-filter viewings-search">
+                <label class="sr-only" for="viewing-search">Search by buyer or vehicle</label>
+                <button type="submit" class="viewings-search-button" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.7" stroke="currentColor" stroke-width="1.9"/><path d="m16 16 5 5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
+                <input id="viewing-search" name="q" type="search" placeholder="Search by buyer or vehicle..." th:value="${q}">
+            </div>
+            <div class="viewings-filter"><label for="viewing-date">Date</label><input id="viewing-date" name="date" type="date" th:value="${date}"></div>
+            <div class="viewings-filter"><label for="viewing-status">Status</label><select id="viewing-status" name="status"><option value="">All</option><option th:each="s : ${ {'SCHEDULED','COMPLETED','CANCELLED'} }" th:value="${s}" th:text="${s}" th:selected="${s == status}"></option></select></div>
+            <div class="viewings-filter"><label for="viewing-salesperson">Salesperson</label><select id="viewing-salesperson" name="salespersonId"><option value="">All</option><option th:each="o : ${salespeople}" th:value="${o.id}" th:text="${o.label}" th:selected="${o.id == salespersonId}"></option></select></div>
+            <div class="viewings-filter"><label for="viewing-type">Type</label><select id="viewing-type" name="type"><option value="">All</option><option value="VIEWING" th:selected="${type == 'VIEWING'}">Viewing</option><option value="TEST_DRIVE" th:selected="${type == 'TEST_DRIVE'}">Test Drive</option></select></div>
+            <a class="viewings-clear" th:href="@{/sales/viewings}"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 8a8 8 0 0 0-14-2L4 8m0-4v4h4M4 16a8 8 0 0 0 14 2l2-2m0 4v-4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Clear</a>
+        </form>
+        <div class="viewings-table-wrap">
+            <table class="custom-table viewings-table">
+                <caption class="sr-only">Scheduled viewings and test drives</caption>
+                <thead><tr><th scope="col">ID</th><th scope="col">Buyer</th><th scope="col">Vehicle</th><th scope="col">Type</th><th scope="col">Start (ICT)</th><th scope="col">End (ICT)</th><th scope="col">Salesperson</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+                <tbody>
+                <tr th:each="v : ${rows.content}">
+                    <td th:text="${v.id}"></td><td th:text="${v.buyer}"></td><td th:text="${v.vehicle}"></td>
+                    <td><span class="viewings-type" th:classappend="${v.type == 'TEST_DRIVE'} ? ' is-test-drive' : ' is-viewing'" th:text="${v.type}"></span></td>
+                    <td th:text="${#temporals.format(v.startTime, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td th:text="${v.endTime == null ? '—' : #temporals.format(v.endTime, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td th:text="${v.salesperson}"></td><td><span class="viewings-status" th:attr="data-status=${v.status}" th:text="${v.status}"></span></td>
+                    <td class="viewings-actions">
+                        <a class="viewings-icon-button" th:href="@{/sales/inquiries/{id}(id=${v.inquiryId})}" th:attr="aria-label=|View inquiry for viewing ${v.id}|,title=|View inquiry for viewing ${v.id}|"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg></a>
+                        <a class="viewings-icon-button viewings-edit" th:if="${v.status == 'SCHEDULED'}" th:href="@{/sales/viewings/{id}/edit(id=${v.id})}" th:attr="aria-label=|Edit viewing ${v.id}|,title=|Edit viewing ${v.id}|"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 16-.8 4.8L8 20l10.9-10.9-4-4L4 16Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m13.5 6.5 4 4" stroke="currentColor" stroke-width="1.8"/></svg></a>
+                        <a class="viewings-icon-button viewings-delete" th:if="${v.status == 'SCHEDULED'}" th:href="@{/sales/viewings/{id}/delete(id=${v.id})}" th:attr="aria-label=|Delete viewing ${v.id}|,title=|Delete viewing ${v.id}|"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v6m4-6v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+                    </td>
+                </tr>
+                <tr th:if="${rows.empty}"><td class="viewings-empty" colspan="9">No viewings found. Try changing your filters.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="viewings-footer">
+            <div class="viewings-rows"><label for="viewing-size">Rows</label><select id="viewing-size" name="size" form="viewings-filter-form"><option th:each="count : ${ {10,20,50} }" th:value="${count}" th:text="${count}" th:selected="${count == rows.size}"></option></select></div>
+            <nav aria-label="Pagination" class="viewings-pages">
+                <a class="button" th:classappend="${!rows.hasPrevious()} ? ' is-disabled' : ''" th:href="@{/sales/viewings(page=${rows.hasPrevious() ? rows.number : 1},size=${rows.size},date=${date},status=${status},salespersonId=${salespersonId},q=${q},type=${type})}" th:attr="aria-disabled=${!rows.hasPrevious()}">Previous</a>
+                <a class="button viewings-page-number" th:each="pageNumber : ${#numbers.sequence(rows.number > 2 ? rows.number - 1 : 1, rows.totalPages == 0 ? 1 : (rows.number + 3 < rows.totalPages ? rows.number + 3 : rows.totalPages))}" th:href="@{/sales/viewings(page=${pageNumber},size=${rows.size},date=${date},status=${status},salespersonId=${salespersonId},q=${q},type=${type})}" th:classappend="${pageNumber == rows.number + 1} ? ' is-current' : ''" th:attr="aria-current=${pageNumber == rows.number + 1} ? 'page' : null" th:text="${pageNumber}"></a>
+                <a class="button" th:classappend="${!rows.hasNext()} ? ' is-disabled' : ''" th:href="@{/sales/viewings(page=${rows.number + 2},size=${rows.size},date=${date},status=${status},salespersonId=${salespersonId},q=${q},type=${type})}" th:attr="aria-disabled=${!rows.hasNext()}">Next</a>
+            </nav>
+        </div>
+    </section>
+</section>
+</body>
+</html>

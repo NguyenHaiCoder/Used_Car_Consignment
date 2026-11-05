@@ -1,0 +1,57 @@
+.main-content:has(#viewings-list) .page-header { margin-bottom: 16px; }
+.main-content:has(#viewings-list) .eyebrow { color: #bd4b00; }
+.main-content:has(#viewings-list) .buyer-toolbar { margin-bottom: 0; }
+.main-content:has(#viewings-list) .buyer-toolbar .button { min-height: 44px; border-radius: 8px; background: #fff; border-color: #d9e1ed; color: #172033; }
+.main-content:has(#viewings-list) .buyer-toolbar .button.buyer-primary { border-color: #f36a0b; color: #ba4600; background: #fff; }
+#viewings-list { min-width: 0; }
+#viewings-list .viewings-card { padding: 14px 16px 22px; border: 1px solid #d8e1ef; border-radius: 10px; box-shadow: 0 8px 28px rgb(31 59 98 / 4%); }
+#viewings-list .viewings-card-header { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+#viewings-list .viewings-create { min-height: 46px; padding: 10px 18px; border-radius: 8px; border: 1px solid #ee5a00; background: #f46700; color: #fff; font-weight: 700; white-space: nowrap; }
+#viewings-list .viewings-create:hover { background: #d95200; border-color: #d95200; color: #fff; }
+#viewings-list .viewings-create span { font-size: 22px; font-weight: 400; line-height: 0; margin-right: 5px; }
+#viewings-list .viewings-filters { display: grid; grid-template-columns: minmax(220px,2.2fr) minmax(145px,.95fr) minmax(140px,1fr) minmax(155px,1.05fr) minmax(135px,.95fr) auto; gap: 16px; align-items: end; margin: 0 0 18px; }
+#viewings-list .viewings-filter { display: grid; gap: 5px; min-width: 0; }
+#viewings-list .viewings-filter label { font-size: 13px; font-weight: 700; color: #192334; }
+#viewings-list .viewings-filter :is(input,select), #viewings-list .viewings-rows select { min-width: 0; width: 100%; height: 42px; padding: 8px 12px; border: 1px solid #cfd9e8; border-radius: 8px; background: #fff; color: #172033; font: inherit; font-size: 14px; box-shadow: 0 1px 2px rgb(30 60 100 / 3%); }
+#viewings-list .viewings-search { position: relative; align-self: end; }
+#viewings-list .viewings-search input { padding-left: 46px; }
+#viewings-list .viewings-search input::placeholder { color: #61728c; opacity: 1; }
+#viewings-list .viewings-search-button { position: absolute; left: 0; top: 0; height: 42px; width: 42px; display: grid; place-items: center; padding: 0; border: 0; background: none; color: #526989; cursor: pointer; }
+#viewings-list .viewings-search-button svg, #viewings-list .viewings-clear svg { width: 20px; height: 20px; }
+#viewings-list .viewings-clear { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 42px; padding: 0 0 0 16px; border-left: 1px solid #d5deeb; color: #e05800; font-size: 14px; font-weight: 600; white-space: nowrap; }
+#viewings-list .viewings-clear:hover { color: #b84700; text-decoration: underline; }
+#viewings-list .viewings-table-wrap { max-width: 100%; overflow-x: auto; border: 1px solid #e0e7f1; border-radius: 10px; }
+#viewings-list .viewings-table { width: 100%; min-width: 1060px; table-layout: auto; font-size: 14px; }
+#viewings-list .viewings-table th { padding: 12px 14px; background: #f3f6fa; color: #4d6182; font-size: 13px; font-weight: 700; text-align: left; white-space: nowrap; }
+#viewings-list .viewings-table td { padding: 10px 14px; height: 56px; color: #111b2c; vertical-align: middle; white-space: nowrap; border-bottom: 1px solid #e7edf5; }
+#viewings-list .viewings-table tbody tr:last-child td { border-bottom: 0; }
+#viewings-list .viewings-table tbody tr:hover { background: #f9fbfe; }
+#viewings-list .viewings-table td:nth-child(2), #viewings-list .viewings-table td:nth-child(3), #viewings-list .viewings-table td:nth-child(7) { white-space: normal; min-width: 130px; }
+#viewings-list .viewings-type, #viewings-list .viewings-status { display: inline-flex; align-items: center; min-height: 28px; padding: 3px 11px; border-radius: 7px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+#viewings-list .viewings-type.is-viewing { background: #e0f3e4; color: #06752d; }
+#viewings-list .viewings-type.is-test-drive { background: #dceeff; color: #064d9d; }
+#viewings-list .viewings-status[data-status="SCHEDULED"] { background: #fff0df; color: #b84b00; }
+#viewings-list .viewings-status[data-status="COMPLETED"] { background: #e1f5e8; color: #087044; }
+#viewings-list .viewings-status[data-status="CANCELLED"] { background: #ffeded; color: #b42318; }
+#viewings-list .viewings-actions { text-align: center; white-space: nowrap; }
+#viewings-list .viewings-icon-button { display: inline-grid; place-items: center; width: 42px; height: 40px; border: 1px solid #cbd8e8; border-radius: 9px; background: #fff; color: #e65d00; box-shadow: 0 1px 2px rgb(30 50 80 / 5%); }
+#viewings-list .viewings-icon-button:hover { background: #fff4eb; border-color: #ec8a4d; }
+#viewings-list .viewings-icon-button svg { width: 21px; height: 21px; }
+#viewings-list .viewings-icon-button + .viewings-icon-button { margin-left: 4px; }
+#viewings-list .viewings-edit { color: #1262bf; }
+#viewings-list .viewings-edit:hover { background: #eef6ff; border-color: #8db8ee; }
+#viewings-list .viewings-delete { color: #d9272e; }
+#viewings-list .viewings-delete:hover { background: #fff0f0; border-color: #ee9ea2; }
+#viewings-list .viewings-empty { padding: 40px 18px; text-align: center; color: #61728c; white-space: normal; }
+#viewings-list .viewings-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; }
+#viewings-list .viewings-rows { display: flex; align-items: center; gap: 12px; white-space: nowrap; font-size: 14px; }
+#viewings-list .viewings-rows select { width: 84px; font-weight: 600; }
+#viewings-list .viewings-pages { display: flex; align-items: center; gap: 6px; }
+#viewings-list .viewings-pages .button { display: inline-grid; place-items: center; min-width: 42px; height: 42px; padding: 7px 13px; border: 1px solid #d0dbea; border-radius: 9px; background: #fff; color: #172033; font-size: 14px; font-weight: 600; }
+#viewings-list .viewings-pages .button:hover { border-color: #8eace5; background: #f6f9ff; }
+#viewings-list .viewings-pages .button.is-current { border-color: #085cf0; background: #0860f4; color: #fff; }
+#viewings-list .viewings-pages .button.is-disabled { color: #9ba9be; pointer-events: none; }
+#viewings-list :is(a,button,input,select):focus-visible { outline: 3px solid #2069ef; outline-offset: 2px; }
+@media (max-width: 1250px) { #viewings-list .viewings-filters { grid-template-columns: repeat(4,minmax(0,1fr)); } #viewings-list .viewings-search { grid-column: span 2; } #viewings-list .viewings-clear { justify-self: start; } }
+@media (max-width: 760px) { #viewings-list .viewings-card { padding: 14px; } #viewings-list .viewings-filters { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; } #viewings-list .viewings-search { grid-column: 1 / -1; } #viewings-list .viewings-footer { align-items: flex-start; flex-direction: column; } #viewings-list .viewings-pages { max-width: 100%; overflow-x: auto; padding-bottom: 2px; } }
+@media (max-width: 480px) { #viewings-list .viewings-card-header { justify-content: stretch; } #viewings-list .viewings-create { width: 100%; justify-content: center; font-size: 13px; } #viewings-list .viewings-filters { grid-template-columns: 1fr; } #viewings-list .viewings-search { grid-column: auto; } #viewings-list .viewings-clear { border-left: 0; padding-left: 0; } }

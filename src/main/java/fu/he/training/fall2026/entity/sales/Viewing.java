@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +18,20 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "viewings")
+@SQLRestriction("deleted_at IS NULL")
 public class Viewing extends BaseEntity {
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    private Instant endAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_user_id")
+    private fu.he.training.fall2026.entity.auth.User assignedTo;
+
+    @Column(length = 40)
+    private String status = "SCHEDULED";
 
     @Column(nullable = false, unique = true, length = 40)
     private String code;
