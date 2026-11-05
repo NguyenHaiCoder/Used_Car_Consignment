@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/scheduling/layout :: shell(${editing == true ? 'Edit Inquiry' : 'Create Inquiry'}, ~{::content})}" xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="screen-content" id="inquiry-editor" th:fragment="content">
+    <link rel="stylesheet" th:href="@{/css/ui/inquiry-form.css}">
+    <section class="content-card inquiry-form-card">
+        <div class="content-card-header">
+            <h2>Nhập thông tin</h2>
+            <span class="caption">* Thông tin bắt buộc</span>
+        </div>
+        <form id="buyer-create-form" class="inquiry-form" method="post"
+              th:action="${editing == true} ? @{/sales/inquiries/{id}/edit(id=${inquiryId})} : @{/sales/inquiries}"
+              th:object="${inquiryForm}"
+              th:attr="novalidate=${editing == true ? null : 'novalidate'},data-draft-key=|inquiry:${editing == true ? inquiryId : 'create'}:${session.AUTH_USER_ID}|,data-restore-draft=${restoreDraft == true and inquiryForm.buyerId == null},data-has-errors=${#fields.hasAnyErrors()}">
+            <input th:if="${editing == true}" th:field="*{revision}" type="hidden">
+            <th:block th:unless="${editing == true}">
+                <input th:field="*{inquiryDate}" type="hidden">
+                <span class="buyer-field-error" role="alert" th:errors="*{inquiryDate}"></span>
+            </th:block>
+            <p class="buyer-field-error" role="alert" th:if="${editing == true}" th:errors="*{revision}"></p>
+            <p class="alert buyer-field-error" role="alert" th:if="${#fields.hasAnyErrors()}">Vui lòng kiểm tra các thông tin được đánh dấu.</p>
+            <p class="buyer-field-error" role="alert" th:each="e : ${#fields.globalErrors()}" th:text="${e}"></p>
+            <p class="inquiry-draft-message" id="inquiry-draft-message" role="status" hidden></p>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="buyerId">Khách mua <span class="required">*</span></label>
+                    <select id="buyerId" required th:field="*{buyerId}" aria-describedby="buyer-error">
+                        <option value="">Chọn một giá trị</option>
+                        <option th:each="o : ${buyers}" th:text="${o.label}" th:value="${o.id}"></option>
+                    </select>
+                    <span class="buyer-field-error" id="buyer-error" th:errors="*{buyerId}"></span>
+                    <button class="button inquiry-load-vehicles" id="inquiry-load-vehicles" formnovalidate
+                            th:formaction="${editing == true} ? @{/sales/inquiries/{id}/vehicles(id=${inquiryId})} : @{/sales/inquiries/vehicles}"
+                            type="submit">Cập nhật xe theo khách mua</button>
+                </div>
+                <div class="field">
+                    <label for="vehicleId">Xe quan tâm <span class="required">*</span></label>
+                    <select id="vehicleId" required th:field="*{vehicleId}" aria-describedby="vehicle-error">
+                        <option value="">Chọn một giá trị</option>
+                        <option th:each="o : ${vehicles}" th:text="${o.label}" th:value="${o.id}"></option>
+                    </select>
+                    <span class="buyer-field-error" id="vehicle-error" th:errors="*{vehicleId}"></span>
+                </div>
+                <div class="field">
+                    <label for="channel">Kênh liên hệ <span class="required">*</span></label>
+                    <select id="channel" required th:field="*{channel}" aria-describedby="channel-error">
+                        <option value="">Chọn một giá trị</option>
+                        <option value="SHOWROOM">Tại showroom</option>
+                        <option value="PHONE">Điện thoại</option>
+                        <option value="WEBSITE">Website</option>
+                    </select>
+                    <span class="buyer-field-error" id="channel-error" th:errors="*{channel}"></span>
+                </div>
+                <div class="field">
+                    <label for="need">Nhu cầu <span class="required">*</span></label>
+                    <select id="need" required th:field="*{need}" aria-describedby="need-error">
+                        <option value="">Chọn một giá trị</option>
+                        <option value="PRICE">Hỏi giá</option>
+                        <option value="VIEWING">Xem xe</option>
+                        <option value="TEST_DRIVE">Lái thử</option>
+                    </select>
+                    <span class="buyer-field-error" id="need-error" th:errors="*{need}"></span>
+                </div>
+                <th:block th:if="${editing == true}">
+                    <div class="field">
+                        <label for="inquiryDate">Ngày tư vấn <span class="required">*</span></label>
+                        <input id="inquiryDate" required th:field="*{inquiryDate}" type="date">
+                        <span class="buyer-field-error" th:errors="*{inquiryDate}"></span>
+                    </div>
+                </th:block>
+                <div class="field full-width">
+                    <label for="notes">Ghi chú</label>
+                    <textarea id="notes" maxlength="2000" rows="5" th:field="*{notes}" aria-describedby="notes-error"></textarea>
+                    <span class="buyer-field-error" id="notes-error" th:errors="*{notes}"></span>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button class="button" id="inquiry-save-draft" type="button" hidden>Lưu nháp trên trình duyệt</button>
+                <button class="button action-icon action-delete" id="inquiry-clear-draft" type="button" aria-label="Xóa nháp" title="Xóa nháp" hidden>
+                    <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
+                </button>
+                <button class="button button-primary" id="inquiry-submit" type="submit"
+                        th:text="${editing == true ? 'Lưu thay đổi' : 'Tạo tư vấn'}">Tạo tư vấn</button>
+                <a class="inquiry-cancel" th:href="@{/sales/inquiries}">Hủy</a>
+            </div>
+        </form>
+    </section>
+    <section class="content-card inquiry-related">
+        <div class="content-card-header"><h2>Các bước liên quan</h2><span class="caption">Mở bước xử lý tiếp theo</span></div>
+        <ol class="inquiry-related-links">
+            <li>
+                <a th:if="${editing == true}" th:href="@{/sales/viewings/new(inquiryId=${inquiryId})}"><span>Đặt lịch xem xe</span><span aria-hidden="true">&rarr;</span></a>
+                <button th:unless="${editing == true}" class="inquiry-next-step" form="buyer-create-form" name="next" value="schedule" type="submit"><span>Đặt lịch xem xe</span><span aria-hidden="true">&rarr;</span></button>
+            </li>
+        </ol>
+    </section>
+    <script defer th:src="@{/js/sales/inquiry-form.js}"></script>
+</section>
+</body>
+</html>

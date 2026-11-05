@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Sales Inquiries', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="screen-content" th:fragment="content">
+    <link rel="stylesheet" th:href="@{/css/ui/inquiries-list.css}">
+    <section class="content-card inquiry-list" id="buyer-list">
+        <div class="inquiry-toolbar"><a class="button buyer-primary" th:href="@{/sales/inquiries/new}">Create Inquiry</a>
+        </div>
+        <form class="buyer-search" id="inquiry-list-filters" method="get" role="search" th:action="@{/sales/inquiries}">
+            <input name="page" type="hidden" value="1">
+            <label for="search">Search</label><input id="search" type="search" maxlength="180" name="search" placeholder="ID, code, buyer, VIN or vehicle model"
+                                                     th:value="${search}">
+            <button hidden type="submit">Search</button>
+            <a th:href="@{/sales/inquiries}">Clear</a></form>
+        <div class="buyer-table-wrap">
+            <table class="custom-table buyer-table">
+                <colgroup>
+                    <col class="inquiry-col-id"><col class="inquiry-col-buyer"><col class="inquiry-col-vehicle">
+                    <col class="inquiry-col-salesperson"><col class="inquiry-col-date"><col class="inquiry-col-status">
+                    <col class="inquiry-col-actions">
+                </colgroup>
+                <thead>
+                <tr class="buyer-filter-row">
+                    <td></td><td></td><td></td>
+                    <td><select aria-label="Filter by salesperson" form="inquiry-list-filters" id="salespersonId" name="salespersonId">
+                        <option value="">All</option>
+                        <option th:each="o : ${salespeople}" th:selected="${o.id == salespersonId}" th:text="${o.label}"
+                                th:value="${o.id}"></option>
+                    </select></td>
+                    <td></td>
+                    <td><select aria-label="Filter by status" form="inquiry-list-filters" id="status" name="status">
+                        <option value="">All</option>
+                        <option th:each="s : ${statuses}" th:selected="${s == status}" th:text="${s}" th:value="${s}"></option>
+                    </select></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <th>ID</th>
+                    <th>Buyer</th>
+                    <th>Vehicle</th>
+                    <th>Salesperson</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th class="action-cell">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="i : ${rows.content}">
+                    <td th:text="${i.id}"></td>
+                    <td th:text="${i.buyer}"></td>
+                    <td th:text="${i.vehicle}"></td>
+                    <td th:text="${i.salesperson}"></td>
+                    <td th:text="${#temporals.format(i.date, 'dd/MM/yyyy')}"></td>
+                    <td th:text="${i.status}"></td>
+                    <td class="action-cell">
+                        <div class="row-actions">
+                            <a class="action-icon action-view" th:href="@{/sales/inquiries/{id}(id=${i.id})}"
+                               th:attr="aria-label=|View inquiry ${i.id} details|" title="View inquiry details">
+                                <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
+                            </a>
+                            <a class="action-icon action-edit" th:href="@{/sales/inquiries/{id}/edit(id=${i.id})}"
+                               th:attr="aria-label=|Edit inquiry ${i.id}|" title="Edit inquiry">
+                                <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg>
+                            </a>
+                            <a class="action-icon action-delete" th:href="@{/sales/inquiries/{id}/delete(id=${i.id})}"
+                               th:attr="aria-label=|Delete inquiry ${i.id}|" title="Delete inquiry">
+                                <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${rows.empty}"><td colspan="7">No inquiries found.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="inquiry-table-footer">
+            <div class="inquiry-rows">
+                <label for="size">Rows</label><select form="inquiry-list-filters" id="size" name="size">
+                    <option th:each="s : ${ {10,25,50,100} }" th:selected="${s == rows.size}" th:text="${s}"
+                            th:value="${s}"></option>
+                </select>
+            </div>
+            <nav aria-label="Inquiry pagination" class="pagination"
+                 th:with="currentPage=${rows.number + 1},totalPages=${T(java.lang.Math).max(1, rows.totalPages)},startPage=${T(java.lang.Math).max(1, currentPage - 2)},endPage=${T(java.lang.Math).min(totalPages, currentPage + 2)}">
+                <a class="button" aria-label="Previous page" th:classappend="${!rows.hasPrevious()} ? 'is-disabled'"
+                   th:attr="aria-disabled=${!rows.hasPrevious()}"
+                   th:href="${rows.hasPrevious()} ? @{/sales/inquiries(page=${currentPage - 1},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})} : null">Previous</a>
+                <a class="button" th:if="${startPage > 1}"
+                   th:href="@{/sales/inquiries(page=1,size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})}">1</a>
+                <span th:if="${startPage > 2}" aria-hidden="true">&hellip;</span>
+                <a class="button" th:each="number : ${#numbers.sequence(startPage, endPage)}" th:text="${number}"
+                   th:classappend="${number == currentPage} ? 'is-current'"
+                   th:attr="aria-current=${number == currentPage} ? 'page' : null"
+                   th:href="@{/sales/inquiries(page=${number},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})}"></a>
+                <span th:if="${endPage < totalPages - 1}" aria-hidden="true">&hellip;</span>
+                <a class="button" th:if="${endPage < totalPages}" th:text="${totalPages}"
+                   th:href="@{/sales/inquiries(page=${totalPages},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})}"></a>
+                <a class="button" aria-label="Next page" th:classappend="${!rows.hasNext()} ? 'is-disabled'"
+                   th:attr="aria-disabled=${!rows.hasNext()}"
+                   th:href="${rows.hasNext()} ? @{/sales/inquiries(page=${currentPage + 1},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})} : null">Next</a>
+            </nav>
+        </div>
+    </section>
+    <script defer th:src="@{/js/sales/inquiries-list.js}"></script>
+</section>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Delete Inquiry', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section class="screen-content" id="buyer-details" th:fragment="content">
+    <section class="content-card">
+        <div class="content-card-header"><h2>Confirm Inquiry Deletion</h2></div>
+        <div class="buyer-card-body">
+            <p th:text="|Delete inquiry #${deletion.inquiry.id} (${deletion.inquiry.code})?|"></p>
+            <dl class="buyer-information">
+                <dt>Buyer</dt><dd th:text="${deletion.inquiry.buyer}"></dd>
+                <dt>Vehicle</dt><dd th:text="|${deletion.inquiry.vehicle} / ${deletion.inquiry.vin}|"></dd>
+                <dt>Salesperson</dt><dd th:text="${deletion.inquiry.salesperson}"></dd>
+            </dl>
+            <p>This inquiry will be removed from active lists. Its stored record will be retained.</p>
+            <p class="buyer-field-error" role="alert" th:if="${deletion.linkedRecords}">
+                Cannot delete an inquiry with Viewings or Reservations, including cancelled or completed records.
+            </p>
+            <form method="post" th:action="@{/sales/inquiries/{id}/delete(id=${deletion.inquiry.id})}"
+                  th:object="${deleteForm}">
+                <input th:field="*{revision}" type="hidden">
+                <p class="buyer-field-error" role="alert" th:each="error : ${#fields.allErrors()}" th:text="${error}"></p>
+                <div class="buyer-create-actions">
+                    <a class="button" th:href="@{/sales/inquiries}">Cancel</a>
+                    <button class="button buyer-danger" type="submit" name="confirmed" value="true"
+                            th:disabled="${deletion.linkedRecords}">Confirm Delete</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</section>
+</body>
+</html>
