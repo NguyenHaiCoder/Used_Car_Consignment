@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.dto.buyer;
 
+import fu.he.training.fall2026.dto.common.PaginationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,20 +12,5 @@ import java.util.List;
 @AllArgsConstructor
 public class BuyerListResponse {
     private List<BuyerResponse> data;
-    private Pagination pagination;
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Pagination {
-        private int page;
-        private int size;
-        private long totalElements;
-        private int totalPages;
-        private List<Integer> pageItems;
-
-        public Pagination(int page, int size, long totalElements, int totalPages) {
-            this(page, size, totalElements, totalPages, null);
-        }
-    }
+    private PaginationResponse pagination;
 }

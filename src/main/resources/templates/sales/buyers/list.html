@@ -9,13 +9,17 @@
         <link rel="stylesheet" th:href="@{/css/ui/buyers.css}">
         <p class="alert" role="status" th:if="${flashMessage != null}" th:text="${flashMessage}"></p>
         <section class="content-card" id="buyer-list">
-            <div class="buyer-toolbar"><a class="button buyer-primary" th:href="@{/sales/buyers/new}">Add Buyer</a>
-            </div>
             <form class="buyer-search" id="buyer-list-filters" method="get" role="search" th:action="@{/sales/buyers}">
                 <input id="buyer-id-sort" name="idSort" th:value="${idSort}" type="hidden">
                 <label for="buyer-search">Search buyers</label>
                 <input id="buyer-search" maxlength="180" name="search" placeholder="Buyer ID, full name, phone or email" th:value="${search}"
                        type="search">
+                <label for="buyer-created-sort">Created Date</label>
+                <select aria-label="Sort by Created Date" id="buyer-created-sort" name="createdSort">
+                    <option value="default" th:selected="${createdSort == 'default'}">Mặc định</option>
+                    <option value="newest" th:selected="${createdSort == 'newest'}">Mới nhất</option>
+                    <option value="oldest" th:selected="${createdSort == 'oldest'}">Cũ nhất</option>
+                </select>
                 <label for="buyer-size">Rows per page</label>
                 <select id="buyer-size" name="size">
                     <option th:each="size : ${ {10,25,50,100} }" th:selected="${size == buyers.pagination.size}" th:text="${size}"
@@ -27,40 +31,35 @@
                 <table class="custom-table buyer-table">
                     <colgroup>
                         <col class="buyer-col-id"><col class="buyer-col-name"><col class="buyer-col-phone">
-                        <col class="buyer-col-email"><col class="buyer-col-status"><col class="buyer-col-created">
+                        <col class="buyer-col-status"><col class="buyer-col-email">
                         <col class="buyer-col-actions">
                     </colgroup>
                     <thead>
                     <tr class="buyer-filter-row">
-                        <th></th>
-                        <th></th><th></th><th></th>
+                        <th>
+                            <button class="buyer-id-sort-button" form="buyer-list-filters" id="buyer-id-sort-toggle" type="button"
+                                    th:attr="aria-label=${idSort == 'asc' ? 'Buyer ID ascending. Sort descending' : 'Buyer ID descending. Sort ascending'}"
+                                    title="Sort by Buyer ID first">
+                                <span aria-hidden="true" th:text="${idSort == 'asc' ? '↑' : '↓'}">↓</span>
+                            </button>
+                        </th>
+                        <th></th><th></th>
                         <th><select aria-label="Filter by status" form="buyer-list-filters" id="buyer-status" name="status">
                             <option value="all" th:selected="${status == 'all'}">All</option>
                             <option value="active" th:selected="${status == 'active'}">Active</option>
                             <option value="inactive" th:selected="${status == 'inactive'}">Inactive</option>
                         </select></th>
-                        <th><select aria-label="Sort by Created Date" form="buyer-list-filters" id="buyer-created-sort" name="createdSort">
-                            <option value="default" th:selected="${createdSort == 'default'}">Mặc định</option>
-                            <option value="newest" th:selected="${createdSort == 'newest'}">Mới nhất</option>
-                            <option value="oldest" th:selected="${createdSort == 'oldest'}">Cũ nhất</option>
-                        </select></th>
+                        <th></th>
                         <th></th>
                     </tr>
                     <tr>
                         <th scope="col" th:attr="aria-sort=${createdSort == 'default' ? (idSort == 'asc' ? 'ascending' : 'descending') : 'none'}">
-                            <span class="buyer-id-heading">Buyer ID
-                                <button class="buyer-id-sort-button" form="buyer-list-filters" id="buyer-id-sort-toggle" type="button"
-                                        th:attr="aria-label=${idSort == 'asc' ? 'Buyer ID ascending. Sort descending' : 'Buyer ID descending. Sort ascending'}"
-                                        title="Sort by Buyer ID first">
-                                    <span aria-hidden="true" th:text="${idSort == 'asc' ? '↑' : '↓'}">↓</span>
-                                </button>
-                            </span>
+                            ID
                         </th>
-                        <th>Full Name</th>
-                        <th>Phone Number</th>
-                        <th>Email</th>
+                        <th>Name</th>
+                        <th>Phone</th>
                         <th>Status</th>
-                        <th th:attr="aria-sort=${createdSort == 'default' ? 'none' : (createdSort == 'newest' ? 'descending' : 'ascending')}">Created Date</th>
+                        <th>Email</th>
                         <th>Actions</th>
                     </tr>
                     </thead>
@@ -69,17 +68,27 @@
                         <td th:text="${buyer.buyerId}"></td>
                         <td th:text="${buyer.fullName}"></td>
                         <td th:text="${buyer.phone}"></td>
-                        <td class="buyer-email-cell" th:text="${buyer.email ?: '—'}" th:title="${buyer.email}"></td>
                         <td><span class="buyer-status" th:classappend="${buyer.active} ? ' buyer-status-active' : ' buyer-status-inactive'"
                                   th:text="${buyer.status}"></span></td>
-                        <td th:text="${#temporals.format(buyer.createdDate, 'dd/MM/yyyy')}"></td>
-                        <td>
-                            <a class="button" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId})}">Details</a>
-                            <a class="button" th:href="@{/sales/buyers/{id}/edit(id=${buyer.buyerId})}">Edit</a>
-                            <a class="button buyer-danger" th:if="${buyer.active}" th:href="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}">Delete</a>
+                        <td class="buyer-email-cell" th:text="${buyer.email ?: '—'}" th:title="${buyer.email}"></td>
+                        <td class="action-cell">
+                            <div class="row-actions">
+                                <a class="action-icon action-view" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId})}"
+                                   aria-label="View buyer details" title="View buyer details">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
+                                </a>
+                                <a class="action-icon action-edit" th:href="@{/sales/buyers/{id}/edit(id=${buyer.buyerId})}"
+                                   aria-label="Edit buyer" title="Edit buyer">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg>
+                                </a>
+                                <a class="action-icon action-delete" th:if="${buyer.active}" th:href="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}"
+                                   aria-label="Delete buyer" title="Delete buyer">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
+                                </a>
+                            </div>
                         </td>
                     </tr>
-                    <tr th:if="${#lists.isEmpty(buyers.data)}"><td colspan="7">No buyers found</td></tr>
+                    <tr th:if="${#lists.isEmpty(buyers.data)}"><td colspan="6">No buyers found</td></tr>
                     </tbody>
                 </table>
             </div>

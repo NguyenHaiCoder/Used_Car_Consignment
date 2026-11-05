@@ -5,6 +5,7 @@ import fu.he.training.fall2026.dto.buyer.BuyerRequest;
 import fu.he.training.fall2026.dto.buyer.DeleteBuyerRequest;
 import fu.he.training.fall2026.exception.BuyerException;
 import fu.he.training.fall2026.service.BuyerService;
+import fu.he.training.fall2026.service.InquiryService;
 import fu.he.training.fall2026.validation.BuyerValidation;
 import jakarta.validation.Valid;
 import java.util.Map;
@@ -25,6 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/sales/buyers")
 public class BuyerWebController {
     private final BuyerService buyerService;
+    private final InquiryService inquiryService;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
@@ -45,7 +47,7 @@ public class BuyerWebController {
     public String detail(@PathVariable long id, @RequestParam(defaultValue = "1") int page,
                          @RequestParam(defaultValue = "10") int size, Model model) {
         model.addAttribute("buyer", buyerService.getDetails(id));
-        model.addAttribute("history", buyerService.getInquiryHistory(id, page, size));
+        model.addAttribute("history", inquiryService.getBuyerHistory(id, page, size));
         return "sales/buyers/details";
     }
 
@@ -150,10 +152,11 @@ public class BuyerWebController {
             }
             if (ex.getReason() == BuyerException.Reason.VALIDATION) {
                 binding.rejectValue("reason", "buyer.invalid", ex.getMessage());
-            } else {
-                model.addAttribute("error", ex.getMessage());
             }
             prepareDeleteModel(id, model);
+            if (ex.getReason() == BuyerException.Reason.CONFLICT) {
+                model.addAttribute("deleteBlockedReason", ex.getMessage());
+            }
             return "sales/buyers/details";
         } catch (Exception ex) {
             model.addAttribute("error", "Không thể xóa Buyer lúc này. Vui lòng tải lại trang và thử lại.");
@@ -184,7 +187,8 @@ public class BuyerWebController {
 
     private void prepareDeleteModel(long id, Model model) {
         model.addAttribute("buyer", buyerService.getDetails(id));
-        model.addAttribute("history", buyerService.getInquiryHistory(id, 1, 10));
+        model.addAttribute("history", inquiryService.getBuyerHistory(id, 1, 10));
+        model.addAttribute("deleteBlockedReason", buyerService.deletionBlockReason(id));
         model.addAttribute("confirmDelete", true);
     }
 }

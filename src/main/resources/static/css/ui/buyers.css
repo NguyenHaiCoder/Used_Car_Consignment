@@ -22,6 +22,7 @@
 .buyer-card-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 #buyer-details #delete-reason { width: 100%; min-height: 80px; box-sizing: border-box; resize: vertical; border: 1px solid #cfd7e5; border-radius: 7px; padding: 9px 12px; font: inherit; }
 #buyer-details #delete-reason-error:empty { display: none; }
+#buyer-details form .buyer-danger:disabled { opacity: .5; cursor: not-allowed; }
 #buyer-details .pagination { gap: 1rem; flex-wrap: wrap; margin-top: 12px; }
 .buyer-page-actions { margin-bottom: 0.5rem; }
 .buyer-information { display: grid; grid-template-columns: minmax(140px, 1fr) 3fr; gap: 1rem; }
@@ -54,11 +55,12 @@
 .main-content:has(#buyer-list) h1 { font-size: clamp(24px, 2vw, 28px); margin-bottom: 6px; }
 .main-content:has(#buyer-list) .page-description { font-size: 14px; }
 #buyer-list { padding: 16px 20px 20px; border-radius: 8px; box-shadow: 0 1px 3px rgb(16 24 40 / 2%); }
-#buyer-list .buyer-toolbar { margin-bottom: 16px; }
+.buyer-list-header { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+.buyer-list-header > div { min-width: 0; }
+.buyer-list-header .buyer-primary { flex-shrink: 0; white-space: nowrap; }
 #buyer-list .button { min-height: 40px; border-radius: 7px; font-size: 14px; padding: 8px 14px; }
-#buyer-list .buyer-primary { background: #2169f5; border-color: #2169f5; color: #fff; box-shadow: inset 0 1px 2px rgb(255 255 255 / 15%); }
-#buyer-list .buyer-primary:hover { background: #1858d8; border-color: #1858d8; }
-#buyer-list .buyer-primary:disabled { background: var(--color-disabled); color: var(--color-muted); border-color: var(--color-border); }
+.buyer-list-header .buyer-primary { background: #2169f5; border-color: #2169f5; color: #fff; box-shadow: inset 0 1px 2px rgb(255 255 255 / 15%); }
+.buyer-list-header .buyer-primary:hover { background: #1858d8; border-color: #1858d8; }
 .buyer-icon { width: 22px; height: 22px; flex: 0 0 22px; }
 #buyer-list .buyer-search { gap: 10px; padding: 12px; margin: 0 0 16px; background: #f5f6f8; border: 1px solid #e3e8ef; border-radius: 7px; }
 #buyer-list .buyer-search > label { font-size: 14px; font-weight: 600; margin-right: 4px; }
@@ -73,29 +75,25 @@
 #buyer-created a { color: #1764ed; text-decoration: underline; }
 #buyer-list .buyer-table-title { font-size: 17px; font-weight: 600; margin: 0 0 12px; }
 #buyer-list .buyer-table-wrap { border: 1px solid #e3e8ef; border-radius: 7px; overflow-x: auto; }
-#buyer-list .buyer-table { min-width: 1120px; table-layout: fixed; font-size: 14px; }
-#buyer-list .buyer-col-id { width: 10%; }
-#buyer-list .buyer-col-name { width: 18%; }
-#buyer-list .buyer-col-phone { width: 12%; }
-#buyer-list .buyer-col-email { width: 20%; }
-#buyer-list .buyer-col-status { width: 9%; }
-#buyer-list .buyer-col-created { width: 12%; }
-#buyer-list .buyer-col-actions { width: 19%; }
+#buyer-list .buyer-table { min-width: 1000px; table-layout: fixed; font-size: 14px; }
+#buyer-list .buyer-col-id { width: 8%; }
+#buyer-list .buyer-col-name { width: 22%; }
+#buyer-list .buyer-col-phone { width: 14%; }
+#buyer-list .buyer-col-status { width: 11%; }
+#buyer-list .buyer-col-email { width: 27%; }
+#buyer-list .buyer-col-actions { width: 18%; }
 #buyer-list .buyer-filter-row th { padding: 8px 12px; vertical-align: middle; }
 #buyer-list .buyer-filter-row select { width: 100%; min-width: 0; min-height: 36px; padding: 6px 8px; font-size: 12px; }
 #buyer-list .buyer-table th { background: #f5f6f8; color: #50617d; font-size: 13px; font-weight: 600; padding: 10px 12px; white-space: nowrap; }
-#buyer-list .buyer-id-heading { display: inline-flex; align-items: center; gap: 3px; }
-#buyer-list .buyer-id-sort-button { display: inline-grid; place-items: center; width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #2169f5; font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+#buyer-list .buyer-id-sort-button { display: inline-grid; place-items: center; vertical-align: middle; width: 36px; height: 36px; min-height: 36px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: #2169f5; font: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
 #buyer-list .buyer-id-sort-button:hover, #buyer-list .buyer-id-sort-button:focus-visible { background: #e7efff; outline: 2px solid #2169f5; outline-offset: 1px; }
 #buyer-list .buyer-table td { padding: 10px 12px; height: 54px; min-width: 0; overflow-wrap: normal; }
 #buyer-list .buyer-table tbody tr:last-child td { border-bottom: 0; }
 #buyer-list .buyer-table tbody tr:hover { background: #f8faff; }
 #buyer-list .buyer-table td:last-child { white-space: nowrap; }
-#buyer-list .buyer-table td:last-child .button + .button { margin-left: 6px; }
 #buyer-list .buyer-table td:nth-child(2) { min-width: 140px; max-width: 240px; overflow-wrap: anywhere; }
-#buyer-list .buyer-table td:is(:nth-child(1), :nth-child(3), :nth-child(5), :nth-child(6)) { white-space: nowrap; }
+#buyer-list .buyer-table td:is(:nth-child(1), :nth-child(3), :nth-child(4)) { white-space: nowrap; }
 #buyer-list .buyer-table .buyer-email-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
-#buyer-list .buyer-table td:last-child .button { padding: 8px 12px; font-weight: 500; }
 #buyer-list .pagination { padding: 14px 0 0; justify-content: flex-end; font-size: 14px; }
 #buyer-list .pagination label { margin-right: auto; }
 #buyer-list .pagination .button { font-size: 14px; }

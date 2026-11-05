@@ -10,12 +10,13 @@
     <button aria-label="Close navigation" class="nav-overlay" hidden></button>
     <header th:replace="~{common/header :: header}"></header>
     <main class="main-content" id="main" tabindex="-1">
-        <div class="page-header">
+        <div class="page-header" th:classappend="${buyers != null} ? 'buyer-list-header' : ''">
             <div>
                 <p class="eyebrow">Kinh doanh</p>
                 <h1 th:text="${title}"></h1>
                 <p class="page-description" th:text="${description}"></p>
             </div>
+            <a class="button buyer-primary" th:if="${buyers != null}" th:href="@{/sales/buyers/new}">Add Buyer</a>
         </div>
         <section th:replace="${content}"></section>
         <footer th:replace="~{common/footer :: footer}"></footer>

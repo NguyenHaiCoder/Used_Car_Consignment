@@ -1,4 +1,5 @@
 package fu.he.training.fall2026.service;
+import org.springframework.security.core.Authentication;
 
 import fu.he.training.fall2026.entity.auth.AuditEvent;
 import fu.he.training.fall2026.repository.AuditEventRepository;
@@ -18,8 +19,8 @@ public class BuyerConsentRecorder {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(long buyerId) {
-        var event = new AuditEvent();
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        AuditEvent event = new AuditEvent();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated())
             event.setActor(userRepository.findByEmailIgnoreCase(authentication.getName()).orElse(null));
         event.setAction("BUYER_CONSENT_STORAGE_CONFIRMED");

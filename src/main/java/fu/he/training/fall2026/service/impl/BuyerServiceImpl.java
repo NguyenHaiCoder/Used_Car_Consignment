@@ -3,19 +3,17 @@ package fu.he.training.fall2026.service.impl;
 import fu.he.training.fall2026.dto.buyer.BuyerResponse;
 import fu.he.training.fall2026.dto.buyer.BuyerRequest;
 import fu.he.training.fall2026.dto.buyer.BuyerListResponse;
-import fu.he.training.fall2026.dto.buyer.InquiryHistoryItemResponse;
-import fu.he.training.fall2026.dto.buyer.InquiryHistoryResponse;
+import fu.he.training.fall2026.dto.common.PaginationResponse;
 import fu.he.training.fall2026.entity.sales.Buyer;
-import fu.he.training.fall2026.entity.sales.Inquiry;
 import fu.he.training.fall2026.entity.enums.ContractStatus;
 import fu.he.training.fall2026.entity.enums.ReservationStatus;
 import fu.he.training.fall2026.exception.BuyerCreateException;
 import fu.he.training.fall2026.exception.BuyerException;
 import fu.he.training.fall2026.exception.BuyerException.Reason;
 import fu.he.training.fall2026.repository.BuyerRepository;
-import fu.he.training.fall2026.repository.InquiryRepository;
 import fu.he.training.fall2026.repository.ReservationRepository;
 import fu.he.training.fall2026.repository.SalesContractRepository;
+import fu.he.training.fall2026.repository.ViewingRepository;
 import fu.he.training.fall2026.service.BuyerConsentRecorder;
 import fu.he.training.fall2026.service.BuyerService;
 import fu.he.training.fall2026.validation.BuyerValidation;
@@ -40,9 +38,9 @@ import java.util.Set;
 public class BuyerServiceImpl implements BuyerService {
 
     private final BuyerRepository buyerRepository;
-    private final InquiryRepository inquiryRepository;
     private final ReservationRepository reservationRepository;
     private final SalesContractRepository salesContractRepository;
+    private final ViewingRepository viewingRepository;
     private final BuyerConsentRecorder consentRecorder;
 
     @Override
@@ -168,16 +166,41 @@ public class BuyerServiceImpl implements BuyerService {
         Buyer buyer = buyerRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
 
-        if (reservationRepository.existsByBuyer_IdAndStatus(id, ReservationStatus.ACTIVE)
-                || salesContractRepository.existsByReservation_Buyer_IdAndStatusNotIn(
-                        id, Set.of(ContractStatus.CLOSED, ContractStatus.CANCELLED))) {
-            throw new BuyerException(Reason.CONFLICT,
-                    "Cannot delete buyer with an ACTIVE reservation or a processing sales contract.");
-        }
+        String blockReason = deletionBlockReasonFor(id);
+        if (blockReason != null) throw new BuyerException(Reason.CONFLICT, blockReason);
 
         buyer.setDeleteReason(deleteReason);
         buyer.setDeletedAt(Instant.now());
         buyerRepository.saveAndFlush(buyer);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String deletionBlockReason(long id) {
+        validateId(id);
+        buyerRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
+        return deletionBlockReasonFor(id);
+    }
+
+    private String deletionBlockReasonFor(long id) {
+        List<String> reasons = new ArrayList<>();
+        if (viewingRepository.existsByInquiry_Buyer_IdAndViewingTypeAndStatusAndDeletedAtIsNull(
+                id, "TEST_DRIVE", "SCHEDULED")) {
+            reasons.add("lịch lái thử");
+        }
+        if (reservationRepository.existsByBuyer_IdAndStatus(id, ReservationStatus.ACTIVE)) {
+            reasons.add("đặt xe");
+        }
+        if (salesContractRepository.existsByReservation_Buyer_IdAndStatusNotIn(
+                id, Set.of(ContractStatus.CLOSED, ContractStatus.CANCELLED))) {
+            reasons.add("giao dịch mua xe");
+        }
+        if (reasons.isEmpty()) return null;
+        if (reasons.size() == 3) {
+            return "Không thể xóa người mua này vì đang có lịch lái thử, đặt xe hoặc mua xe.";
+        }
+        return "Không thể xóa người mua này vì đang có " + String.join(" hoặc ", reasons) + ".";
     }
 
     @Override
@@ -224,40 +247,8 @@ public class BuyerServiceImpl implements BuyerService {
 
         return new BuyerListResponse(
                 result.getContent().stream().map(this::toResponse).toList(),
-                new BuyerListResponse.Pagination(
-                        page,
-                        size,
-                        result.getTotalElements(),
-                        result.getTotalPages(),
-                        buildPageItems(page, result.getTotalPages())
-                ));
+                PaginationResponse.of(page, size, result.getTotalElements(), result.getTotalPages()));
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public InquiryHistoryResponse getInquiryHistory(long buyerId, int page, int size) {
-        validateId(buyerId);
-        validatePagination(page, size);
-
-        if (buyerRepository.findById(buyerId).isEmpty()) {
-            throw new BuyerException(Reason.NOT_FOUND, "Buyer not found.");
-        }
-
-        Page<Inquiry> result = inquiryRepository.findByBuyerId(buyerId,
-                PageRequest.of(page - 1, size,
-                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
-
-        return new InquiryHistoryResponse(
-                result.getContent().stream().map(this::toInquiryHistoryItem).toList(),
-                new BuyerListResponse.Pagination(
-                        page,
-                        size,
-                        result.getTotalElements(),
-                        result.getTotalPages(),
-                        buildPageItems(page, result.getTotalPages())
-                ));
-    }
-
 
     private void validateId(long id) {
         if (id <= 0) {
@@ -295,29 +286,6 @@ public class BuyerServiceImpl implements BuyerService {
         }
     }
 
-    private List<Integer> buildPageItems(int page, int totalPages) {
-        List<Integer> items = new ArrayList<>();
-        if (totalPages <= 0) {
-            return items;
-        }
-        items.add(1);
-        int start = Math.max(2, page - 2);
-        int end = Math.min(totalPages - 1, page + 2);
-        if (start > 2) {
-            items.add(-1);
-        }
-        for (int number = start; number <= end; number++) {
-            items.add(number);
-        }
-        if (end < totalPages - 1) {
-            items.add(-1);
-        }
-        if (totalPages > 1) {
-            items.add(totalPages);
-        }
-        return items;
-    }
-
     private BuyerResponse toResponse(Buyer buyer) {
         return new BuyerResponse(
                 buyer.getId(),
@@ -331,13 +299,4 @@ public class BuyerServiceImpl implements BuyerService {
                 buyer.getDeleteReason());
     }
 
-    private InquiryHistoryItemResponse toInquiryHistoryItem(Inquiry inquiry) {
-        return new InquiryHistoryItemResponse(
-                inquiry.getId(),
-                inquiry.getVehicle() != null ? inquiry.getVehicle().getMake() : null,
-                inquiry.getVehicle() != null ? inquiry.getVehicle().getModel() : null,
-                inquiry.getCreatedAt(),
-                inquiry.getStatus(),
-                inquiry.getAssignedTo() != null ? inquiry.getAssignedTo().getFullName() : null);
-    }
 }
