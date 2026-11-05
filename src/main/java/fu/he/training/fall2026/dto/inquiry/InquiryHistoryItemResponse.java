@@ -1,4 +1,4 @@
-package fu.he.training.fall2026.dto.buyer;
+package fu.he.training.fall2026.dto.inquiry;
 
 import fu.he.training.fall2026.entity.enums.InquiryStatus;
 import lombok.AllArgsConstructor;

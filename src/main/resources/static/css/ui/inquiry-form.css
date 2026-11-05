@@ -1,0 +1,35 @@
+#inquiry-editor { min-width: 0; gap: 24px; }
+#inquiry-editor .content-card { border-radius: 18px; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); }
+#inquiry-editor .content-card-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 28px; }
+#inquiry-editor .content-card-header h2 { margin: 0; font-size: 21px; font-weight: 700; }
+#inquiry-editor .caption { color: #718096; font-size: 13px; }
+#inquiry-editor #buyer-create-form { display: block; padding: 28px; border: 0; border-radius: 0 0 18px 18px; }
+#inquiry-editor .form-grid { gap: 30px 24px; }
+#inquiry-editor .field label { font-size: 15px; margin-bottom: 10px; }
+#inquiry-editor .required { color: #b42318; }
+#inquiry-editor .field :is(select, input, textarea) { width: 100%; border: 1px solid #d9dce1; border-radius: 10px; min-height: 52px; padding: 12px 16px; font: inherit; background: #fff; }
+#inquiry-editor #notes { min-height: 132px; resize: vertical; }
+#inquiry-editor :is(select, input, textarea, button, a):focus-visible { outline: 2px solid #ad4f00; outline-offset: 3px; }
+#inquiry-editor .form-actions { align-items: center; gap: 14px; margin-top: 32px; padding-top: 24px; }
+#inquiry-editor .form-actions .button { min-height: 52px; padding: 12px 20px; border-radius: 10px; font-size: 15px; }
+#inquiry-editor #inquiry-submit { background: #ff8000; border-color: #ff8000; color: #171717; }
+#inquiry-editor #inquiry-submit:hover { background: #ed7500; border-color: #ed7500; }
+#inquiry-editor #inquiry-clear-draft { width: 52px; padding: 12px; flex: 0 0 52px; }
+#inquiry-editor .inquiry-cancel { color: #66758d; margin-left: auto; padding: 12px 0; }
+#inquiry-editor .inquiry-load-vehicles { margin-top: 8px; font-size: 13px; }
+#inquiry-editor .buyer-field-error { display: block; margin-top: 6px; font-size: 13px; }
+#inquiry-editor .buyer-field-error:empty { display: none; }
+#inquiry-editor .inquiry-draft-message { padding: 12px 16px; margin: 0 0 20px; border-radius: 8px; background: #edf5ff; color: #245b94; }
+#inquiry-editor [hidden] { display: none !important; }
+#inquiry-editor .inquiry-related-links { list-style: none; counter-reset: inquiry-step; margin: 0; padding: 24px 28px; }
+#inquiry-editor .inquiry-related-links li { counter-increment: inquiry-step; display: flex; align-items: center; gap: 14px; padding: 16px 20px; border: 1px solid #d9dce1; border-radius: 10px; color: #ad4f00; }
+#inquiry-editor .inquiry-related-links li::before { content: counter(inquiry-step); }
+#inquiry-editor .inquiry-related-links a { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: 1; font-weight: 600; color: inherit; }
+#inquiry-editor .inquiry-next-step { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: 1; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+@media (max-width: 700px) {
+  #inquiry-editor .form-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  #inquiry-editor .content-card-header { align-items: flex-start; flex-wrap: wrap; padding: 20px; }
+  #inquiry-editor #buyer-create-form, #inquiry-editor .inquiry-related-links { padding: 20px; }
+  #inquiry-editor .form-actions { gap: 10px; }
+  #inquiry-editor .form-actions .button { font-size: 14px; }
+}

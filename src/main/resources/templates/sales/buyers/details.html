@@ -44,6 +44,8 @@
                 <form method="post" novalidate th:action="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}" th:object="${deleteForm}"
                       th:if="${confirmDelete == true}">
                     <p>Are you sure you want to delete <strong th:text="${buyer.fullName}"></strong>?</p>
+                    <p class="alert buyer-field-error" role="alert" th:if="${deleteBlockedReason != null}"
+                       th:text="${deleteBlockedReason}"></p>
                     <div class="buyer-editor-field">
                         <label for="delete-reason">Lý do xóa<span class="required" aria-hidden="true"> *</span></label>
                         <textarea id="delete-reason" aria-describedby="delete-reason-error" maxlength="500" rows="3" required
@@ -51,7 +53,7 @@
                         <small class="buyer-field-error" id="delete-reason-error" role="alert" th:errors="*{reason}"></small>
                     </div>
                     <a class="button" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId})}">Cancel</a>
-                    <button class="button buyer-danger" type="submit">Confirm Delete</button>
+                    <button class="button buyer-danger" type="submit" th:disabled="${deleteBlockedReason != null}">Confirm Delete</button>
                 </form>
             </div>
         </section>

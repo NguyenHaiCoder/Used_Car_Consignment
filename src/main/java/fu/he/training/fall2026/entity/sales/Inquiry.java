@@ -4,6 +4,8 @@ import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.common.BaseEntity;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
 import fu.he.training.fall2026.entity.enums.InquiryStatus;
+import java.time.Instant;
+import java.time.LocalDate;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,13 +17,20 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "inquiries")
+@SQLRestriction("deleted_at IS NULL")
 public class Inquiry extends BaseEntity {
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    private LocalDate inquiryDate;
 
     @Column(nullable = false, unique = true, length = 40)
     private String code;
@@ -44,6 +53,9 @@ public class Inquiry extends BaseEntity {
 
     @Column(length = 40)
     private String channel;
+
+    @Column(length = 40)
+    private String need;
 
     @Column(length = 2000)
     private String notes;

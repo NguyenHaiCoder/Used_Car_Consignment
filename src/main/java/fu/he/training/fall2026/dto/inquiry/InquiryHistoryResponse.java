@@ -1,5 +1,6 @@
-package fu.he.training.fall2026.dto.buyer;
+package fu.he.training.fall2026.dto.inquiry;
 
+import fu.he.training.fall2026.dto.common.PaginationResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,5 +12,5 @@ import java.util.List;
 @AllArgsConstructor
 public class InquiryHistoryResponse {
     private List<InquiryHistoryItemResponse> data;
-    private BuyerListResponse.Pagination pagination;
+    private PaginationResponse pagination;
 }

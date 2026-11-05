@@ -1,0 +1,11 @@
+#buyer-details .inquiry-history { border-radius: 18px; box-shadow: 0 2px 8px rgb(16 24 40 / 5%); }
+#buyer-details .inquiry-history .content-card-header { padding: 24px 30px; }
+#buyer-details .inquiry-history h2 { margin: 0; font-size: 21px; font-weight: 700; }
+#buyer-details .inquiry-history .timeline { padding: 30px; }
+#buyer-details .inquiry-history .timeline li { padding: 0 0 28px 24px; border-left: 2px solid #dedede; }
+#buyer-details .inquiry-history .timeline li:last-child { padding-bottom: 0; }
+#buyer-details .inquiry-history .timeline li::before { width: 10px; height: 10px; left: -6px; top: 5px; background: #ff8000; }
+#buyer-details .inquiry-history .timeline time,
+#buyer-details .inquiry-history .timeline small { font-size: 13px; color: #66758d; }
+#buyer-details .inquiry-history .timeline strong { margin: 3px 0; font-size: 15px; }
+#buyer-details .inquiry-history .panel-note { padding: 24px 30px; }
