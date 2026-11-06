@@ -1,11 +1,147 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+<html lang="vi" th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/pipeline/layout :: shell('Giữ xe & cọc', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Đặt cọc &amp; giữ xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/reservations/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
+<section th:fragment="content">
+    <section th:if="${screen != null}" data-template="sales/reservations/list">
+        <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+        <section th:replace="~{common/fragments/table :: table}"></section>
+    </section>
+    <div th:if="${screen == null}" id="reservation-list">
+        <section class="content-card reservation-list-card">
+            <div class="reservation-list-actions">
+                <a class="button reservation-create" th:href="@{/sales/reservations/new}">
+                    <span aria-hidden="true">＋</span> Tạo giữ xe
+                </a>
+            </div>
+
+            <form id="reservation-filters" method="get" th:action="@{/sales/reservations}">
+                <input type="hidden" name="size" th:value="${size}">
+                <div class="reservation-search-bar">
+                    <label for="reservation-search">Tìm kiếm</label>
+                    <input id="reservation-search" name="q" type="search" th:value="${q}"
+                           placeholder="Mã đơn, tên người mua, VIN hoặc mẫu xe">
+                    <button class="reservation-search-submit" type="submit">Tìm</button>
+                    <a th:href="@{/sales/reservations}" class="reservation-clear">Xóa lọc</a>
+                </div>
+                <div class="reservation-filter-bar">
+                    <div class="reservation-filter-field">
+                        <label for="reservation-vehicle">Xe</label>
+                        <select id="reservation-vehicle" name="vehicleId" onchange="this.form.submit()">
+                            <option value="">Tất cả xe</option>
+                            <option th:each="vehicle : ${vehicleOptions}" th:value="${vehicle.id}"
+                                    th:text="${vehicle.label}" th:selected="${vehicle.id == vehicleId}"></option>
+                        </select>
+                    </div>
+                    <div class="reservation-filter-field">
+                        <label for="reservation-date">Giữ đến ngày</label>
+                        <input id="reservation-date" name="holdUntil" type="date" th:value="${holdUntil}"
+                               onchange="this.form.submit()">
+                    </div>
+                    <div class="reservation-filter-field">
+                        <label for="reservation-status">Trạng thái</label>
+                        <select id="reservation-status" name="status" onchange="this.form.submit()">
+                            <option value="">Tất cả</option>
+                            <option th:each="item : ${statuses}" th:value="${item}" th:text="${item.toString() == 'ACTIVE' ? 'Đang giữ xe' : (item.toString() == 'EXPIRED' ? 'Hết hạn' : (item.toString() == 'CANCELLED' ? 'Đã hủy' : (item.toString() == 'CONVERTED' ? 'Đã chuyển đổi' : item)))}"
+                                    th:selected="${item == status}"></option>
+                        </select>
+                    </div>
+                    <div class="reservation-filter-field">
+                        <label for="reservation-sort-order">Sắp xếp mã</label>
+                        <select id="reservation-sort-order" name="sort" onchange="this.form.submit()">
+                            <option value="desc" th:selected="${sort == 'desc'}">Mới nhất</option>
+                            <option value="asc" th:selected="${sort == 'asc'}">Cũ nhất</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="reservation-table-wrap">
+                    <table class="reservation-table">
+                        <colgroup><col class="col-reservation"><col class="col-vehicle">
+                            <col class="col-deposit"><col class="col-status"><col class="col-actions"></colgroup>
+                        <thead>
+                        <tr class="reservation-heading-row">
+                            <th scope="col"><a class="reservation-sort-link" th:href="@{/sales/reservations(sort=${sort == 'asc' ? 'desc' : 'asc'},size=${size},q=${q},vehicleId=${vehicleId},holdUntil=${holdUntil},status=${status})}">Giữ xe · khách <span class="reservation-sort" aria-hidden="true">↕</span></a></th>
+                            <th scope="col">Xe</th>
+                            <th scope="col">Tiền cọc</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col" class="reservation-actions-cell">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="r : ${rows.content}">
+                            <td data-label="Giữ xe · khách"><a class="reservation-code" th:href="@{/sales/reservations/{id}(id=${r.id})}"
+                                   th:text="${r.code}"></a><span aria-hidden="true"> · </span><span th:text="${r.buyerName}"></span></td>
+                            <td data-label="Xe" th:text="${r.vehicleLabel}"></td>
+                            <td data-label="Tiền cọc" class="reservation-money" th:text="|${#numbers.formatDecimal(r.depositAmount,1,'POINT',0,'COMMA')} ₫|"></td>
+                            <td data-label="Trạng thái"><span class="reservation-status" th:attr="data-status=${r.status}"
+                                      th:text="${r.status.toString() == 'ACTIVE' ? 'Đang giữ xe' : (r.status.toString() == 'EXPIRED' ? 'Hết hạn' : (r.status.toString() == 'CANCELLED' ? 'Đã hủy' : (r.status.toString() == 'CONVERTED' ? 'Đã chuyển đổi' : r.status)))}"></span>
+                                <small class="reservation-pending" th:if="${r.decisionPending}">Chờ xử lý cọc</small></td>
+                            <td data-label="Thao tác" class="reservation-actions-cell"><div class="reservation-row-actions">
+                                <a class="action-icon action-view" th:href="@{/sales/reservations/{id}(id=${r.id})}"
+                                   th:aria-label="|Xem chi tiết đơn ${r.code}|" title="Xem chi tiết">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
+                                </a>
+                                <a class="action-icon action-edit" th:if="${r.editable}"
+                                   th:href="@{/sales/reservations/{id}/edit(id=${r.id})}"
+                                   th:aria-label="|Sửa đơn giữ xe ${r.code}|" title="Sửa thỏa thuận giữ xe">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg>
+                                </a>
+                                <span class="reservation-disabled-wrap" th:unless="${r.editable}"
+                                      th:title="${r.decisionPending ? 'Đã ghi quyết định xử lý cọc; không thể sửa' : (r.status.name() != 'ACTIVE' ? 'Chỉ đơn ACTIVE mới được sửa' : 'Đơn hiện không đủ điều kiện sửa')}">
+                                    <span class="action-icon action-edit reservation-edit-disabled" role="img"
+                                          th:aria-label="|Đơn ${r.code} hiện không đủ điều kiện sửa|">
+                                        <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg>
+                                    </span>
+                                </span>
+                                <a class="action-icon action-delete" th:if="${r.status.name() == 'ACTIVE' and !r.decisionPending}"
+                                   th:href="@{/sales/reservations/{id}/cancel(id=${r.id})}"
+                                   th:aria-label="|Mở xử lý hủy hoặc hết hạn đơn ${r.code}|" title="Hủy / xử lý cọc">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
+                                </a>
+                                <span class="reservation-disabled-wrap" th:unless="${r.status.name() == 'ACTIVE' and !r.decisionPending}"
+                                      title="Trạng thái hiện tại không cho phép hủy hoặc đang chờ xử lý cọc">
+                                    <span class="action-icon action-delete reservation-cancel-disabled" role="img"
+                                          th:aria-label="|Không thể hủy đơn ${r.code} ở trạng thái hiện tại|"
+                                          title="Không thể hủy ở trạng thái hiện tại">
+                                        <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
+                                    </span>
+                                </span>
+                            </div></td>
+                        </tr>
+                        <tr th:if="${rows.empty}"><td colspan="5" class="reservation-empty">Không có đơn giữ xe phù hợp.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <div class="reservation-pagination">
+                <div class="reservation-page-size"><label for="reservation-size">Số dòng</label>
+                    <select id="reservation-size" name="size" form="reservation-page-size-form" onchange="this.form.submit()">
+                        <option value="10" th:selected="${size == 10}">10</option>
+                        <option value="20" th:selected="${size == 20}">20</option>
+                        <option value="50" th:selected="${size == 50}">50</option>
+                    </select></div>
+                <form id="reservation-page-size-form" method="get" th:action="@{/sales/reservations}">
+                    <input type="hidden" name="q" th:value="${q}">
+                    <input type="hidden" name="vehicleId" th:value="${vehicleId}">
+                    <input type="hidden" name="holdUntil" th:value="${holdUntil}">
+                    <input type="hidden" name="status" th:value="${status}">
+                    <input type="hidden" name="sort" th:value="${sort}">
+                </form>
+                <span class="reservation-count" th:text="|Hiển thị ${firstRow}–${lastRow} / ${rows.totalElements} đơn|"></span>
+                <nav class="reservation-pages" aria-label="Phân trang">
+                    <a class="reservation-page-link" th:if="${rows.hasPrevious()}"
+                       th:href="@{/sales/reservations(page=${rows.number},size=${size},q=${q},vehicleId=${vehicleId},holdUntil=${holdUntil},status=${status},sort=${sort})}">Trước</a>
+                    <span class="reservation-page-link is-disabled" th:unless="${rows.hasPrevious()}">Trước</span>
+                    <span class="reservation-page-link is-current" aria-current="page" th:text="${rows.number + 1}"></span>
+                    <a class="reservation-page-link" th:if="${rows.hasNext()}"
+                       th:href="@{/sales/reservations(page=${rows.number + 2},size=${size},q=${q},vehicleId=${vehicleId},holdUntil=${holdUntil},status=${status},sort=${sort})}">Sau</a>
+                    <span class="reservation-page-link is-disabled" th:unless="${rows.hasNext()}">Sau</span>
+                </nav>
+            </div>
+        </section>
+    </div>
 </section>
 </body>
 </html>

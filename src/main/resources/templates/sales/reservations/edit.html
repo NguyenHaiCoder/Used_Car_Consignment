@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Sửa giữ xe', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content">
+    <link rel="stylesheet" th:href="@{/css/ui/reservations-create.css}">
+    <div id="reservation-create-page" class="reservation-edit-page">
+        <header class="reservation-create-heading">
+            <div>
+                <p class="eyebrow">Kinh doanh</p>
+                <h1 th:text="|Sửa reservation ${reservation.code}|">Sửa reservation</h1>
+                <p>Cập nhật thỏa thuận giữ xe sau khi người mua đồng ý với nội dung mới.</p>
+            </div>
+            <a class="button" th:href="@{/sales/reservations/{id}(id=${reservation.id})}">Về chi tiết</a>
+        </header>
+
+        <p class="reservation-create-notice">Tiền cọc trên đơn là số tiền thỏa thuận, không phải khoản đã thu. Khách mua và xe không thay đổi khi sửa.</p>
+        <p class="reservation-create-notice" th:if="${financialTermsLocked}">Đơn này đã có dữ liệu tiền cọc được xác nhận. Chỉ được sửa ngày hết hạn giữ xe; số tiền, điều khoản và chính sách cọc được giữ nguyên.</p>
+
+        <section class="content-card reservation-create-card" aria-labelledby="reservation-edit-profile-title">
+            <div class="content-card-header"><h2 id="reservation-edit-profile-title">Thông tin hồ sơ</h2>
+                <span class="badge" th:attr="data-status=${reservation.status}" th:text="${reservation.status.toString() == 'ACTIVE' ? 'Đang giữ xe' : (reservation.status.toString() == 'EXPIRED' ? 'Hết hạn' : (reservation.status.toString() == 'CANCELLED' ? 'Đã hủy' : (reservation.status.toString() == 'CONVERTED' ? 'Đã chuyển đổi' : reservation.status)))}"></span></div>
+            <dl class="reservation-create-facts">
+                <div><dt>Khách mua</dt><dd th:text="${reservation.buyerName}"></dd></div>
+                <div><dt>Xe</dt><dd th:text="|${reservation.vehicleMake} ${reservation.vehicleModel}|"></dd></div>
+                <div><dt>Nhân viên phụ trách</dt><dd th:text="${reservation.assignedToName ?: '—'}"></dd></div>
+                <div><dt>Phiếu tư vấn</dt><dd th:text="${reservation.inquiryId ?: '—'}"></dd></div>
+            </dl>
+        </section>
+
+        <section class="content-card reservation-create-card reservation-create-form-card" aria-labelledby="reservation-edit-input-title">
+            <div class="content-card-header"><h2 id="reservation-edit-input-title">Thông tin cần sửa</h2>
+                <span class="caption"><span class="required">*</span> Thông tin bắt buộc</span></div>
+            <form id="reservation-edit-form" method="post" th:action="@{/sales/reservations/{id}/edit(id=${reservation.id})}"
+                  th:object="${form}" novalidate>
+                <input th:field="*{revision}" type="hidden">
+                <p class="buyer-field-error" role="alert" th:errors="*{revision}"></p>
+                <p class="alert buyer-field-error" role="alert" th:if="${#fields.hasAnyErrors()}">Vui lòng kiểm tra thông tin được đánh dấu.</p>
+                <p class="buyer-field-error" role="alert" th:each="e : ${#fields.globalErrors()}" th:text="${e}"></p>
+                <div class="reservation-create-fields">
+                    <div class="reservation-create-field">
+                        <label for="deposit">Tiền cọc thỏa thuận (VND) <span class="required">*</span></label>
+                        <input id="deposit" th:field="*{depositAmount}" th:readonly="${financialTermsLocked}" type="text" inputmode="numeric" autocomplete="off">
+                        <span class="buyer-field-error" th:errors="*{depositAmount}"></span>
+                    </div>
+                    <div class="reservation-create-field">
+                        <label for="hold">Hết hạn giữ xe <span class="required">*</span></label>
+                        <input id="hold" th:field="*{holdUntil}" type="date">
+                        <span class="buyer-field-error" th:errors="*{holdUntil}"></span>
+                    </div>
+                    <div class="reservation-create-field reservation-create-full">
+                        <label for="terms">Điều khoản cọc <span class="required">*</span></label>
+                        <textarea id="terms" th:field="*{terms}" th:readonly="${financialTermsLocked}" maxlength="2000" rows="5"></textarea>
+                        <span class="buyer-field-error" th:errors="*{terms}"></span>
+                    </div>
+                    <div class="reservation-create-field">
+                        <label for="cancelPolicy">Chính sách khi hủy trước hạn <span class="required">*</span></label>
+                        <select id="cancelPolicy" th:field="*{cancelDepositPolicy}" th:disabled="${financialTermsLocked}">
+                            <option value="">Chọn chính sách</option><option value="REFUND">Hoàn cọc</option>
+                            <option value="FORFEIT">Tịch thu cọc</option><option value="TRANSFER">Chuyển cọc</option>
+                        </select>
+                        <input id="cancelPolicyValue" th:if="${financialTermsLocked}" th:field="*{cancelDepositPolicy}" type="hidden">
+                        <span class="buyer-field-error" th:errors="*{cancelDepositPolicy}"></span>
+                    </div>
+                    <div class="reservation-create-field">
+                        <label for="expiryPolicy">Chính sách khi hết hạn <span class="required">*</span></label>
+                        <select id="expiryPolicy" th:field="*{expiryDepositPolicy}" th:disabled="${financialTermsLocked}">
+                            <option value="">Chọn chính sách</option><option value="REFUND">Hoàn cọc</option>
+                            <option value="FORFEIT">Tịch thu cọc</option><option value="TRANSFER">Chuyển cọc</option>
+                        </select>
+                        <input id="expiryPolicyValue" th:if="${financialTermsLocked}" th:field="*{expiryDepositPolicy}" type="hidden">
+                        <span class="buyer-field-error" th:errors="*{expiryDepositPolicy}"></span>
+                    </div>
+                    <div class="reservation-create-field reservation-create-full">
+                        <label class="reservation-consent" for="consentStored">
+                            <input id="consentStored" th:field="*{consentStored}" type="checkbox" value="true">
+                            <span th:if="${!financialTermsLocked}">Đã lưu sự đồng ý mới của người mua với điều khoản và hai chính sách cọc <span class="required">*</span></span>
+                            <span th:if="${financialTermsLocked}">Đã lưu sự đồng ý mới của người mua với ngày hết hạn giữ xe <span class="required">*</span></span>
+                        </label>
+                        <span class="buyer-field-error" th:errors="*{consentStored}"></span>
+                    </div>
+                </div>
+                <div class="reservation-create-form-actions">
+                    <button class="button reservation-submit" type="submit">Lưu thay đổi</button>
+                    <a class="button" th:href="@{/sales/reservations/{id}(id=${reservation.id})}">Hủy</a>
+                </div>
+            </form>
+        </section>
+        <script defer th:src="@{/js/sales/reservations-create.js}"></script>
+    </div>
+</section>
+</body>
+</html>

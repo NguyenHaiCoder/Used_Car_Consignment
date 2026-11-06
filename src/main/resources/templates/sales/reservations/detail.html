@@ -1,15 +1,101 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+<html lang="vi" th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/pipeline/layout :: shell('Chi tiết giữ xe', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Reservation RS-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/reservations/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
-  </div>
-  <section th:replace="~{common/fragments/components :: history}"></section>
+<section th:fragment="content">
+    <section th:if="${screen != null}" data-template="sales/reservations/detail">
+        <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+        <div class="detail-grid"><section th:replace="~{common/fragments/components :: facts}"></section>
+            <section th:replace="~{common/fragments/components :: checks}"></section></div>
+        <section th:replace="~{common/fragments/components :: history}"></section>
+    </section>
+    <link rel="stylesheet" th:if="${screen == null}" th:href="@{/css/ui/reservations-detail.css}">
+    <div th:if="${screen == null}" id="reservation-detail">
+        <header class="reservation-detail-heading">
+            <div>
+                <p class="eyebrow">Kinh doanh</p>
+                <h1 th:text="|Đơn giữ xe ${reservation.code}|">Đơn giữ xe</h1>
+                <p>Theo dõi tiền cọc, hiệu lực giữ xe và đường dẫn chuyển thành hợp đồng.</p>
+            </div>
+            <div class="reservation-detail-actions">
+                <a class="button" th:href="@{/sales/reservations}">Danh sách giữ xe</a>
+                <a class="button" th:if="${reservation.status.name() == 'ACTIVE' and reservation.depositDisposition == null and reservation.depositDecisionActorId == null and reservation.depositOperationKey == null and reservation.cancelledAt == null and reservation.vehicleTransitionReference == null and !policy.overdue and contractId == null and (reservation.processedLiabilityAmount == null or reservation.processedLiabilityAmount.signum() == 0) and reservation.depositProcessingReference == null}"
+                   th:href="@{/sales/reservations/{id}/edit(id=${reservation.id})}">Sửa thỏa thuận</a>
+                <a class="button reservation-detail-cancel"
+                   th:if="${reservation.status.name() == 'ACTIVE' and reservation.depositDisposition == null}"
+                   th:href="@{/sales/reservations/{id}/cancel(id=${reservation.id})}">Hủy / xử lý hết hạn</a>
+            </div>
+        </header>
+
+        <section class="content-card reservation-detail-card" aria-labelledby="reservation-profile-title">
+            <div class="content-card-header">
+                <h2 id="reservation-profile-title">Thông tin hồ sơ</h2>
+                <span class="badge" th:attr="data-status=${reservation.status}" th:text="${reservation.status.toString() == 'ACTIVE' ? 'Đang giữ xe' : (reservation.status.toString() == 'EXPIRED' ? 'Hết hạn' : (reservation.status.toString() == 'CANCELLED' ? 'Đã hủy' : (reservation.status.toString() == 'CONVERTED' ? 'Đã chuyển đổi' : reservation.status)))}"></span>
+            </div>
+            <dl class="reservation-detail-facts">
+                <div><dt>Khách</dt><dd th:text="${reservation.buyerName}"></dd></div>
+                <div><dt>Xe</dt><dd th:text="|${reservation.vehicleMake} ${reservation.vehicleModel}|"></dd></div>
+                <div><dt>Tiền cọc thỏa thuận</dt>
+                    <dd th:text="|${#numbers.formatDecimal(reservation.depositAmount, 1, 'POINT', 0, 'COMMA')} ₫|"></dd></div>
+                <div><dt>Hết hạn giữ xe</dt>
+                    <dd th:text="${reservation.holdUntil == null ? '—' : #temporals.format(reservation.holdUntil, 'dd/MM/yyyy')}"></dd></div>
+                <div><dt>Tư vấn gốc</dt>
+                    <dd th:text="${reservation.inquiryId == null ? '—' : reservation.inquiryId}"></dd></div>
+                <div><dt>Điều khoản cọc</dt><dd class="reservation-detail-terms" th:text="${reservation.terms}"></dd></div>
+            </dl>
+        </section>
+
+        <section class="content-card reservation-detail-card reservation-history-card" aria-labelledby="reservation-history-title">
+            <div class="content-card-header"><h2 id="reservation-history-title">Lịch sử &amp; bằng chứng</h2></div>
+            <p class="reservation-detail-empty" th:if="${#lists.isEmpty(history)}">Chưa có sự kiện xử lý được ghi nhận.</p>
+            <ol class="timeline reservation-detail-timeline" th:unless="${#lists.isEmpty(history)}">
+                <li th:each="event : ${history}">
+                    <time th:text="${event.occurredAt == null ? '—' : #temporals.format(event.occurredAt.atZone(reservationTimeZone), 'dd/MM/yyyy · HH:mm')}"></time>
+                    <strong th:text="${event.action}"></strong>
+                    <small th:text="${event.actorName}"></small>
+                    <p th:if="${!#strings.isEmpty(event.detail)}" th:text="${event.detail}"></p>
+                </li>
+            </ol>
+        </section>
+
+        <section class="content-card reservation-detail-card reservation-processing-card" aria-labelledby="reservation-processing-title">
+            <div class="content-card-header"><h2 id="reservation-processing-title">Điều khoản &amp; xử lý cọc</h2></div>
+            <p class="reservation-detail-notice" role="status"
+               th:if="${reservation.depositDisposition != null and reservation.depositProcessingReference == null}">Đã ghi nhận quyết định xử lý cọc. Chưa có xác nhận giao dịch tiền từ WP05.</p>
+            <dl class="reservation-detail-facts reservation-processing-facts">
+                <div><dt>Chính sách áp dụng</dt>
+                    <dd th:text="${policy.suggestedDisposition ?: 'Thiếu chính sách đã xác nhận — chưa thể xử lý'}"></dd></div>
+                <div><dt>Nhân viên phụ trách</dt><dd th:text="${reservation.assignedToName ?: '—'}"></dd></div>
+                <div><dt>Thực thu tại thời điểm xử lý</dt>
+                    <dd th:text="${reservation.confirmedCollectedAmount == null ? 'Chưa có xác nhận tài chính' : #numbers.formatDecimal(reservation.confirmedCollectedAmount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+                <div><dt>Nghĩa vụ cọc đã xử lý</dt>
+                    <dd th:text="${reservation.processedLiabilityAmount == null ? 'Chưa xử lý' : #numbers.formatDecimal(reservation.processedLiabilityAmount, 1, 'POINT', 0, 'COMMA') + ' ₫'}"></dd></div>
+                <div><dt>VIN</dt><dd th:text="${reservation.vehicleVin ?: '—'}"></dd></div>
+                <div><dt>Người thực hiện (ID)</dt><dd th:text="${reservation.depositDecisionActorId ?: '—'}"></dd></div>
+                <div><dt>Mã thao tác</dt><dd th:text="${reservation.depositOperationKey ?: '—'}"></dd></div>
+                <div><dt>Tham chiếu số dư cọc</dt><dd th:text="${reservation.depositBalanceReference ?: '—'}"></dd></div>
+                <div><dt>Tham chiếu xử lý cọc</dt><dd th:text="${reservation.depositProcessingReference ?: '—'}"></dd></div>
+                <div><dt>Tham chiếu trạng thái xe</dt><dd th:text="${reservation.vehicleTransitionReference ?: '—'}"></dd></div>
+            </dl>
+            <p class="reservation-policy-note" th:if="${!#strings.isEmpty(policy.note)}" th:text="${policy.note}"></p>
+            <div class="reservation-decision" th:if="${reservation.depositDisposition != null}">
+                <h3>Quyết định xử lý cọc</h3>
+                <p><strong>Hình thức:</strong> <span th:text="${reservation.depositDisposition}"></span></p>
+                <p><strong>Lý do:</strong> <span th:text="${reservation.cancelReason ?: '—'}"></span></p>
+                <p><strong>Thời điểm:</strong> <time th:text="${reservation.cancelledAt == null ? '—' : #temporals.format(reservation.cancelledAt.atZone(reservationTimeZone), 'dd/MM/yyyy · HH:mm')}"></time></p>
+                <a th:href="@{/sales/reservations/{id}(id=${reservation.transferReservationId})}"
+                   th:if="${reservation.transferReservationId != null}">Xem đơn nhận chuyển cọc</a>
+            </div>
+            <div class="reservation-related-actions">
+                <a class="button" th:href="@{/sales/inquiries/{id}(id=${reservation.inquiryId})}"
+                   th:if="${reservation.inquiryId != null}">Xem tư vấn</a>
+                <a class="button reservation-contract-create" th:href="@{/sales/contracts/new(reservationId=${reservation.id})}"
+                   th:if="${reservation.status.name() == 'ACTIVE' and reservation.depositDisposition == null and !policy.overdue and contractId == null}">Lập hợp đồng mua bán</a>
+                <a class="button" th:href="@{/sales/contracts/{id}(id=${contractId})}"
+                   th:if="${contractId != null}">Xem hợp đồng</a>
+            </div>
+        </section>
+    </div>
 </section>
 </body>
 </html>

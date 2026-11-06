@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Chi tiết giữ xe', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content">
+    <section class="content-card pipeline-card"><h2 th:text="${reservation.code}"></h2>
+        <p class="alert" role="status"
+           th:if="${reservation.depositDisposition != null and reservation.depositProcessingReference == null}">Đã ghi
+            nhận quyết định xử lý cọc. Quyết định được lưu trên đơn giữ xe; không xác nhận giao dịch tiền.</p>
+        <dl class="pipeline-facts">
+            <dt>Trạng thái</dt>
+            <dd th:text="${reservation.status}"></dd>
+            <dt>Khách mua / Xe</dt>
+            <dd th:text="|${reservation.buyerName} / ${reservation.vehicleMake} ${reservation.vehicleModel}|"></dd>
+            <dt>Tiền cọc thỏa thuận</dt>
+            <dd th:text="${reservation.depositAmount}"></dd>
+            <dt>Giữ đến ngày</dt>
+            <dd th:text="${reservation.holdUntil}"></dd>
+            <dt>Điều khoản</dt>
+            <dd class="pipeline-pre" th:text="${reservation.terms}"></dd>
+            <dt>Chính sách áp dụng</dt>
+            <dd th:text="${policy.suggestedDisposition ?: 'Thiếu chính sách đã xác nhận — chưa thể xử lý'}"></dd>
+            <dt>Thực thu tại thời điểm xử lý</dt>
+            <dd th:text="${reservation.confirmedCollectedAmount ?: 'Chưa có xác nhận tài chính'}"></dd>
+            <dt>Nghĩa vụ cọc đã xử lý</dt>
+            <dd th:text="${reservation.processedLiabilityAmount ?: 'Chưa xử lý'}"></dd>
+            <dt>Người thực hiện (ID)</dt>
+            <dd th:text="${reservation.depositDecisionActorId}"></dd>
+            <dt>Mã thao tác</dt>
+            <dd th:text="${reservation.depositOperationKey}"></dd>
+            <dt>Tham chiếu số dư cọc</dt>
+            <dd th:text="${reservation.depositBalanceReference}"></dd>
+            <dt>Tham chiếu xử lý cọc</dt>
+            <dd th:text="${reservation.depositProcessingReference}"></dd>
+            <dt>Tham chiếu trạng thái xe</dt>
+            <dd th:text="${reservation.vehicleTransitionReference}"></dd>
+        </dl>
+        <p class="panel-note" th:text="${policy.note}"></p>
+        <a class="button" th:href="@{/sales/inquiries/{id}(id=${reservation.inquiryId})}"
+           th:if="${reservation.inquiryId != null}">Xem tư vấn</a>
+        <a class="button button-primary"
+           th:href="@{/sales/contracts/new(reservationId=${reservation.id})}"
+           th:if="${reservation.status.name() == 'ACTIVE' and !policy.overdue and contractId == null}">Lập hợp đồng mua bán</a>
+        <a class="button" th:href="@{/sales/contracts/{id}(id=${contractId})}" th:if="${contractId != null}">Xem hợp
+            đồng</a>
+        <div th:if="${reservation.cancelledAt != null}"><h3>Lịch sử xử lý</h3>
+            <p th:text="${reservation.cancelledAt}"></p>
+            <p th:text="${reservation.depositDisposition}"></p>
+            <p th:text="${reservation.cancelReason}"></p><a th:href="@{/sales/reservations/{id}(id=${reservation.transferReservationId})}"
+                                                            th:if="${reservation.transferReservationId != null}">Đơn
+                nhận chuyển cọc</a></div>
+    </section>
+    <form class="content-card pipeline-card pipeline-form" method="post"
+          th:action="@{/sales/reservations/{id}/cancel(id=${reservation.id})}" th:if="${reservation.status.name() == 'ACTIVE'}"
+          th:object="${form}">
+        <h2>Hủy / xử lý hết hạn</h2>
+        <div class="alert buyer-field-error" role="alert" th:if="${#fields.hasErrors('*')}"><p
+                th:each="e : ${#fields.allErrors()}" th:text="${e}"></p></div>
+        <label for="disposition">Phương án tiền cọc (bắt buộc)</label><select id="disposition" name="disposition"
+                                                                              required>
+        <option value="">Chọn phương án</option>
+        <option th:selected="${form.disposition != null and form.disposition.name() == 'REFUND'}" value="REFUND">Hoàn
+            cọc — cần tài chính xác nhận xử lý
+        </option>
+        <option th:selected="${form.disposition != null and form.disposition.name() == 'FORFEIT'}" value="FORFEIT">Giữ /
+            tịch thu cọc theo điều khoản
+        </option>
+        <option th:selected="${form.disposition != null and form.disposition.name() == 'TRANSFER'}" value="TRANSFER">
+            Chuyển cọc sang đơn khác
+        </option>
+    </select>
+        <label for="target">Đơn nhận chuyển cọc — chỉ chọn khi TRANSFER</label><select id="target"
+                                                                                       name="transferReservationId">
+        <option value="">Không chuyển cọc</option>
+        <option th:each="t : ${targets}" th:selected="${t.id == form.transferReservationId}" th:text="${t.label}"
+                th:value="${t.id}"></option>
+    </select>
+        <label for="reason">Lý do / căn cứ điều khoản</label><textarea id="reason" maxlength="2000" name="reason"
+                                                                       required th:text="${form.reason}"></textarea>
+        <div class="buyer-toolbar">
+            <button class="button">Xác nhận hủy đơn</button>
+            <button class="button button-primary" th:formaction="@{/sales/reservations/{id}/expire(id=${reservation.id})}"
+                    th:if="${policy.overdue}">Xử lý đơn hết hạn
+            </button>
+        </div>
+    </form>
+</section>
+</body>
+</html>

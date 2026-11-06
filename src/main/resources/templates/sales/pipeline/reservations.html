@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Giữ xe & cọc', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content">
+    <section class="content-card pipeline-card">
+        <div class="buyer-toolbar"><a class="button button-primary" th:href="@{/sales/reservations/new}">Tạo giữ xe</a>
+            <form method="get" th:action="@{/sales/reservations}"><label for="status">Trạng thái</label><select
+                    id="status" name="status">
+                <option value="">Tất cả</option>
+                <option th:each="s : ${statuses}" th:selected="${s == status}" th:text="${s}" th:value="${s}"></option>
+            </select>
+                <button class="button">Lọc</button>
+            </form>
+        </div>
+        <p th:if="${rows.empty}">Chưa có đơn giữ xe phù hợp. Tạo tư vấn trước khi giữ xe.</p>
+        <div class="buyer-table-wrap" th:unless="${rows.empty}">
+            <table class="buyer-table">
+                <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách mua / Xe</th>
+                    <th>Tiền cọc thỏa thuận</th>
+                    <th>Giữ đến ngày</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${rows.content}">
+                    <td><a th:href="@{/sales/reservations/{id}(id=${r.id})}" th:text="${r.code}"></a></td>
+                    <td th:text="|${r.buyerName} / ${r.vehicleLabel}|"></td>
+                    <td th:text="${#numbers.formatDecimal(r.depositAmount,1,'COMMA',2,'POINT')}"></td>
+                    <td th:text="${r.holdUntil}"></td>
+                    <td th:text="${r.status}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav aria-label="Phân trang" class="buyer-toolbar"><a class="button" th:href="@{/sales/reservations(page=${rows.number},status=${status})}"
+                                                              th:if="${rows.hasPrevious()}">Trước</a><span
+                th:text="|Trang ${rows.number + 1} / ${rows.totalPages == 0 ? 1 : rows.totalPages}|"></span><a
+                class="button" th:href="@{/sales/reservations(page=${rows.number + 2},status=${status})}"
+                th:if="${rows.hasNext()}">Sau</a></nav>
+    </section>
+</section>
+</body>
+</html>

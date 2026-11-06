@@ -1,16 +1,152 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+<html lang="vi" th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/pipeline/layout :: shell('Tạo giữ xe', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Tạo reservation &amp; cọc: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/reservations/create">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
-  </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: steps}"></section>
+<section th:fragment="content">
+    <section th:if="${screen != null}" data-template="sales/reservations/create">
+        <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+        <div class="detail-grid"><section th:replace="~{common/fragments/components :: facts}"></section>
+            <section th:replace="~{common/fragments/components :: checks}"></section></div>
+        <section th:replace="~{common/fragments/forms :: form}"></section>
+        <section th:replace="~{common/fragments/components :: steps}"></section>
+    </section>
+    <link rel="stylesheet" th:if="${screen == null}" th:href="@{/css/ui/reservations-create.css}">
+    <div th:if="${screen == null}" id="reservation-create-page">
+        <header class="reservation-create-heading">
+            <div>
+                <p class="eyebrow">Kinh doanh</p>
+                <h1>Tạo reservation &amp; cọc</h1>
+                <p>Tạo từ inquiry, giữ đúng khách và xe; cọc chưa phải doanh thu của shop.</p>
+            </div>
+            <a class="button" th:href="@{/sales/reservations}">Danh sách giữ xe</a>
+        </header>
+
+        <p class="reservation-create-notice">Việc tạo reservation chỉ ghi nhận tiền cọc thỏa thuận. Thu tiền thực tế do bộ phận tài chính xác nhận.</p>
+
+        <div class="reservation-create-overview">
+            <section class="content-card reservation-create-card" aria-labelledby="reservation-source-title">
+                <div class="content-card-header"><h2 id="reservation-source-title">Thông tin hồ sơ</h2></div>
+                <dl class="reservation-create-facts" th:if="${sourceInquiry != null}">
+                    <div><dt>Khách mua</dt><dd th:text="${sourceInquiry.buyer}"></dd></div>
+                    <div><dt>Xe</dt><dd th:text="${sourceInquiry.vehicle}"></dd></div>
+                    <div><dt>Nhân viên phụ trách</dt><dd th:text="${session.AUTH_FULL_NAME ?: 'Nhân viên đang đăng nhập'}"></dd></div>
+                    <div><dt>Phiếu tư vấn</dt><dd th:text="${sourceInquiry.code}"></dd></div>
+                </dl>
+                <p class="reservation-create-placeholder" th:unless="${sourceInquiry != null}">Chọn phiếu tư vấn bên dưới để xem khách mua và xe được giữ.</p>
+            </section>
+            <section class="content-card reservation-create-card" id="reservation-eligibility"
+                     th:attr="data-check-url=@{/sales/reservations/eligibility}"
+                     aria-labelledby="reservation-checks-title">
+                <div class="content-card-header"><h2 id="reservation-checks-title">Điều kiện &amp; kiểm tra</h2>
+                    <span class="caption" id="reservation-checks-summary"
+                          th:text="${eligibility != null ? 'Đã kiểm tra' : (eligibilityError == true ? 'Lỗi kiểm tra' : 'Chưa kiểm tra')}">Chưa kiểm tra</span></div>
+                <ul class="reservation-create-checks" aria-live="polite">
+                    <li id="reservation-vehicle-check"
+                        th:attr="data-state=${eligibility == null ? (eligibilityError == true ? 'error' : 'empty') : (eligibility.vehicleEligible ? 'success' : 'failure')}">
+                        <span class="reservation-check-icon" aria-hidden="true"
+                              th:text="${eligibility == null ? (eligibilityError == true ? '!' : '–') : (eligibility.vehicleEligible ? '✓' : '!')}">–</span>
+                        <div><strong>Xe đủ điều kiện bán</strong><small>
+                            <span class="reservation-check-state" id="reservation-vehicle-state"
+                                  th:text="${eligibility == null ? (eligibilityError == true ? 'Không lấy được kết quả' : 'Chưa chọn xe') : (eligibility.vehicleEligible ? 'Đủ điều kiện' : 'Chưa đủ điều kiện')}">Chưa chọn xe</span>
+                            <span class="reservation-check-detail" id="reservation-vehicle-detail"
+                                  th:text="${eligibility == null ? (eligibilityError == true ? 'Thử chọn lại phiếu tư vấn.' : 'Chọn phiếu tư vấn để kiểm tra xe.') : (eligibility.vehicleEligible ? 'Trạng thái xe: ' + eligibility.vehicleStatus : 'Trạng thái xe: ' + eligibility.vehicleStatus + ' — ' + eligibility.vehicleReason)}"></span>
+                        </small></div>
+                    </li>
+                    <li id="reservation-active-check"
+                        th:attr="data-state=${eligibility == null ? (eligibilityError == true ? 'error' : 'empty') : (eligibility.noActiveReservation ? 'success' : 'failure')}">
+                        <span class="reservation-check-icon" aria-hidden="true"
+                              th:text="${eligibility == null ? (eligibilityError == true ? '!' : '–') : (eligibility.noActiveReservation ? '✓' : '!')}">–</span>
+                        <div><strong>Không có reservation ACTIVE khác</strong><small>
+                            <span class="reservation-check-state" id="reservation-active-state"
+                                  th:text="${eligibility == null ? (eligibilityError == true ? 'Không lấy được kết quả' : 'Chưa chọn xe') : (eligibility.noActiveReservation ? 'Đủ điều kiện' : 'Chưa đủ điều kiện')}">Chưa chọn xe</span>
+                            <span class="reservation-check-detail" id="reservation-active-detail"
+                                  th:text="${eligibility == null ? (eligibilityError == true ? 'Thử chọn lại phiếu tư vấn.' : 'Chọn phiếu tư vấn để kiểm tra xe.') : (eligibility.noActiveReservation ? 'Xe chưa có đơn giữ xe đang hoạt động' : 'Xe đã có đơn giữ xe đang hoạt động')}"></span>
+                        </small></div>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <section class="content-card reservation-create-card reservation-create-form-card" aria-labelledby="reservation-input-title">
+            <div class="content-card-header"><h2 id="reservation-input-title">Nhập thông tin</h2><span class="caption"><span class="required">*</span> Thông tin bắt buộc</span></div>
+            <form class="reservation-source-picker" method="get" th:action="@{/sales/reservations/new}" novalidate>
+                <div class="reservation-create-field">
+                    <label for="inquiry">Phiếu tư vấn <span class="required">*</span></label>
+                    <select id="inquiry" name="inquiryId">
+                        <option value="">Chọn một giá trị</option>
+                        <option th:each="i : ${inquiries}" th:selected="${i.id == form.inquiryId}" th:text="${i.label}" th:value="${i.id}"></option>
+                    </select>
+                </div>
+                <button class="button" type="submit">Chọn phiếu tư vấn</button>
+            </form>
+            <p class="reservation-selection-note" id="reservation-selection-note" hidden>
+                Nhấn “Chọn phiếu tư vấn” để cập nhật khách và xe trước khi tạo đơn.
+            </p>
+            <p class="reservation-create-empty" th:if="${#lists.isEmpty(inquiries)}">Chưa có tư vấn phù hợp. <a th:href="@{/sales/inquiries/new}">Tạo tư vấn</a></p>
+            <p class="buyer-field-error reservation-source-error" role="alert" th:if="${sourceInquiryError != null}" th:text="${sourceInquiryError}"></p>
+
+            <form id="reservation-create-form" method="post" th:action="@{/sales/reservations}"
+                  th:if="${form.inquiryId != null or showForm == true}" th:object="${form}" novalidate>
+                <p class="alert buyer-field-error" role="alert" th:if="${#fields.hasAnyErrors()}">Vui lòng kiểm tra các thông tin được đánh dấu.</p>
+                <p class="buyer-field-error" role="alert" th:each="e : ${#fields.globalErrors()}" th:text="${e}"></p>
+                <input th:field="*{inquiryId}" type="hidden"><input th:field="*{vehicleId}" type="hidden"><input th:field="*{buyerId}" type="hidden">
+                <p class="buyer-field-error" th:errors="*{inquiryId}"></p>
+                <p class="buyer-field-error" th:errors="*{vehicleId}"></p>
+                <p class="buyer-field-error" th:errors="*{buyerId}"></p>
+                <div class="reservation-create-fields">
+                    <div class="reservation-create-field">
+                        <label for="deposit">Tiền cọc thỏa thuận (VND) <span class="required">*</span></label>
+                        <input id="deposit" th:field="*{depositAmount}" type="text" inputmode="numeric" autocomplete="off">
+                        <span class="buyer-field-error" th:errors="*{depositAmount}"></span>
+                    </div>
+                    <div class="reservation-create-field">
+                        <label for="hold">Hết hạn giữ xe <span class="required">*</span></label>
+                        <input id="hold" th:field="*{holdUntil}" type="date">
+                        <span class="buyer-field-error" th:errors="*{holdUntil}"></span>
+                    </div>
+                    <div class="reservation-create-field reservation-create-full">
+                        <label for="terms">Điều khoản cọc <span class="required">*</span></label>
+                        <textarea id="terms" th:field="*{terms}" maxlength="2000" rows="5"></textarea>
+                        <span class="buyer-field-error" th:errors="*{terms}"></span>
+                    </div>
+                    <div class="reservation-create-field">
+                        <label for="cancelPolicy">Chính sách khi hủy trước hạn <span class="required">*</span></label>
+                        <select id="cancelPolicy" th:field="*{cancelDepositPolicy}">
+                            <option value="">Chọn chính sách</option><option value="REFUND">Hoàn cọc</option>
+                            <option value="FORFEIT">Tịch thu cọc</option><option value="TRANSFER">Chuyển cọc</option>
+                        </select>
+                        <span class="buyer-field-error" th:errors="*{cancelDepositPolicy}"></span>
+                    </div>
+                    <div class="reservation-create-field">
+                        <label for="expiryPolicy">Chính sách khi hết hạn <span class="required">*</span></label>
+                        <select id="expiryPolicy" th:field="*{expiryDepositPolicy}">
+                            <option value="">Chọn chính sách</option><option value="REFUND">Hoàn cọc</option>
+                            <option value="FORFEIT">Tịch thu cọc</option><option value="TRANSFER">Chuyển cọc</option>
+                        </select>
+                        <span class="buyer-field-error" th:errors="*{expiryDepositPolicy}"></span>
+                    </div>
+                    <div class="reservation-create-field reservation-create-full">
+                        <label class="reservation-consent" for="consentStored">
+                            <input id="consentStored" th:field="*{consentStored}" type="checkbox" value="true">
+                            <span>Đã lưu sự đồng ý của người mua với điều khoản và hai chính sách cọc trên <span class="required">*</span></span>
+                        </label>
+                        <span class="buyer-field-error" th:errors="*{consentStored}"></span>
+                    </div>
+                </div>
+                <div class="reservation-create-form-actions">
+                    <button class="button reservation-submit" type="submit">Tạo giữ xe</button>
+                    <a class="button" th:href="@{/sales/reservations}">Hủy</a>
+                </div>
+            </form>
+            <p class="reservation-create-prompt" th:if="${form.inquiryId == null and showForm != true}">Chọn phiếu tư vấn để tiếp tục nhập thông tin giữ xe và cọc.</p>
+        </section>
+
+        <section class="content-card reservation-create-card reservation-create-related" aria-labelledby="reservation-related-title">
+            <div class="content-card-header"><h2 id="reservation-related-title">Các bước liên quan</h2><span class="caption">Sau khi tạo reservation</span></div>
+            <div class="reservation-create-related-body"><a th:href="@{/sales/contracts}"><span>1&nbsp;&nbsp; Hợp đồng mua bán</span><span aria-hidden="true">→</span></a></div>
+        </section>
+        <script defer th:src="@{/js/sales/reservations-create.js}"></script>
+    </div>
 </section>
 </body>
 </html>
