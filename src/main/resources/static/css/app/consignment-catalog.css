@@ -118,13 +118,13 @@
   border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
 }
 .catalog-form .form-row {
-  display: grid; gap: 12px;
+  display: grid; gap: 12px; align-items: start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .catalog-form .form-row--3 {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .9fr);
 }
-.catalog-form .field { display: grid; gap: 6px; }
+.catalog-form .field { display: grid; gap: 6px; align-content: start; }
 .catalog-form label { font-size: 12.5px; font-weight: 700; color: var(--ink); }
 .catalog-form .req { color: var(--red); }
 .catalog-form input,
@@ -142,6 +142,9 @@
   box-shadow: 0 0 0 3px rgba(37, 117, 232, .15);
 }
 .catalog-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.catalog-wrap .flash--error { border-color: #f3b9b9; background: #fdecec; color: #a11c1c; }
+.catalog-form .field-error,
+.steps-editor .field-error { display: block; font-size: 12px; font-weight: 600; color: var(--red, #d92d20); }
 .catalog-empty {
   padding: 28px 16px; text-align: center; color: var(--ink-soft); font-weight: 600;
 }
@@ -170,7 +173,7 @@
   font-size: 12px; font-weight: 700;
 }
 .step-row-fields {
-  display: grid; gap: 10px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  display: grid; gap: 10px; align-items: start; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
 }
 .step-remove { min-height: 32px; padding: 0 10px; font-size: 12.5px; }
 

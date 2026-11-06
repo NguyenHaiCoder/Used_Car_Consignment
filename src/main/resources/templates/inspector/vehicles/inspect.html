@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: tiến hành kiểm định — chọn loại, ảnh chứng minh, UI mock. */-->
+<!--/* Nguyễn Vũ Trường An: tiến hành kiểm định — chọn loại kiểm định, kết quả + ảnh từng bước, định giá. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${'Kiểm định ' + vehicle.code}, 'Kiểm định và tiếp nhận xe', 'inspector-vehicles',
                     null, ~{::link}, ~{::#inspector-inspect})}">
@@ -27,8 +27,6 @@
     </div>
   </div>
 
-  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
-
   <section class="csb-card">
     <header class="csb-head">
       <svg th:replace="~{shell/icons :: icon('car')}"></svg>
@@ -38,48 +36,58 @@
       <div class="meta-row"><span class="mk">Mã hồ sơ</span><span class="mv code" th:text="${vehicle.code}">KG-1</span></div>
       <div class="meta-row"><span class="mk">Xe</span><span class="mv" th:text="${vehicle.displayLabel}">Xe</span></div>
       <div class="meta-row"><span class="mk">VIN</span><span class="mv" th:text="${vehicle.vin}">VIN</span></div>
-      <div class="meta-row"><span class="mk">Loại xe</span><span class="mv" th:text="${vehicle.vehicleType}">SUV</span></div>
     </div>
   </section>
 
   <form class="csb-card inspect-form" style="margin-top:14px;" method="post" enctype="multipart/form-data"
         th:action="@{/inspector/vehicles/{id}/inspect(id=${vehicle.id})}"
-        th:attr="data-inspect-base=@{/inspector/vehicles/{id}/inspect(id=${vehicle.id})}">
+        th:attr="data-inspect-base=@{/inspector/vehicles/{id}/inspect(id=${vehicle.id})}"
+        th:object="${form}">
     <header class="csb-head">
       <svg th:replace="~{shell/icons :: icon('list')}"></svg>
       <h4>Tiến hành kiểm định theo bước</h4>
     </header>
 
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}"
+       th:text="${err}" role="alert"></p>
+    <p class="flash flash--error" th:if="${#fields.hasErrors('*')}" role="alert">
+      Ảnh chứng minh đã chọn không được giữ lại, vui lòng chọn lại ảnh trước khi lưu.
+    </p>
+
     <div class="inspect-type-field">
       <label for="checklistId">Loại kiểm định <span class="req">*</span></label>
       <span class="select inspect-type-select">
-        <select id="checklistId" name="checklistId" required>
+        <select id="checklistId" name="checklistId">
           <option value="" disabled th:selected="${selectedChecklistId == null}">— Chọn loại kiểm định —</option>
           <option th:each="c : ${checklists}"
-                  th:value="${c['id']}"
-                  th:text="${c['name']}"
-                  th:selected="${selectedChecklistId == c['id']}">
+                  th:value="${c.id}"
+                  th:text="${c.name + ' (' + c.vehicleTypeLabel + ')'}"
+                  th:selected="${selectedChecklistId == c.id}">
             Loại kiểm định
           </option>
         </select>
       </span>
+      <span class="field-error" th:if="${#fields.hasErrors('checklistId')}" th:errors="*{checklistId}"></span>
+      <span class="field-error" th:if="${#lists.isEmpty(checklists)}">Chưa có loại kiểm định nào đang dùng.</span>
     </div>
 
     <div class="csb-body inspect-steps" style="gap:12px;">
-      <div th:each="s : ${steps}" class="inspect-step">
+      <div th:each="s, it : ${steps}" class="inspect-step">
         <label class="inspect-step-head">
-          <input type="checkbox" th:name="${'step_' + s.order}" value="PASS">
+          <input type="checkbox" th:field="*{steps[__${it.index}__].passed}">
           <span>
             <strong th:text="${s.order + '. ' + s.title}">Bước</strong>
             <small th:text="${s.hint}">Gợi ý</small>
           </span>
         </label>
         <div class="inspect-step-extra">
-          <textarea class="field-textarea" rows="2" th:name="${'note_' + s.order}"
+          <textarea class="field-textarea" rows="2" th:field="*{steps[__${it.index}__].note}"
                     placeholder="Ghi chú kết quả (tuỳ chọn)"></textarea>
+          <span class="field-error" th:if="${#fields.hasErrors('steps[__${it.index}__].note')}"
+                th:errors="*{steps[__${it.index}__].note}"></span>
           <label class="inspect-proof">
-            <span class="inspect-proof-label">Hình ảnh chứng minh</span>
-            <input type="file" th:name="${'proof_' + s.order}" accept="image/*" multiple>
+            <span class="inspect-proof-label">Hình ảnh chứng minh (tối đa 5 ảnh)</span>
+            <input type="file" th:name="${'steps[' + it.index + '].proofs'}" accept=".jpg,.jpeg,.png" multiple>
           </label>
         </div>
       </div>
@@ -97,24 +105,23 @@
         <div class="inspect-valuation-field inspect-valuation-field--full">
           <label for="proposedPrice">Giá chào bán (định giá) <span class="req">*</span></label>
           <div class="inspect-valuation-input">
-            <input id="proposedPrice" type="number" name="proposedPrice" min="1" step="any" required
-                   placeholder="VD: 750000000"
-                   th:value="${valuation != null ? valuation['proposedPrice'] : ''}">
+            <input type="number" th:field="*{proposedPrice}" step="any" placeholder="VD: 750000000">
             <span>VNĐ</span>
           </div>
+          <span class="field-error" th:if="${#fields.hasErrors('proposedPrice')}" th:errors="*{proposedPrice}"></span>
         </div>
         <div class="inspect-valuation-field inspect-valuation-field--full">
           <label for="rationale">Ghi chú định giá</label>
-          <textarea id="rationale" class="field-textarea" name="rationale" rows="2"
-                    placeholder="Căn cứ định giá (tuỳ chọn)"
-                    th:text="${valuation != null ? valuation['rationale'] : ''}"></textarea>
+          <textarea class="field-textarea" th:field="*{rationale}" rows="2"
+                    placeholder="Căn cứ định giá (tuỳ chọn)"></textarea>
+          <span class="field-error" th:if="${#fields.hasErrors('rationale')}" th:errors="*{rationale}"></span>
         </div>
       </div>
     </section>
 
     <div class="inspect-actions">
       <a class="btn-c btn-c--ghost" th:href="@{/inspector/vehicles}">Huỷ</a>
-      <button class="btn-c btn-c--primary" type="submit">Gửi duyệt</button>
+      <button class="btn-c btn-c--primary" type="submit">Lưu</button>
     </div>
   </form>
   <script>

@@ -856,14 +856,27 @@
   </section>
 
   <!-- Featured Cars -->
-  <section id="cars" class="py-5 home-surface">
+  <section id="cars" class="py-5 home-surface" th:unless="${#lists.isEmpty(featuredCars)}">
     <div class="container text-center">
       <h2 class="section-title mb-4">Xe ký gửi nổi bật</h2>
       <div class="position-relative">
         <button id="prevCar" class="btn btn-carousel rounded-circle position-absolute top-50 start-0 translate-middle-y shadow">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <div class="row g-4 justify-content-center" id="carList"></div>
+        <!--/* 6 tin LISTED mới nhất (HomeController.featuredCars); script bên dưới chỉ xoay 3 thẻ mỗi lượt. */-->
+        <div class="row g-4 justify-content-center" id="carList">
+          <div class="col-md-4 car-slide" th:each="car : ${featuredCars}">
+            <div class="car-card">
+              <img th:if="${car.coverUrl != null}" th:src="${car.coverUrl}" th:alt="${car.title}">
+              <div class="car-info">
+                <h5 th:text="${car.title}">Tên xe</h5>
+                <p th:text="${car.listPrice != null ? #numbers.formatDecimal(car.listPrice, 1, 'POINT', 0, 'COMMA') + ' ₫' : 'Liên hệ'}">Giá</p>
+                <p th:text="${(car.odometerKm != null ? #numbers.formatInteger(car.odometerKm, 1, 'POINT') : '—') + ' km - Đã kiểm định'}">km</p>
+                <a th:href="@{/tin-ban-xe}" class="btn-cta">Xem tin bán xe</a>
+              </div>
+            </div>
+          </div>
+        </div>
         <button id="nextCar" class="btn btn-carousel rounded-circle position-absolute top-50 end-0 translate-middle-y shadow">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
@@ -1066,54 +1079,38 @@
       });
     }
 
-    // === CAR SLIDER ===
-    const cars = [
-      { name: "Toyota Vios G 2021", img: "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80", price: "435 triệu VNĐ", detail: "42.000 km - Đã kiểm định" },
-      { name: "Mazda CX-5 2020", img: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80", price: "685 triệu VNĐ", detail: "58.000 km - Hồ sơ đầy đủ" },
-      { name: "Honda City RS 2022", img: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=800&q=80", price: "515 triệu VNĐ", detail: "31.000 km - Sẵn sàng xem xe" },
-      { name: "Ford Ranger XLS 2019", img: "https://images.unsplash.com/photo-1616788494707-ec28f08d05a1?auto=format&fit=crop&w=800&q=80", price: "620 triệu VNĐ", detail: "76.000 km - Đang thương lượng" },
-      { name: "Kia Seltos Premium 2021", img: "https://images.unsplash.com/photo-1605559424840-4e0b86781b25?auto=format&fit=crop&w=800&q=80", price: "615 triệu VNĐ", detail: "39.000 km - Chủ xe ký gửi" },
-      { name: "VinFast Lux A2.0 2020", img: "https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=800&q=80", price: "710 triệu VNĐ", detail: "52.000 km - Có lịch sử bảo dưỡng" }
-    ];
-
-    let currentIndex = 0;
+    // === CAR SLIDER === (thẻ xe do server render, chỉ ẩn/hiện 3 thẻ mỗi lượt)
+    const slides = Array.from(document.querySelectorAll('#carList .car-slide'));
     const carsPerView = 3;
+    let currentIndex = 0;
 
     function renderCars() {
-      const container = document.getElementById("carList");
-      container.innerHTML = "";
-      for (let i = currentIndex; i < currentIndex + carsPerView; i++) {
-        const car = cars[i % cars.length];
-        container.innerHTML += `
-          <div class="col-md-4">
-            <div class="car-card">
-              <img src="${car.img}" alt="${car.name}">
-              <div class="car-info">
-                <h5>${car.name}</h5>
-                <p>${car.price}</p>
-                <p>${car.detail}</p>
-                <a href="#contact" class="btn-cta">Đặt lịch xem xe</a>
-              </div>
-            </div>
-          </div>`;
-      }
+      slides.forEach((slide, i) => {
+        const offset = (i - currentIndex + slides.length) % slides.length;
+        slide.style.display = offset < carsPerView ? '' : 'none';
+      });
     }
 
-    document.getElementById('prevCar').addEventListener('click', () => {
-      currentIndex = (currentIndex - carsPerView + cars.length) % cars.length;
+    const prevCar = document.getElementById('prevCar');
+    const nextCar = document.getElementById('nextCar');
+    if (slides.length <= carsPerView) {
+      prevCar?.remove();
+      nextCar?.remove();
+    } else {
+      prevCar.addEventListener('click', () => {
+        currentIndex = (currentIndex - carsPerView + slides.length) % slides.length;
+        renderCars();
+      });
+      nextCar.addEventListener('click', () => {
+        currentIndex = (currentIndex + carsPerView) % slides.length;
+        renderCars();
+      });
       renderCars();
-    });
-
-    document.getElementById('nextCar').addEventListener('click', () => {
-      currentIndex = (currentIndex + carsPerView) % cars.length;
-      renderCars();
-    });
-
-    renderCars();
-    setInterval(() => {
-      currentIndex = (currentIndex + 1) % cars.length;
-      renderCars();
-    }, 3500);
+      setInterval(() => {
+        currentIndex = (currentIndex + 1) % slides.length;
+        renderCars();
+      }, 3500);
+    }
   });
 </script>
 <!-- ========================= -->

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: thêm loại xe — UI mock. */-->
+<!--/* Nguyễn Vũ Trường An: thêm loại xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Thêm loại xe', 'Kiểm định và tiếp nhận xe', 'vehicle-types',
                     null, ~{::link}, ~{::#vehicle-type-create})}">
@@ -27,24 +27,26 @@
     </div>
   </div>
 
-  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
-
-  <form class="catalog-form" method="post" th:action="@{/inspector/vehicle-types}">
+  <form class="catalog-form" method="post" th:action="@{/inspector/vehicle-types}" th:object="${form}">
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
     <div class="form-row form-row--3">
       <div class="field">
-        <label>Mã loại xe <span class="req">*</span></label>
-        <input type="text" name="code" required placeholder="SUV, SEDAN, EV..." th:value="${form.code}">
+        <label for="code">Mã loại xe <span class="req">*</span></label>
+        <input type="text" th:field="*{code}" maxlength="40" placeholder="SUV, SEDAN, EV...">
+        <span class="field-error" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></span>
       </div>
       <div class="field">
-        <label>Tên hiển thị <span class="req">*</span></label>
-        <input type="text" name="label" required placeholder="SUV / Crossover" th:value="${form.label}">
+        <label for="label">Tên hiển thị <span class="req">*</span></label>
+        <input type="text" th:field="*{label}" maxlength="120" placeholder="SUV / Crossover">
+        <span class="field-error" th:if="${#fields.hasErrors('label')}" th:errors="*{label}"></span>
       </div>
       <div class="field">
-        <label>Trạng thái</label>
-        <select name="status">
-          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
-          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        <label for="status">Trạng thái</label>
+        <select th:field="*{status}">
+          <option th:value="ACTIVE">Đang dùng</option>
+          <option th:value="INACTIVE">Ngưng hoạt động</option>
         </select>
+        <span class="field-error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></span>
       </div>
     </div>
     <div class="catalog-actions">

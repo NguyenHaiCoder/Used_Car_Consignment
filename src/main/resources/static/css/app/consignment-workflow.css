@@ -16,6 +16,8 @@
 .page-title p { font-size: 17px; color: var(--blue-600); }
 
 .flash { padding: 9px 14px; border: 1px solid #a9dfbc; border-radius: 10px; background: var(--green-soft); color: #0e6a31; font-weight: 600; }
+.flash.flash--error { border-color: #f3b9b9; background: #fdecec; color: #a11c1c; }
+.field-error { display: block; font-size: 12px; font-weight: 600; color: var(--red, #d92d20); }
 
 /* KPI / bộ lọc nhanh theo trạng thái */
 .kpis {

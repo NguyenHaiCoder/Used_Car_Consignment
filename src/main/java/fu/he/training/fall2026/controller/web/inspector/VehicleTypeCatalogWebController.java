@@ -1,108 +1,110 @@
 package fu.he.training.fall2026.controller.web.inspector;
 
 import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
-import java.util.LinkedHashMap;
-import java.util.List;
+import fu.he.training.fall2026.dto.inspection.VehicleTypeRequest;
+import fu.he.training.fall2026.dto.inspection.VehicleTypeResponse;
+import fu.he.training.fall2026.entity.enums.CatalogStatus;
+import fu.he.training.fall2026.exception.BusinessException;
+import fu.he.training.fall2026.service.VehicleTypeService;
+import jakarta.validation.Valid;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/** Nguyễn Vũ Trường An: CRUD Quản lý loại xe (mock in-memory, phục vụ select loại kiểm định). */
+/** Nguyễn Vũ Trường An: Quản lý loại xe — danh sách, thêm, sửa, ngưng / kích hoạt. */
 @Controller
 @RequestMapping("/inspector/vehicle-types")
+@RequiredArgsConstructor
 public class VehicleTypeCatalogWebController {
 
     private static final String BASE = "/inspector/vehicle-types";
+    private static final String LIST_VIEW = "inspector/vehicle-types/list";
+    private static final String CREATE_VIEW = "inspector/vehicle-types/create";
+    private static final String EDIT_VIEW = "inspector/vehicle-types/edit";
+
+    private final VehicleTypeService vehicleTypeService;
 
     @GetMapping
     public String list(
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false) CatalogStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) Integer size,
             Model model) {
-        String keyword = q == null ? "" : q.trim().toLowerCase();
-        String statusFilter = status == null ? "" : status.trim();
-        List<Map<String, Object>> filtered = InspectionUiData.vehicleTypes().stream()
-                .filter(t -> statusFilter.isBlank() || statusFilter.equals(t.get("status")))
-                .filter(t -> keyword.isBlank()
-                        || String.valueOf(t.get("code")).toLowerCase().contains(keyword)
-                        || String.valueOf(t.get("label")).toLowerCase().contains(keyword))
-                .toList();
-        model.addAttribute("page", CatalogPageSupport.pageOf(filtered, page, size));
+        int pageSize = CatalogPageSupport.normalizeSize(size);
+        Page<VehicleTypeResponse> result = CatalogPageSupport.lastPageIfBeyond(
+                vehicleTypeService.search(q, status, page, pageSize),
+                last -> vehicleTypeService.search(q, status, last, pageSize));
+        Map<CatalogStatus, Long> counts = vehicleTypeService.countByStatus();
+        model.addAttribute("page", result);
         model.addAttribute("q", q == null ? "" : q);
-        model.addAttribute("status", statusFilter);
-        model.addAttribute("size", CatalogPageSupport.normalizeSize(size));
-        model.addAttribute("total", InspectionUiData.vehicleTypes().size());
-        model.addAttribute(
-                "activeCount",
-                InspectionUiData.vehicleTypes().stream().filter(t -> "ACTIVE".equals(t.get("status"))).count());
-        return "inspector/vehicle-types/list";
+        model.addAttribute("status", status == null ? "" : status.name());
+        model.addAttribute("size", pageSize);
+        model.addAttribute("total", counts.values().stream().mapToLong(Long::longValue).sum());
+        model.addAttribute("activeCount", counts.get(CatalogStatus.ACTIVE));
+        return LIST_VIEW;
     }
 
     @GetMapping("/new")
     public String createForm(Model model) {
-        model.addAttribute("form", emptyForm());
-        return "inspector/vehicle-types/create";
+        model.addAttribute("form", new VehicleTypeRequest());
+        return CREATE_VIEW;
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("form", InspectionUiData.findVehicleType(id));
-        return "inspector/vehicle-types/edit";
+        model.addAttribute("form", vehicleTypeService.formFor(id));
+        return EDIT_VIEW;
     }
 
+    /** Creates the vehicle type when the hidden id is empty, otherwise updates that vehicle type. */
     @PostMapping
     public String save(
-            @RequestParam(required = false) Long id,
-            @RequestParam String code,
-            @RequestParam String label,
-            @RequestParam(required = false) String status,
+            @Valid @ModelAttribute("form") VehicleTypeRequest form,
+            BindingResult errors,
             RedirectAttributes flash) {
-        try {
-            Map<String, Object> saved = InspectionUiData.saveVehicleType(id, code, label, status);
-            if (id == null) {
-                flash.addFlashAttribute(
-                        "flashMessage", "Đã thêm loại xe \"" + saved.get("label") + "\".");
+        if (!errors.hasErrors()) {
+            try {
+                if (form.getId() == null) {
+                    vehicleTypeService.create(form);
+                    flash.addFlashAttribute("flashMessage", "Đã thêm loại xe \"" + form.getLabel().trim() + "\".");
+                    return "redirect:" + BASE;
+                }
+                vehicleTypeService.update(form.getId(), form);
+                flash.addFlashAttribute("flashMessage", "Đã cập nhật loại xe \"" + form.getLabel().trim() + "\".");
                 return "redirect:" + BASE;
+            } catch (BusinessException ex) {
+                errors.reject("business", ex.getMessage());
             }
-            flash.addFlashAttribute(
-                    "flashMessage", "Đã cập nhật loại xe \"" + saved.get("label") + "\".");
-            return "redirect:" + BASE;
-        } catch (IllegalArgumentException ex) {
-            flash.addFlashAttribute("flashMessage", ex.getMessage());
-            return id == null ? "redirect:" + BASE + "/new" : "redirect:" + BASE + "/" + id + "/edit";
         }
+        return form.getId() == null ? CREATE_VIEW : EDIT_VIEW;
     }
 
     @PostMapping("/{id}/deactivate")
     public String deactivate(@PathVariable Long id, RedirectAttributes flash) {
-        Map<String, Object> item = InspectionUiData.findVehicleType(id);
-        InspectionUiData.setVehicleTypeStatus(id, "INACTIVE");
-        flash.addFlashAttribute("flashMessage", "Đã ngưng loại xe \"" + item.get("label") + "\".");
+        try {
+            VehicleTypeResponse type = vehicleTypeService.deactivate(id);
+            flash.addFlashAttribute("flashMessage", "Đã ngưng loại xe \"" + type.getLabel() + "\".");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
+        }
         return "redirect:" + BASE;
     }
 
     @PostMapping("/{id}/activate")
     public String activate(@PathVariable Long id, RedirectAttributes flash) {
-        Map<String, Object> item = InspectionUiData.findVehicleType(id);
-        InspectionUiData.setVehicleTypeStatus(id, "ACTIVE");
-        flash.addFlashAttribute("flashMessage", "Đã kích hoạt loại xe \"" + item.get("label") + "\".");
+        VehicleTypeResponse type = vehicleTypeService.activate(id);
+        flash.addFlashAttribute("flashMessage", "Đã kích hoạt loại xe \"" + type.getLabel() + "\".");
         return "redirect:" + BASE;
-    }
-
-    private static Map<String, Object> emptyForm() {
-        Map<String, Object> form = new LinkedHashMap<>();
-        form.put("id", null);
-        form.put("code", "");
-        form.put("label", "");
-        form.put("status", "ACTIVE");
-        return form;
     }
 }

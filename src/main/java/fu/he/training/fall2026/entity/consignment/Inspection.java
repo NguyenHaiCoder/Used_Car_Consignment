@@ -29,6 +29,19 @@ public class Inspection extends BaseEntity {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
+    /**
+     * Nguyễn Vũ Trường An: hồ sơ ký gửi được kiểm định (một xe có thể ký gửi nhiều lần).
+     * Cột cho phép null vì bảng inspections đã có dòng cũ trước khi thêm cột; phiếu mới luôn có giá trị.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "consignment_id")
+    private Consignment consignment;
+
+    /** Nguyễn Vũ Trường An: loại kiểm định đã chọn trên màn Tiến hành kiểm định (null với dòng cũ như trên). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inspection_type_id")
+    private InspectionType inspectionType;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
     private InspectionStatus status;

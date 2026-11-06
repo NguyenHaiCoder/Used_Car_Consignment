@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: danh sách Quản lý loại xe — UI mock. */-->
+<!--/* Nguyễn Vũ Trường An: danh sách Quản lý loại xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Quản lý loại xe', 'Kiểm định và tiếp nhận xe', 'vehicle-types',
                     null, ~{::link}, ~{::#vehicle-type-list})}">
@@ -33,6 +33,7 @@
   </div>
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
 
   <section class="kpis" aria-label="Thống kê loại xe">
     <article th:replace="~{shell/ui :: kpi('car', 'Tổng loại', ${total})}"></article>
@@ -93,8 +94,8 @@
             <td><span class="code" th:text="${t.code}">SUV</span></td>
             <td th:text="${t.label}">SUV / Crossover</td>
             <td>
-              <span class="pill" th:classappend="${t.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
-                    th:text="${t.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+              <span class="pill" th:classappend="${t.status.name() == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+                    th:text="${t.status.name() == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
             </td>
             <td>
               <div class="row-actions">
@@ -102,14 +103,14 @@
                   <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
                 </a>
                 <form method="post" th:action="@{/inspector/vehicle-types/{id}/deactivate(id=${t.id})}"
-                      th:if="${t.status == 'ACTIVE'}"
+                      th:if="${t.status.name() == 'ACTIVE'}"
                       onsubmit="return confirm('Ngưng loại xe này?');">
                   <button class="row-action is-danger" type="submit" title="Ngưng hoạt động">
                     <svg th:replace="~{shell/icons :: icon('trash')}"></svg>
                   </button>
                 </form>
                 <form method="post" th:action="@{/inspector/vehicle-types/{id}/activate(id=${t.id})}"
-                      th:if="${t.status != 'ACTIVE'}"
+                      th:if="${t.status.name() != 'ACTIVE'}"
                       onsubmit="return confirm('Kích hoạt lại loại xe này?');">
                   <button class="row-action is-success" type="submit" title="Kích hoạt">
                     <svg th:replace="~{shell/icons :: icon('check')}"></svg>

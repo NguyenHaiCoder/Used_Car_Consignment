@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: danh sách đợi kiểm định — data + status từ InspectorVehiclesWebController. */-->
+<!--/* Nguyễn Vũ Trường An: danh sách đợi kiểm định — hồ sơ ký gửi Đã duyệt / Đang kiểm định / Đã kiểm định. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Kiểm định xe', 'Kiểm định và tiếp nhận xe', 'inspector-vehicles',
                     null, ~{::link}, ~{::#inspector-vehicles})}">
@@ -26,15 +26,10 @@
         <h2>Kiểm định xe</h2>
       </div>
     </div>
-    <div class="contracts-header-actions">
-      <button class="btn-c btn-c--primary" type="button"
-              onclick="document.getElementById('intake-dialog').showModal()">
-        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tiếp nhận xe
-      </button>
-    </div>
   </div>
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
 
   <section class="card records">
     <header class="card-head">
@@ -65,28 +60,28 @@
         </thead>
         <tbody>
           <tr th:each="c : ${page.content}">
-            <td><a class="code" th:href="@{/inspector/vehicles/{id}(id=${c.id})}" th:text="${c.code}">KG-1</a></td>
+            <td><span class="code" th:text="${c.code}">KG-1</span></td>
             <td>
               <div class="vehicle">
                 <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
                 <span>
                   <strong th:text="${c.displayLabel}" th:title="${c.displayLabel}">Xe</strong>
-                  <small th:text="${c.year + ' · ' + c.vin}">Năm · VIN</small>
+                  <small th:text="${(c.year ?: '—') + ' · ' + c.vin}">Năm · VIN</small>
                 </span>
               </div>
             </td>
             <td th:text="${c.consignorName}">Chủ xe</td>
-            <td class="num" th:text="${#numbers.formatInteger(c.odometerKm, 1, 'POINT')}">0</td>
-            <td th:text="${c.intakeDate}">01/01/2026</td>
-            <td th:text="${c.inspectDate}">—</td>
+            <td class="num" th:text="${c.odometerKm != null ? #numbers.formatInteger(c.odometerKm, 1, 'POINT') : '—'}">0</td>
+            <td th:text="${c.intakeDate != null ? #temporals.format(c.intakeDate, 'dd/MM/yyyy') : '—'}">01/01/2026</td>
+            <td th:text="${c.inspectedOn != null ? #temporals.format(c.inspectedOn, 'dd/MM/yyyy') : '—'}">—</td>
             <td>
               <span class="pill"
-                    th:classappend="${'pill--' + (statusTones[c.status] ?: 'approved')}"
-                    th:text="${statusNames[c.status] ?: 'Đã duyệt'}">Đã duyệt</span>
+                    th:classappend="${'pill--' + (statusTones[c.status.name()] ?: 'approved')}"
+                    th:text="${statusNames[c.status.name()] ?: 'Đã duyệt'}">Đã duyệt</span>
             </td>
             <td>
               <div class="row-actions">
-                <form th:if="${c.status == 'ACTIVE'}" class="row-action-form" method="post"
+                <form th:if="${c.status.name() == 'ACTIVE'}" class="row-action-form" method="post"
                       th:action="@{/inspector/vehicles/{id}/receive(id=${c.id})}">
                   <button class="btn-c btn-c--secondary" type="submit"
                           th:attr="aria-label=${'Tiếp nhận ' + c.code}" title="Tiếp nhận">
@@ -94,23 +89,17 @@
                     <span>Tiếp nhận</span>
                   </button>
                 </form>
-                <a th:if="${c.status == 'INSPECTION_RECEIVED'}" class="btn-c btn-c--inspect"
+                <a th:if="${c.status.name() == 'INSPECTION_RECEIVED'}" class="btn-c btn-c--inspect"
                    th:href="@{/inspector/vehicles/{id}/inspect(id=${c.id})}"
                    th:attr="aria-label=${'Kiểm định ' + c.code}" title="Tiến hành kiểm định">
                   <svg th:replace="~{shell/icons :: icon('clipboard')}"></svg>
                   <span>Kiểm định</span>
                 </a>
-                <a th:if="${c.status == 'INSPECTED'}" class="btn-c btn-c--secondary"
-                   th:href="@{/inspector/listings/new(vehicleId=${c.id})}"
+                <a th:if="${c.status.name() == 'INSPECTED'}" class="btn-c btn-c--secondary"
+                   th:href="@{/inspector/listings/new(consignmentId=${c.id})}"
                    th:attr="aria-label=${'Đăng tin ' + c.code}" title="Đăng tin bán xe">
                   <svg th:replace="~{shell/icons :: icon('megaphone')}"></svg>
                   <span>Đăng tin</span>
-                </a>
-                <a class="btn-c btn-c--ghost"
-                   th:href="@{/inspector/vehicles/{id}(id=${c.id})}"
-                   th:attr="aria-label=${'Chi tiết ' + c.code}" title="Chi tiết hồ sơ">
-                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
-                  <span>Chi tiết</span>
                 </a>
               </div>
             </td>
@@ -121,65 +110,11 @@
     <div class="empty" th:if="${page.empty}">
       <svg th:replace="~{shell/icons :: icon('search')}"></svg>
       <h4>Không có hồ sơ đợi kiểm định</h4>
-      <p>Chỉ hiện hồ sơ ký gửi ở trạng thái Đã duyệt. Thử đổi từ khóa tìm kiếm.</p>
+      <p>Chỉ hiện hồ sơ ký gửi Đã duyệt, Đang kiểm định hoặc Đã kiểm định. Thử đổi từ khóa tìm kiếm.</p>
     </div>
 
     <div th:replace="~{consignment/catalog-pager :: pager('/inspector/vehicles', 'hồ sơ')}"></div>
   </section>
-
-  <dialog class="intake-dialog" id="intake-dialog" aria-labelledby="intake-title">
-    <form class="intake-form" method="dialog"
-          onsubmit="this.reset()">
-      <header class="intake-head">
-        <div>
-          <h3 id="intake-title">Tiếp nhận xe ký gửi</h3>
-          <p>Chọn hồ sơ đã duyệt và ghi lại tình trạng xe lúc nhận.</p>
-        </div>
-        <button class="intake-close" type="button" aria-label="Đóng"
-                onclick="this.closest('dialog').close()">×</button>
-      </header>
-
-      <div class="intake-body">
-        <div class="intake-field">
-          <label for="intake-consignment">Hồ sơ ký gửi <span class="intake-required">*</span></label>
-          <span class="select">
-            <select id="intake-consignment" name="consignmentId" required autofocus>
-              <option value="">Chọn hồ sơ đã duyệt</option>
-              <option th:each="c : ${approved}" th:value="${c.id}"
-                      th:text="${c.code + ' · ' + c.displayLabel + ' · ' + c.consignorName}">Hồ sơ</option>
-            </select>
-          </span>
-        </div>
-
-        <div class="intake-row">
-          <div class="intake-field">
-            <label for="intake-location">Vị trí đỗ <span class="intake-required">*</span></label>
-            <input id="intake-location" type="text" name="location" maxlength="160" required placeholder="Ví dụ: Khu A-06">
-          </div>
-          <div class="intake-field">
-            <label for="intake-km">Số km <span class="intake-required">*</span></label>
-            <input id="intake-km" type="number" name="odometerKm" min="0" required placeholder="Ví dụ: 32000">
-          </div>
-          <div class="intake-field">
-            <label for="intake-date">Ngày nhận xe</label>
-            <input id="intake-date" type="text" readonly
-                   th:value="${#temporals.format(#temporals.createToday(), 'dd/MM/yyyy')}">
-          </div>
-        </div>
-
-        <div class="intake-field">
-          <label for="intake-condition">Tình trạng xe lúc nhận <span class="intake-required">*</span></label>
-          <textarea id="intake-condition" name="intakeCondition" rows="3" maxlength="1000" required
-                    placeholder="Ngoại thất, nội thất, đồ và giấy tờ đi kèm..."></textarea>
-        </div>
-      </div>
-
-      <footer class="intake-actions">
-        <button class="btn-c btn-c--ghost" type="button" onclick="this.closest('dialog').close()">Hủy</button>
-        <button class="btn-c btn-c--primary" type="submit">Xác nhận tiếp nhận</button>
-      </footer>
-    </form>
-  </dialog>
 </div>
 </body>
 </html>

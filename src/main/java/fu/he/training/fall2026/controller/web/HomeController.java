@@ -1,15 +1,23 @@
 package fu.he.training.fall2026.controller.web;
 
 import fu.he.training.fall2026.dto.auth.LoginOtpRequest;
+import fu.he.training.fall2026.dto.listing.PublicListingFilter;
+import fu.he.training.fall2026.service.PublicSaleNewsService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 /** Public landing pages (Thymeleaf). */
 @Controller
+@RequiredArgsConstructor
 public class HomeController {
+
+    private final PublicSaleNewsService publicSaleNewsService;
 
     @GetMapping({"/", "/home"})
     public String home(HttpSession session, Model model) {
@@ -17,13 +25,20 @@ public class HomeController {
         if (!model.containsAttribute("loginOtpRequest")) {
             model.addAttribute("loginOtpRequest", new LoginOtpRequest());
         }
+        model.addAttribute("featuredCars", publicSaleNewsService.featured());
         return "public/home";
     }
 
-    /** Public UI demo: listing search and contact interactions run in the browser. */
+    /** Tin bán xe: only LISTED listings; the filter form is a plain GET. */
     @GetMapping("/tin-ban-xe")
-    public String saleNews(HttpSession session, Model model) {
+    public String saleNews(
+            @ModelAttribute("filter") PublicListingFilter filter,
+            BindingResult filterErrors,
+            HttpSession session,
+            Model model) {
         populateSessionModel(session, model);
+        model.addAttribute("page", publicSaleNewsService.search(filter));
+        model.addAttribute("brands", publicSaleNewsService.listBrands());
         return "public/sale-news";
     }
 

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: màn Sửa tin bán xe.
+       Model (InspectorListingsWebController): form, news, picked, ownerName, imageUrls.
+       Xe và người phụ trách không đổi; chọn ảnh mới thì thay toàn bộ ảnh cũ, không chọn thì giữ ảnh cũ. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Sửa tin', 'Kiểm định và tiếp nhận xe', 'inspector-listings',
+                    null, ~{::link}, ~{::#news-create})}">
+<head>
+  <title>Sửa tin</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news-create.css}">
+    <script th:src="@{/js/app/inspector-news-create.js}" defer></script>
+  </th:block>
+</head>
+<body>
+<div id="news-create" class="create-wrap"
+     th:attr="data-existing-photos=${imageUrls.size()},data-existing-cover=${imageUrls.isEmpty() ? '' : imageUrls[0]}">
+
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('pencil')}"></svg></div>
+      <div>
+        <h2 th:text="${'Sửa tin ' + news.code}">Sửa tin</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <a th:href="@{/inspector/listings}">Quản lý tin đăng</a>
+          <span>/</span>
+          <span th:text="${news.code}">TD-1</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <form class="news-form" id="news-form" method="post" enctype="multipart/form-data"
+        th:action="@{/inspector/listings}" th:object="${form}">
+    <input type="hidden" th:field="*{id}">
+    <input type="hidden" th:field="*{consignmentId}">
+
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}"
+       th:text="${err}" role="alert"></p>
+    <p class="flash flash--error" th:if="${#fields.hasErrors('*')}" role="alert">
+      Ảnh mới đã chọn không được giữ lại, vui lòng chọn lại nếu muốn thay ảnh.
+    </p>
+
+    <div class="create-layout">
+      <div class="news-main">
+        <section class="section-card">
+          <div class="section-head">
+            <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+            <h3>Xe đăng bán</h3>
+          </div>
+          <div class="section-body">
+            <div th:replace="~{inspector/news/form-parts :: vehicleBox}"></div>
+          </div>
+        </section>
+
+        <fieldset class="news-fields">
+          <div th:replace="~{inspector/news/form-parts :: contentFields}"></div>
+
+          <section class="section-card">
+            <div class="section-head">
+              <svg th:replace="~{shell/icons :: icon('box')}"></svg>
+              <h3>Hình ảnh xe <span class="req">*</span></h3>
+              <span class="section-hint-pill" data-photo-count>0/10 ảnh</span>
+            </div>
+            <div class="section-body">
+              <p class="news-hint" th:unless="${imageUrls.isEmpty()}">Ảnh hiện tại:</p>
+              <div class="photo-grid" th:unless="${imageUrls.isEmpty()}">
+                <div class="photo-slot" th:each="url, it : ${imageUrls}">
+                  <img th:src="${url}" th:alt="${'Ảnh ' + it.count}">
+                  <span class="photo-label" th:if="${it.first}">Ảnh bìa</span>
+                </div>
+              </div>
+              <p class="news-hint">Chọn ảnh mới để thay toàn bộ ảnh hiện tại:</p>
+              <div class="photo-grid" data-photo-grid>
+                <label class="photo-add" data-photo-add>
+                  <svg th:replace="~{shell/icons :: icon('plus')}"></svg>
+                  Thêm ảnh
+                  <small>JPG hoặc PNG</small>
+                  <input class="sr-only" type="file" name="images" accept=".jpg,.jpeg,.png" multiple data-photo-input>
+                </label>
+              </div>
+              <small class="news-hint">Mỗi ảnh tối đa 10MB, tối đa 10 ảnh. Ảnh đầu tiên là ảnh bìa của tin.</small>
+              <p class="news-error" data-photo-error role="alert" hidden></p>
+            </div>
+          </section>
+        </fieldset>
+      </div>
+
+      <aside class="create-sidebar">
+        <div th:replace="~{inspector/news/form-parts :: previewCard}"></div>
+        <div th:replace="~{inspector/news/form-parts :: checklistCard}"></div>
+      </aside>
+    </div>
+
+    <div class="create-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/inspector/listings}">Hủy</a>
+      <button class="btn-c btn-c--primary" type="submit" data-publish>
+        <svg th:replace="~{shell/icons :: icon('check')}"></svg>Lưu thay đổi
+      </button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

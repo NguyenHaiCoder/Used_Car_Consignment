@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--/* Tin bán xe công khai: chỉ tin LISTED, model từ HomeController.saleNews (page, brands, filter). */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
@@ -38,47 +39,93 @@
       </div>
     </section>
 
-    <section class="sale-container listing-section" id="sale-news-page" aria-label="Danh sách tin bán xe">
-      <form id="listing-filters" class="listing-filters" role="search">
+    <section class="sale-container listing-section" id="sale-news-page" aria-label="Danh sách tin bán xe"
+             th:with="filtered=${!#strings.isEmpty(filter.q) or !#strings.isEmpty(filter.brand) or !#strings.isEmpty(filter.budget)}">
+      <form id="listing-filters" class="listing-filters" role="search" method="get" th:action="@{/tin-ban-xe}">
         <div class="filter-search">
           <label for="listing-search">Tìm chiếc xe của bạn</label>
           <div class="search-input"><svg th:replace="~{shell/icons :: icon('search')}"></svg>
-            <input id="listing-search" name="q" type="search" maxlength="100" placeholder="Tên xe, hãng xe, năm sản xuất..." autocomplete="off">
+            <input id="listing-search" name="q" type="search" maxlength="100" th:value="${filter.q}"
+                   placeholder="Tên xe, hãng xe, năm sản xuất, nhiên liệu..." autocomplete="off">
           </div>
         </div>
         <div class="filter-field"><label for="listing-brand">Hãng xe</label>
-          <select id="listing-brand" name="brand"><option value="">Tất cả hãng xe</option></select>
+          <select id="listing-brand" name="brand">
+            <option value="">Tất cả hãng xe</option>
+            <option th:each="b : ${brands}" th:value="${b}" th:text="${b}" th:selected="${b == filter.brand}">Hãng</option>
+          </select>
         </div>
         <div class="filter-field"><label for="listing-budget">Khoảng giá</label>
           <select id="listing-budget" name="budget">
-            <option value="">Tất cả mức giá</option><option value="under-500">Dưới 500 triệu</option>
-            <option value="500-800">500 – dưới 800 triệu</option><option value="800-1000">800 triệu – dưới 1 tỷ</option>
-            <option value="over-1000">Từ 1 tỷ trở lên</option>
+            <option value="">Tất cả mức giá</option>
+            <option value="under-500" th:selected="${filter.budget == 'under-500'}">Dưới 500 triệu</option>
+            <option value="500-800" th:selected="${filter.budget == '500-800'}">500 – dưới 800 triệu</option>
+            <option value="800-1000" th:selected="${filter.budget == '800-1000'}">800 triệu – dưới 1 tỷ</option>
+            <option value="over-1000" th:selected="${filter.budget == 'over-1000'}">Từ 1 tỷ trở lên</option>
           </select>
         </div>
         <button class="sale-button primary filter-submit" type="submit"><svg th:replace="~{shell/icons :: icon('search')}"></svg>Tìm xe</button>
       </form>
 
       <div class="results-toolbar">
-        <div><p id="listing-count" class="result-count" role="status" aria-live="polite" aria-atomic="true"></p>
-          <span class="demo-label">Danh sách minh họa · Demo UI</span></div>
+        <div>
+          <p class="result-count" role="status"
+             th:text="${page.empty ? 'Không tìm thấy xe phù hợp' : 'Tìm thấy ' + page.totalElements + ' xe · Hiển thị ' + (page.number * page.size + 1) + '–' + (page.number * page.size + page.numberOfElements)}">Tìm thấy</p>
+        </div>
         <div class="results-controls">
-          <button id="clear-filters" type="button" class="clear-filters" hidden>Xóa bộ lọc</button>
+          <a class="clear-filters" th:if="${filtered}" th:href="@{/tin-ban-xe}">Xóa bộ lọc</a>
           <div class="sort-label"><label for="listing-sort">Sắp xếp</label>
-            <select id="listing-sort"><option value="newest">Mới nhất</option><option value="price-asc">Giá thấp đến cao</option>
-              <option value="price-desc">Giá cao đến thấp</option><option value="km-asc">Số km ít nhất</option></select>
+            <select id="listing-sort" name="sort" form="listing-filters" onchange="this.form.requestSubmit()">
+              <option value="newest" th:selected="${filter.sort == 'newest'}">Mới nhất</option>
+              <option value="price-asc" th:selected="${filter.sort == 'price-asc'}">Giá thấp đến cao</option>
+              <option value="price-desc" th:selected="${filter.sort == 'price-desc'}">Giá cao đến thấp</option>
+              <option value="km-asc" th:selected="${filter.sort == 'km-asc'}">Số km ít nhất</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <div id="listing-grid" class="listing-grid"></div>
-      <div id="no-listings" class="no-listings" hidden>
+      <div class="listing-grid" th:unless="${page.empty}">
+        <article class="listing-card" th:each="car : ${page.content}"
+                 th:with="specs=${(car.year ?: '—') + ' · ' + (car.odometerKm != null ? #numbers.formatInteger(car.odometerKm, 1, 'POINT') : '—') + ' km · ' + (car.fuelType ?: '—')},
+                          price=${car.listPrice != null ? #numbers.formatDecimal(car.listPrice, 1, 'POINT', 0, 'COMMA') + ' ₫' : 'Liên hệ'}">
+          <div class="listing-photo">
+            <img loading="lazy" width="640" height="400" th:if="${car.coverUrl != null}" th:src="${car.coverUrl}"
+                 th:alt="${'Ảnh xe ' + car.title}">
+            <div class="photo-fallback" th:if="${car.coverUrl == null}"><svg th:replace="~{shell/icons :: icon('car')}"></svg><span>Hình ảnh đang cập nhật</span></div>
+            <span class="inspection-badge"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>Đã kiểm định</span>
+          </div>
+          <div class="listing-content">
+            <p class="listing-reference" th:text="${car.code}">TD-000001</p>
+            <h2 class="listing-title" th:text="${car.title}">Tên xe</h2>
+            <p class="listing-price" th:text="${price}">0 ₫</p>
+            <p class="listing-specs" th:text="${specs}">Năm · km · nhiên liệu</p>
+            <div class="listing-bottom">
+              <button class="sale-button primary listing-contact" type="button"
+                      th:attr="data-listing-id=${car.id},data-title=${car.title},data-specs=${specs},data-price=${price},aria-label=${'Liên hệ về ' + car.title}">
+                <svg th:replace="~{shell/icons :: icon('user')}"></svg>Liên hệ
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="no-listings" th:if="${page.empty}">
         <svg th:replace="~{shell/icons :: icon('search')}"></svg>
         <h2>Chưa tìm thấy xe phù hợp</h2><p>Thử tên xe khác hoặc mở rộng hãng xe, khoảng giá.</p>
-        <button type="button" class="sale-button primary" id="empty-reset">Xem tất cả xe</button>
+        <a class="sale-button primary" th:href="@{/tin-ban-xe}">Xem tất cả xe</a>
       </div>
-      <nav id="listing-pagination" class="listing-pagination" aria-label="Phân trang tin bán xe"></nav>
-      <noscript><p class="no-listings">Vui lòng bật JavaScript để xem danh sách và sử dụng bộ lọc trong bản demo.</p></noscript>
+
+      <nav class="listing-pagination" aria-label="Phân trang tin bán xe" th:if="${page.totalPages > 1}">
+        <a class="page-button" th:if="${page.hasPrevious()}"
+           th:href="@{/tin-ban-xe(q=${filter.q},brand=${filter.brand},budget=${filter.budget},sort=${filter.sort},page=${page.number})}">Trang trước</a>
+        <a class="page-button" th:each="n : ${#numbers.sequence(1, page.totalPages)}"
+           th:attr="aria-current=${n == page.number + 1 ? 'page' : null}"
+           th:href="@{/tin-ban-xe(q=${filter.q},brand=${filter.brand},budget=${filter.budget},sort=${filter.sort},page=${n})}"
+           th:text="${n}">1</a>
+        <a class="page-button" th:if="${page.hasNext()}"
+           th:href="@{/tin-ban-xe(q=${filter.q},brand=${filter.brand},budget=${filter.budget},sort=${filter.sort},page=${page.number + 2})}">Trang sau</a>
+      </nav>
     </section>
   </main>
 
@@ -87,23 +134,6 @@
     <p>© 2026 GaragePro Consign</p>
   </div></footer>
 
-  <template id="listing-card-template">
-    <article class="listing-card">
-      <div class="listing-photo">
-        <img loading="lazy" width="640" height="400" alt="">
-        <div class="photo-fallback" hidden><svg th:replace="~{shell/icons :: icon('car')}"></svg><span>Hình ảnh đang cập nhật</span></div>
-        <span class="inspection-badge"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>Đã kiểm định</span>
-        <span class="illustration-label">Ảnh minh họa</span>
-      </div>
-      <div class="listing-content"><p class="listing-reference"></p><h2 class="listing-title"></h2>
-        <p class="listing-price"></p><p class="listing-specs"></p>
-        <div class="listing-bottom"><span class="listing-location"></span>
-          <button class="sale-button primary listing-contact" type="button"><svg th:replace="~{shell/icons :: icon('user')}"></svg>Liên hệ</button>
-        </div>
-      </div>
-    </article>
-  </template>
-
   <dialog id="contact-dialog" class="contact-dialog" aria-labelledby="contact-title" aria-describedby="contact-description">
     <div class="contact-heading"><div><p class="eyebrow">GARAGEPRO CONSIGN</p><h2 id="contact-title">Liên hệ tư vấn xe</h2></div>
       <button class="dialog-close" type="button" data-close-contact aria-label="Đóng liên hệ">×</button></div>
@@ -111,7 +141,7 @@
     <!--/* Modal này là đầu vào của luồng bán xe: tìm Buyer theo SĐT, chưa có thì tạo, rồi tạo Inquiry (status OPEN, chưa có người phụ trách).
            Buyer: fullName, phone, email, consentStored. Inquiry: xe theo listingId, channel, notes (ghi kèm nhu cầu).
            CCCD và địa chỉ không hỏi ở đây, Sales bổ sung khi khách giữ xe.
-           Chờ BE: tạo route POST /tin-ban-xe/lien-he, cho phép khách chưa đăng nhập, rồi bỏ event.preventDefault() trong public-sale-news.js. */-->
+           Chờ BE (phân hệ Sales): tạo route POST /tin-ban-xe/lien-he, thêm vào permitAll, rồi bỏ event.preventDefault() trong public-sale-news.js. */-->
     <form id="listing-contact-form" method="post" th:action="@{/tin-ban-xe/lien-he}">
       <input type="hidden" name="listingId" id="contact-listing">
       <input type="hidden" name="channel" value="WEBSITE">

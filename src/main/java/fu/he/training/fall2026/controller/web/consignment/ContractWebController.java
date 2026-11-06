@@ -1,6 +1,5 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
-import fu.he.training.fall2026.controller.web.inspector.InspectionUiData;
 import fu.he.training.fall2026.dto.consignment.AgreementRequest;
 import fu.he.training.fall2026.dto.consignment.AgreementResponse;
 import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
@@ -10,6 +9,7 @@ import fu.he.training.fall2026.repository.ConsignmentAgreementRepository;
 import fu.he.training.fall2026.service.ConsignmentAgreementService;
 import fu.he.training.fall2026.service.ConsignmentService;
 import fu.he.training.fall2026.service.ConsignorService;
+import fu.he.training.fall2026.service.ValuationService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -47,6 +47,7 @@ public class ContractWebController {
     private final ConsignmentAgreementService agreementService;
     private final ConsignmentService consignmentService;
     private final ConsignorService consignorService;
+    private final ValuationService valuationService;
 
     @GetMapping
     public String list(
@@ -116,7 +117,7 @@ public class ContractWebController {
         model.addAttribute("consignor", consignorService.get(consignment.getConsignorId()));
         model.addAttribute("agreement", latest.orElse(null));
         model.addAttribute("termDays", DEFAULT_TERM_DAYS);
-        model.addAttribute("listingPriceText", InspectionUiData.listingPriceText(consignment.getCode()));
+        model.addAttribute("listingPriceText", valuationService.listingPriceText(consignment.getCode()));
         return CREATE_VIEW;
     }
 

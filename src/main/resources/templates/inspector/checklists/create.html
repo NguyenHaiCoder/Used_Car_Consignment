@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: tạo loại kiểm định + các bước multipart — UI mock. */-->
+<!--/* Nguyễn Vũ Trường An: tạo loại kiểm định + các bước. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Thêm loại kiểm định', 'Kiểm định và tiếp nhận xe', 'checklists',
                     null, ~{::link}, ~{::#checklist-create})}">
@@ -28,28 +28,29 @@
     </div>
   </div>
 
-  <form class="catalog-form" method="post" enctype="multipart/form-data" th:action="@{/inspector/checklists}">
+  <form class="catalog-form" method="post" th:action="@{/inspector/checklists}" th:object="${form}">
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
     <div class="form-row form-row--3">
       <div class="field">
-        <label>Tên loại kiểm định <span class="req">*</span></label>
-        <input type="text" name="name" required placeholder="Loại kiểm định SUV / Crossover" th:value="${form.name}">
+        <label for="name">Tên loại kiểm định <span class="req">*</span></label>
+        <input type="text" th:field="*{name}" maxlength="160" placeholder="Loại kiểm định SUV / Crossover">
+        <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
       </div>
       <div class="field">
-        <label>Loại xe <span class="req">*</span></label>
-        <select name="vehicleType" required>
-          <option value="" disabled th:selected="${form.vehicleType == null or form.vehicleType == ''}">— Chọn loại xe —</option>
-          <option th:each="t : ${vehicleTypes}"
-                  th:value="${t['code']}"
-                  th:text="${t['label']}"
-                  th:selected="${form.vehicleType == t['code']}">SUV / Crossover</option>
+        <label for="vehicleTypeId">Loại xe <span class="req">*</span></label>
+        <select th:field="*{vehicleTypeId}">
+          <option value="" disabled th:selected="${form.vehicleTypeId == null}">— Chọn loại xe —</option>
+          <option th:each="t : ${vehicleTypes}" th:value="${t.id}" th:text="${t.label}">SUV / Crossover</option>
         </select>
+        <span class="field-error" th:if="${#fields.hasErrors('vehicleTypeId')}" th:errors="*{vehicleTypeId}"></span>
       </div>
       <div class="field">
-        <label>Trạng thái</label>
-        <select name="status">
-          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
-          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        <label for="status">Trạng thái</label>
+        <select th:field="*{status}">
+          <option th:value="ACTIVE">Đang dùng</option>
+          <option th:value="INACTIVE">Ngưng hoạt động</option>
         </select>
+        <span class="field-error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></span>
       </div>
     </div>
 
@@ -57,41 +58,28 @@
       <div class="steps-editor-head">
         <div>
           <h3>Các bước kiểm định</h3>
+          <span class="field-error" th:if="${#fields.hasErrors('steps')}" th:errors="*{steps}"></span>
         </div>
         <button type="button" class="btn-c btn-c--outline" data-add-step>+ Thêm bước</button>
       </div>
       <div class="steps-list" data-steps-list>
-        <div class="step-row" data-step-row th:each="s : ${steps}" th:unless="${#lists.isEmpty(steps)}">
+        <div class="step-row" data-step-row th:each="s, it : *{steps}">
           <div class="step-row-head">
-            <span class="step-order" data-step-order th:text="${'Bước ' + s.order}">Bước 1</span>
+            <span class="step-order" data-step-order th:text="${'Bước ' + it.count}">Bước 1</span>
             <button type="button" class="btn-c btn-c--ghost step-remove" data-remove-step>Xoá</button>
           </div>
           <div class="step-row-fields">
             <div class="field">
               <label>Kiểm định gì <span class="req">*</span></label>
-              <input type="text" name="stepTitles" required placeholder="Vd: Ngoại thất, giấy tờ, động cơ..."
-                     th:value="${s.title}">
+              <input type="text" data-step-title maxlength="160" placeholder="Vd: Ngoại thất, giấy tờ, động cơ..."
+                     th:field="*{steps[__${it.index}__].title}">
+              <span class="field-error" th:if="${#fields.hasErrors('steps[__${it.index}__].title')}" th:errors="*{steps[__${it.index}__].title}"></span>
             </div>
             <div class="field">
               <label>Mô tả / gợi ý</label>
-              <input type="text" name="stepHints" placeholder="Chi tiết cần kiểm tra (tuỳ chọn)"
-                     th:value="${s.hint}">
-            </div>
-          </div>
-        </div>
-        <div class="step-row" data-step-row th:if="${#lists.isEmpty(steps)}">
-          <div class="step-row-head">
-            <span class="step-order" data-step-order>Bước 1</span>
-            <button type="button" class="btn-c btn-c--ghost step-remove" data-remove-step>Xoá</button>
-          </div>
-          <div class="step-row-fields">
-            <div class="field">
-              <label>Kiểm định gì <span class="req">*</span></label>
-              <input type="text" name="stepTitles" required placeholder="Vd: Ngoại thất, giấy tờ, động cơ...">
-            </div>
-            <div class="field">
-              <label>Mô tả / gợi ý</label>
-              <input type="text" name="stepHints" placeholder="Chi tiết cần kiểm tra (tuỳ chọn)">
+              <input type="text" data-step-hint maxlength="500" placeholder="Chi tiết cần kiểm tra (tuỳ chọn)"
+                     th:field="*{steps[__${it.index}__].hint}">
+              <span class="field-error" th:if="${#fields.hasErrors('steps[__${it.index}__].hint')}" th:errors="*{steps[__${it.index}__].hint}"></span>
             </div>
           </div>
         </div>

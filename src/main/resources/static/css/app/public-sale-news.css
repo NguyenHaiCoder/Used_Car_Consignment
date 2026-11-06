@@ -88,6 +88,7 @@ input::placeholder, textarea::placeholder { color: var(--gray); opacity: .8; }
 .listing-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 30px; }
 .page-button { min-width: 36px; height: 36px; padding: 0 10px; color: var(--text-dark); border: 1px solid var(--border); border-radius: 7px; background: var(--card-bg); font-size: 12px; }
 .page-button:hover:not(:disabled) { border-color: var(--blue-500); }
+a.page-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .page-button[aria-current="page"] { color: #fff; background: var(--primary); border-color: var(--primary); }
 .page-button:disabled { opacity: .4; cursor: not-allowed; }
 .no-listings { display: grid; justify-items: center; gap: 12px; padding: 64px 20px; background: var(--card-bg); border: 1px dashed var(--border); border-radius: 14px; text-align: center; color: var(--gray); }

@@ -42,6 +42,34 @@ public interface ConsignmentRepository extends JpaRepository<Consignment, Long> 
     @Query("select c from Consignment c join fetch c.consignor join fetch c.vehicle where c.id = :id")
     Optional<Consignment> findDetailById(@Param("id") Long id);
 
+    /** Nguyễn Vũ Trường An: hàng đợi kiểm định — {@code pattern} như {@link #search}, chỉ lấy các trạng thái truyền vào. */
+    @Query(value = """
+            select c from Consignment c join fetch c.consignor o join fetch c.vehicle v
+            where c.status in :statuses
+              and (lower(c.code) like :pattern
+                   or lower(o.fullName) like :pattern
+                   or lower(v.vin) like :pattern
+                   or lower(v.make) like :pattern
+                   or lower(v.model) like :pattern)
+            """,
+            countQuery = """
+            select count(c) from Consignment c join c.consignor o join c.vehicle v
+            where c.status in :statuses
+              and (lower(c.code) like :pattern
+                   or lower(o.fullName) like :pattern
+                   or lower(v.vin) like :pattern
+                   or lower(v.make) like :pattern
+                   or lower(v.model) like :pattern)
+            """)
+    Page<Consignment> searchByStatuses(
+            @Param("pattern") String pattern,
+            @Param("statuses") List<ConsignmentStatus> statuses,
+            Pageable pageable);
+
+    /** Nguyễn Vũ Trường An: hồ sơ theo trạng thái kèm chủ xe + xe, mới nhất trước (ô chọn xe khi đăng tin). */
+    @Query("select c from Consignment c join fetch c.consignor join fetch c.vehicle where c.status = :status order by c.id desc")
+    List<Consignment> findAllByStatusWithVehicle(@Param("status") ConsignmentStatus status);
+
     /** Codes of the vehicle's reservations in the given status (withdraw blockers). */
     @Query("select r.code from Reservation r where r.vehicle.id = :vehicleId and r.status = :status order by r.code")
     List<String> findReservationCodes(@Param("vehicleId") Long vehicleId, @Param("status") ReservationStatus status);

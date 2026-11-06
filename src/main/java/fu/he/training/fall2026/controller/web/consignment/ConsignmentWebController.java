@@ -1,12 +1,12 @@
 package fu.he.training.fall2026.controller.web.consignment;
 
-import fu.he.training.fall2026.controller.web.inspector.InspectionUiData;
 import fu.he.training.fall2026.dto.consignment.ConsignmentRequest;
 import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignmentService;
 import fu.he.training.fall2026.service.ConsignorService;
+import fu.he.training.fall2026.service.ValuationService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,6 +41,7 @@ public class ConsignmentWebController {
 
     private final ConsignmentService consignmentService;
     private final ConsignorService consignorService;
+    private final ValuationService valuationService;
 
     @GetMapping
     public String list(
@@ -82,7 +83,7 @@ public class ConsignmentWebController {
         model.addAttribute("consignment", consignment);
         model.addAttribute("consignor", consignorService.get(consignment.getConsignorId()));
         model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));
-        model.addAttribute("listingPriceText", InspectionUiData.listingPriceText(consignment.getCode()));
+        model.addAttribute("listingPriceText", valuationService.listingPriceText(consignment.getCode()));
         return DETAIL_VIEW;
     }
 
@@ -93,7 +94,7 @@ public class ConsignmentWebController {
         model.addAttribute("consignors", consignorService.listAll());
         model.addAttribute("vehicles", consignmentService.listVehicles());
         model.addAttribute("vehicleModels", CatalogUiData.activeModels());
-        model.addAttribute("listingPriceText", InspectionUiData.listingPriceText(consignment.getCode()));
+        model.addAttribute("listingPriceText", valuationService.listingPriceText(consignment.getCode()));
         return EDIT_VIEW;
     }
 

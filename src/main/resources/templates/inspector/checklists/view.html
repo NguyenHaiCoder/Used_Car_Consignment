@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: xem loại kiểm định + các bước theo loại xe — UI mock. */-->
+<!--/* Nguyễn Vũ Trường An: xem loại kiểm định + các bước. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${item.name}, 'Kiểm định và tiếp nhận xe', 'checklists',
                     null, ~{::link}, ~{::#checklist-view})}">
@@ -31,12 +31,14 @@
     </div>
   </div>
 
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
   <section class="csb-card">
     <header class="csb-head">
       <svg th:replace="~{shell/icons :: icon('info')}"></svg>
       <h4>Thông tin loại kiểm định</h4>
-      <span class="pill" th:classappend="${item.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
-            th:text="${item.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+      <span class="pill" th:classappend="${item.status.name() == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+            th:text="${item.status.name() == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
     </header>
     <div class="csb-body">
       <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${'LKD-' + item.id}">LKD-1</span></div>

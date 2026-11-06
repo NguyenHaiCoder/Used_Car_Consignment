@@ -1,139 +1,146 @@
 package fu.he.training.fall2026.controller.web.inspector;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
+import fu.he.training.fall2026.dto.listing.ListingVehicleResponse;
+import fu.he.training.fall2026.dto.listing.SaleNewsFilter;
+import fu.he.training.fall2026.dto.listing.SaleNewsRequest;
+import fu.he.training.fall2026.dto.listing.SaleNewsResponse;
+import fu.he.training.fall2026.exception.BusinessException;
+import fu.he.training.fall2026.service.SaleNewsService;
+import fu.he.training.fall2026.util.SessionAuthUtils;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Nguyễn Vũ Trường An: màn Đăng tin / quản lý tin đăng (UI mock).
- * <ul>
- *   <li>{@code GET /inspector/listings} — danh sách</li>
- *   <li>{@code GET /inspector/listings/new} — tạo mới (trống)</li>
- *   <li>{@code GET /inspector/listings/new?vehicleId=} — từ Kiểm định xe, prefill xe + giá</li>
- * </ul>
+ * Nguyễn Vũ Trường An: Quản lý tin đăng bán xe.
+ * Đăng tin chỉ cho hồ sơ Đã kiểm định; người đăng là người phụ trách tin.
  */
 @Controller
 @RequestMapping("/inspector/listings")
+@RequiredArgsConstructor
 public class InspectorListingsWebController {
 
+    private static final String BASE = "/inspector/listings";
     private static final String LIST_VIEW = "inspector/news/list";
     private static final String CREATE_VIEW = "inspector/news/create";
-    private static final DateTimeFormatter INSPECT_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String EDIT_VIEW = "inspector/news/edit";
 
-    /** Biển số / màu / hộp số / nhiên liệu / giá mặc định theo id SEED Kiểm định xe. */
-    private static final Map<Long, Extra> EXTRAS = Map.of(
-            12L, extra("51H-678.90", "Xanh dương", "Số tự động", "Xăng", "SUV", 769_000_000L),
-            11L, extra("30K-123.45", "Đỏ", "Số tự động", "Xăng", "SUV", 760_000_000L),
-            10L, extra("30H-678.22", "Trắng", "Số tự động", "Xăng", "SUV", 680_000_000L),
-            9L, extra("51D-345.12", "Cam", "Số tự động", "Dầu", "Bán tải", 845_000_000L),
-            8L, extra("51K-789.01", "Xám", "Số tự động", "Xăng", "SUV", 1_080_000_000L),
-            7L, extra("51K-564.09", "Bạc", "Số tự động", "Xăng", "SUV", 610_000_000L),
-            6L, extra("30K-903.28", "Đen", "Số tự động", "Điện", "Xe điện", 890_000_000L),
-            5L, extra("30A-882.16", "Trắng", "Số tự động", "Xăng", "Sedan", 425_000_000L));
+    private final SaleNewsService saleNewsService;
 
     @GetMapping
-    public String list() {
+    public String list(
+            @ModelAttribute("filter") SaleNewsFilter filter,
+            BindingResult filterErrors,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer size,
+            Model model) {
+        int pageSize = CatalogPageSupport.normalizeSize(size);
+        Page<SaleNewsResponse> result = CatalogPageSupport.lastPageIfBeyond(
+                saleNewsService.search(filter, page, pageSize),
+                last -> saleNewsService.search(filter, last, pageSize));
+        Map<String, Long> counts = new LinkedHashMap<>();
+        saleNewsService.countByStatus().forEach((status, count) -> counts.put(status.name(), count));
+        model.addAttribute("page", result);
+        model.addAttribute("counts", counts);
+        model.addAttribute("size", pageSize);
+        model.addAttribute("staffs", saleNewsService.listStaffs());
         return LIST_VIEW;
     }
 
     @GetMapping("/new")
-    public String createForm(@RequestParam(required = false) Long vehicleId, Model model) {
-        List<Map<String, Object>> vehicles = new ArrayList<>();
-        for (InspectorVehiclesWebController.MockRow row : InspectorVehiclesWebController.listingCandidates()) {
-            vehicles.add(toListingVehicle(row));
-        }
-
-        List<Map<String, Object>> ready = vehicles.stream()
-                .filter(v -> {
-                    Object inspected = v.get("inspected");
-                    return inspected != null && !String.valueOf(inspected).isBlank();
-                })
-                .toList();
-
-        Map<String, Object> picked = null;
-        if (vehicleId != null) {
-            picked = vehicles.stream()
-                    .filter(v -> vehicleId.equals(v.get("id")))
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        model.addAttribute("ready", ready);
-        model.addAttribute("picked", picked);
-        model.addAttribute("staffs", staffs());
+    public String createForm(
+            @RequestParam(required = false) Long consignmentId,
+            HttpSession session,
+            Model model) {
+        ListingVehicleResponse picked = saleNewsService.findReadyVehicle(consignmentId).orElse(null);
+        model.addAttribute("form", picked == null ? new SaleNewsRequest() : saleNewsService.newForm(picked));
+        addCreateOptions(model, picked, session);
         return CREATE_VIEW;
     }
 
-    private static Map<String, Object> toListingVehicle(InspectorVehiclesWebController.MockRow row) {
-        Extra extra = EXTRAS.getOrDefault(row.getId(), extra("—", "—", "—", "—", typeLabel(row.getVehicleType()), 0L));
-        boolean ready = InspectorVehiclesWebController.isReadyForListing(row);
-        String inspectDate = row.getInspectDate();
-        String inspected = "";
-        if (ready) {
-            if (inspectDate != null && !inspectDate.isBlank() && !"—".equals(inspectDate)) {
-                inspected = inspectDate;
-            } else {
-                inspected = LocalDate.now().format(INSPECT_DATE);
+    @GetMapping("/{id}/edit")
+    public String editForm(@PathVariable Long id, Model model) {
+        SaleNewsRequest form = saleNewsService.formFor(id);
+        model.addAttribute("form", form);
+        addEditOptions(model, form);
+        return EDIT_VIEW;
+    }
+
+    /** Creates the listing when the hidden id is empty, otherwise updates it. */
+    @PostMapping
+    public String save(
+            @Valid @ModelAttribute("form") SaleNewsRequest form,
+            BindingResult errors,
+            HttpSession session,
+            Model model,
+            RedirectAttributes flash) {
+        if (!errors.hasErrors()) {
+            try {
+                if (form.getId() == null) {
+                    Long id = saleNewsService.create(form, SessionAuthUtils.getUserId(session));
+                    flash.addFlashAttribute("flashMessage", "Đã đăng tin " + saleNewsService.get(id).getCode() + ".");
+                    return "redirect:" + BASE;
+                }
+                saleNewsService.update(form.getId(), form);
+                flash.addFlashAttribute("flashMessage", "Đã cập nhật tin " + saleNewsService.get(form.getId()).getCode() + ".");
+                return "redirect:" + BASE;
+            } catch (BusinessException ex) {
+                errors.reject("business", ex.getMessage());
             }
         }
-
-        long proposed = InspectionUiData.findValuation(row.getCode())
-                .map(v -> (BigDecimal) v.get("proposedPrice"))
-                .map(BigDecimal::longValue)
-                .orElse(extra.proposed);
-
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", row.getId());
-        map.put("code", row.getCode());
-        map.put("car", row.getDisplayLabel());
-        map.put("year", row.getYear());
-        map.put("vin", row.getVin());
-        map.put("plate", extra.plate);
-        map.put("km", row.getOdometerKm());
-        map.put("type", extra.typeLabel);
-        map.put("color", extra.color);
-        map.put("gearbox", extra.gearbox);
-        map.put("fuel", extra.fuel);
-        map.put("owner", row.getConsignorName());
-        map.put("inspected", inspected);
-        map.put("proposed", proposed);
-        return map;
+        if (form.getId() == null) {
+            addCreateOptions(model, saleNewsService.findReadyVehicle(form.getConsignmentId()).orElse(null), session);
+            return CREATE_VIEW;
+        }
+        addEditOptions(model, form);
+        return EDIT_VIEW;
     }
 
-    private static String typeLabel(String vehicleType) {
-        String label = InspectionUiData.labelOf(vehicleType);
-        return label == null || label.isBlank() ? Optional.ofNullable(vehicleType).orElse("—") : label;
+    @PostMapping("/{id}/pause")
+    public String pause(@PathVariable Long id, RedirectAttributes flash) {
+        try {
+            flash.addFlashAttribute("flashMessage", "Đã tạm ẩn tin " + saleNewsService.pause(id).getCode() + ".");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
+        }
+        return "redirect:" + BASE;
     }
 
-    private static List<Map<String, Object>> staffs() {
-        return List.of(
-                staff(1L, "Trường An"),
-                staff(2L, "Minh Đức"),
-                staff(3L, "Thu Hà"));
+    @PostMapping("/{id}/resume")
+    public String resume(@PathVariable Long id, RedirectAttributes flash) {
+        try {
+            flash.addFlashAttribute("flashMessage", "Đã hiển thị lại tin " + saleNewsService.resume(id).getCode() + ".");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
+        }
+        return "redirect:" + BASE;
     }
 
-    private static Map<String, Object> staff(long id, String name) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("id", id);
-        row.put("name", name);
-        return row;
+    private void addCreateOptions(Model model, ListingVehicleResponse picked, HttpSession session) {
+        model.addAttribute("ready", saleNewsService.listReadyVehicles());
+        model.addAttribute("picked", picked);
+        model.addAttribute("ownerName", SessionAuthUtils.getFullName(session));
     }
 
-    private static Extra extra(
-            String plate, String color, String gearbox, String fuel, String typeLabel, long proposed) {
-        return new Extra(plate, color, gearbox, fuel, typeLabel, proposed);
+    private void addEditOptions(Model model, SaleNewsRequest form) {
+        SaleNewsResponse news = saleNewsService.get(form.getId());
+        model.addAttribute("news", news);
+        model.addAttribute("picked", saleNewsService.getVehicle(saleNewsService.formFor(form.getId()).getConsignmentId()));
+        model.addAttribute("ownerName", news.getStaffName());
+        model.addAttribute("imageUrls", saleNewsService.imageUrls(form.getId()));
     }
-
-    private record Extra(
-            String plate, String color, String gearbox, String fuel, String typeLabel, long proposed) {}
 }

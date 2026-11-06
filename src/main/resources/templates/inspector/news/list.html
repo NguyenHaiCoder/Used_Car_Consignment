@@ -1,8 +1,6 @@
 <!DOCTYPE html>
-<!--/* Nguyễn Vũ Trường An: màn Quản lý tin đăng bán xe (mục Tin đăng ở sidebar, URL /inspector/listings) — chỉ UI.
-       Chờ BE: xóa khối MOCK ở #news-list rồi truyền qua Model các biến cùng tên
-       (page, counts, q, status, channel, staff, dateFrom, dateTo, priceMin, priceMax, size).
-       Phần giao diện bên dưới giữ nguyên, trừ n.created cần bỏ #temporals.createDateTime nếu BE trả LocalDateTime. */-->
+<!--/* Nguyễn Vũ Trường An: màn Quản lý tin đăng bán xe (mục Tin đăng ở sidebar, URL /inspector/listings).
+       Model (InspectorListingsWebController): page, counts, filter, size, staffs. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Quản lý tin đăng', 'Kiểm định và tiếp nhận xe', 'inspector-listings',
                     null, ~{::link}, ~{::#news-list})}">
@@ -17,82 +15,21 @@
   </th:block>
 </head>
 <body>
-<!--/* Danh mục hiển thị giữ lại khi nối BE. Khối MOCK là từ dòng all= đến hết dòng page=. */-->
+<!--/* statuses: chỉ là bảng nhãn / màu hiển thị theo ListingStatus. */-->
 <div id="news-list" class="catalog-wrap workflow"
      th:with="
        statuses=${ {
-         'LISTED':{'label':'Đang hiển thị','tone':'blue','icon':'megaphone','pill':'listed','actions':{'Tạm ẩn'}},
-         'PAUSED':{'label':'Tạm ẩn','tone':'slate','icon':'eye-off','pill':'closed','actions':{'Hiển thị lại'}},
-         'SOLD':{'label':'Đã bán','tone':'red','icon':'store','pill':'sold','actions':{}}
+         'LISTED':{'label':'Đang hiển thị','tone':'blue','icon':'megaphone','pill':'listed'},
+         'PAUSED':{'label':'Tạm ẩn','tone':'slate','icon':'eye-off','pill':'closed'},
+         'SOLD':{'label':'Đã bán','tone':'red','icon':'store','pill':'sold'}
        } },
-       channels=${ {
-         'WEBSITE':{'label':'Website','icon':'globe','css':'web'},
-         'FACEBOOK':{'label':'Facebook','icon':'facebook','css':'fb'},
-         'MARKETPLACE':{'label':'Sàn xe','icon':'store','css':'shop'}
-       } },
-       staffs=${ {'Trường An','Minh Đức','Thu Hà'} },
-
-       all=${ {
-         {'id':528,'code':'TD-000528','file':'KG-001205','car':'Hyundai Tucson 2022','plate':'51H-678.90','km':38650,'price':769000000,'created':'2026-11-07T10:24','staff':'Trường An','seller':'Nguyễn Quang Huy','ch':{'WEBSITE','FACEBOOK','MARKETPLACE'},'status':'LISTED','views':1243,'saves':36},
-         {'id':527,'code':'TD-000527','file':'KG-001204','car':'Toyota Camry 2020','plate':'30G-456.78','km':62100,'price':920000000,'created':'2026-11-06T15:40','staff':'Trường An','seller':'Trần Thị Lan','ch':{'WEBSITE','MARKETPLACE'},'status':'LISTED','views':328,'saves':14},
-         {'id':526,'code':'TD-000526','file':'KG-001203','car':'Mazda CX-5 2021','plate':'30K-123.45','km':45200,'price':760000000,'created':'2026-11-05T11:20','staff':'Trường An','seller':'Lê Thị Mai','ch':{'WEBSITE','FACEBOOK'},'status':'PAUSED','views':0,'saves':0},
-         {'id':525,'code':'TD-000525','file':'KG-001202','car':'Honda CR-V 2023','plate':'51K-789.01','km':28900,'price':1080000000,'created':'2026-11-04T16:05','staff':'Trường An','seller':'Đỗ Văn Nam','ch':{'WEBSITE','FACEBOOK','MARKETPLACE'},'status':'LISTED','views':0,'saves':0},
-         {'id':524,'code':'TD-000524','file':'KG-001201','car':'KIA Seltos 2021','plate':'30H-678.22','km':51300,'price':680000000,'created':'2026-11-04T09:30','staff':'Trường An','seller':'Phạm Thu Trang','ch':{'FACEBOOK'},'status':'PAUSED','views':412,'saves':11},
-         {'id':523,'code':'TD-000523','file':'KG-001200','car':'Ford Ranger 2022','plate':'51D-345.12','km':41800,'price':845000000,'created':'2026-11-03T14:10','staff':'Thu Hà','seller':'Phạm Quốc Huy','ch':{'WEBSITE','FACEBOOK'},'status':'LISTED','views':986,'saves':29},
-         {'id':522,'code':'TD-000522','file':'KG-001199','car':'Toyota Vios 2021','plate':'30A-882.16','km':54200,'price':425000000,'created':'2026-11-03T09:05','staff':'Minh Đức','seller':'Vũ Thị Hồng','ch':{'WEBSITE','MARKETPLACE'},'status':'LISTED','views':1508,'saves':44},
-         {'id':521,'code':'TD-000521','file':'KG-001198','car':'Kia Sorento 2022','plate':'51L-220.47','km':36300,'price':950000000,'created':'2026-11-02T16:40','staff':'Trường An','seller':'Trần Văn Bình','ch':{'WEBSITE'},'status':'PAUSED','views':0,'saves':0},
-         {'id':520,'code':'TD-000520','file':'KG-001197','car':'Honda City 2023','plate':'30L-117.35','km':18700,'price':535000000,'created':'2026-11-02T10:15','staff':'Thu Hà','seller':'Bùi Thanh Tùng','ch':{'WEBSITE','FACEBOOK','MARKETPLACE'},'status':'LISTED','views':0,'saves':0},
-         {'id':519,'code':'TD-000519','file':'KG-001196','car':'Mitsubishi Xpander 2023','plate':'51K-564.09','km':21300,'price':610000000,'created':'2026-11-01T15:25','staff':'Minh Đức','seller':'Ngô Thị Lan','ch':{'WEBSITE','FACEBOOK'},'status':'LISTED','views':742,'saves':19},
-         {'id':518,'code':'TD-000518','file':'KG-001195','car':'VinFast VF 8 2023','plate':'30K-903.28','km':15600,'price':890000000,'created':'2026-11-01T08:50','staff':'Trường An','seller':'Hoàng Anh Tuấn','ch':{'WEBSITE','MARKETPLACE'},'status':'LISTED','views':0,'saves':0},
-         {'id':517,'code':'TD-000517','file':'KG-001194','car':'Mazda 3 2021','plate':'51H-315.66','km':47900,'price':585000000,'created':'2026-10-31T13:35','staff':'Thu Hà','seller':'Đặng Thị Yến','ch':{'FACEBOOK'},'status':'LISTED','views':0,'saves':0},
-         {'id':516,'code':'TD-000516','file':'KG-001193','car':'Toyota Fortuner 2021','plate':'30G-742.50','km':58400,'price':1020000000,'created':'2026-10-31T09:20','staff':'Minh Đức','seller':'Lê Văn Khoa','ch':{'WEBSITE','FACEBOOK','MARKETPLACE'},'status':'LISTED','views':2104,'saves':57},
-         {'id':515,'code':'TD-000515','file':'KG-001192','car':'Hyundai Accent 2022','plate':'51G-118.73','km':33100,'price':465000000,'created':'2026-10-30T16:55','staff':'Trường An','seller':'Mai Hồng Sơn','ch':{'WEBSITE'},'status':'SOLD','views':1876,'saves':62},
-         {'id':514,'code':'TD-000514','file':'KG-001191','car':'Kia Carnival 2022','plate':'30K-276.91','km':40500,'price':1280000000,'created':'2026-10-30T10:40','staff':'Thu Hà','seller':'Dương Thị Hoa','ch':{'WEBSITE','FACEBOOK'},'status':'PAUSED','views':0,'saves':0},
-         {'id':513,'code':'TD-000513','file':'KG-001190','car':'Peugeot 3008 2021','plate':'51K-430.18','km':49700,'price':830000000,'created':'2026-10-29T14:30','staff':'Trường An','seller':'Cao Minh Trí','ch':{'WEBSITE','MARKETPLACE'},'status':'LISTED','views':0,'saves':0},
-         {'id':512,'code':'TD-000512','file':'KG-001189','car':'Toyota Corolla Cross 2023','plate':'30L-655.02','km':23800,'price':790000000,'created':'2026-10-29T09:45','staff':'Minh Đức','seller':'Lý Thu Hằng','ch':{'WEBSITE','FACEBOOK'},'status':'LISTED','views':1322,'saves':38},
-         {'id':511,'code':'TD-000511','file':'KG-001188','car':'Ford Everest 2021','plate':'51H-802.37','km':61200,'price':995000000,'created':'2026-10-28T15:15','staff':'Trường An','seller':'Hồ Văn Long','ch':{'FACEBOOK','MARKETPLACE'},'status':'PAUSED','views':654,'saves':17},
-         {'id':510,'code':'TD-000510','file':'KG-001187','car':'Honda Civic 2022','plate':'30G-391.84','km':35600,'price':745000000,'created':'2026-10-28T08:30','staff':'Thu Hà','seller':'Phan Ngọc Ánh','ch':{'WEBSITE','FACEBOOK','MARKETPLACE'},'status':'LISTED','views':1711,'saves':49},
-         {'id':509,'code':'TD-000509','file':'KG-001186','car':'Suzuki XL7 2022','plate':'51K-172.65','km':38900,'price':545000000,'created':'2026-10-27T16:20','staff':'Minh Đức','seller':'Tô Văn Hưng','ch':{'WEBSITE'},'status':'LISTED','views':0,'saves':0},
-         {'id':508,'code':'TD-000508','file':'KG-001185','car':'Hyundai Santa Fe 2021','plate':'30K-518.29','km':52300,'price':985000000,'created':'2026-10-27T10:05','staff':'Trường An','seller':'Đinh Thị Thảo','ch':{'WEBSITE','FACEBOOK'},'status':'SOLD','views':2240,'saves':71},
-         {'id':507,'code':'TD-000507','file':'KG-001184','car':'Kia K3 2022','plate':'51G-604.11','km':29400,'price':575000000,'created':'2026-10-26T14:50','staff':'Thu Hà','seller':'Võ Quốc Bảo','ch':{'WEBSITE','MARKETPLACE'},'status':'PAUSED','views':0,'saves':0},
-         {'id':506,'code':'TD-000506','file':'KG-001183','car':'Mazda 6 2020','plate':'30G-225.76','km':68100,'price':640000000,'created':'2026-10-26T09:10','staff':'Minh Đức','seller':'Tạ Thị Nga','ch':{'FACEBOOK'},'status':'PAUSED','views':389,'saves':8},
-         {'id':505,'code':'TD-000505','file':'KG-001182','car':'Toyota Innova 2021','plate':'51H-947.33','km':72500,'price':655000000,'created':'2026-10-25T15:35','staff':'Trường An','seller':'Lâm Văn Phúc','ch':{'WEBSITE','FACEBOOK'},'status':'LISTED','views':1095,'saves':27},
-         {'id':504,'code':'TD-000504','file':'KG-001181','car':'VinFast Lux A2.0 2021','plate':'30K-361.48','km':44800,'price':690000000,'created':'2026-10-25T08:55','staff':'Thu Hà','seller':'Kiều Thị Oanh','ch':{'WEBSITE'},'status':'LISTED','views':0,'saves':0},
-         {'id':503,'code':'TD-000503','file':'KG-001180','car':'Hyundai Elantra 2022','plate':'51K-286.59','km':31700,'price':615000000,'created':'2026-10-24T13:25','staff':'Minh Đức','seller':'Châu Minh Tâm','ch':{'WEBSITE','FACEBOOK','MARKETPLACE'},'status':'LISTED','views':0,'saves':0},
-         {'id':502,'code':'TD-000502','file':'KG-001179','car':'Nissan Navara 2021','plate':'30L-493.07','km':57600,'price':630000000,'created':'2026-10-24T09:00','staff':'Trường An','seller':'Thái Văn Lộc','ch':{'WEBSITE'},'status':'LISTED','views':0,'saves':0},
-         {'id':501,'code':'TD-000501','file':'KG-001178','car':'Mercedes-Benz C200 2020','plate':'51H-130.64','km':64300,'price':1150000000,'created':'2026-10-23T11:40','staff':'Thu Hà','seller':'Hà Thị Dung','ch':{'WEBSITE','FACEBOOK'},'status':'SOLD','views':3108,'saves':84}
-       } },
-       q=${param.q != null ? param.q[0].trim() : ''},
-       status=${param.status != null ? param.status[0] : ''},
-       channel=${param.channel != null ? param.channel[0] : ''},
-       staff=${param.staff != null ? param.staff[0] : ''},
-       dateFrom=${param.from != null and param.from[0] matches '\d{4}-\d{2}-\d{2}' ? param.from[0] : ''},
-       dateTo=${param.to != null and param.to[0] matches '\d{4}-\d{2}-\d{2}' ? param.to[0] : ''},
-       priceMin=${param.priceMin != null and param.priceMin[0] matches '\d{1,5}' ? param.priceMin[0] : ''},
-       priceMax=${param.priceMax != null and param.priceMax[0] matches '\d{1,5}' ? param.priceMax[0] : ''},
-       size=${param.size != null and {'5','10','20'}.contains(param.size[0]) ? #conversions.convert(param.size[0], 'java.lang.Integer') : 10},
-       counts=${ {
-         'LISTED':all.?[#this['status'] == 'LISTED'].size(),
-         'PAUSED':all.?[#this['status'] == 'PAUSED'].size(),
-         'SOLD':all.?[#this['status'] == 'SOLD'].size()
-       } },
-       shown=${all.?[
-         (#root['q'] == '' or #strings.containsIgnoreCase(#this['code'] + ' ' + #this['file'] + ' ' + #this['car'] + ' ' + #this['plate'] + ' ' + #this['seller'], #root['q']))
-         and (#root['status'] == '' or #this['status'] == #root['status'])
-         and (#root['channel'] == '' or #this['ch'].contains(#root['channel']))
-         and (#root['staff'] == '' or #this['staff'] == #root['staff'])
-         and (#root['dateFrom'] == '' or #this['created'].substring(0, 10).compareTo(#root['dateFrom']) >= 0)
-         and (#root['dateTo'] == '' or #this['created'].substring(0, 10).compareTo(#root['dateTo']) <= 0)
-         and (#root['priceMin'] == '' or #this['price'] >= #conversions.convert(#root['priceMin'], 'java.lang.Long') * 1000000)
-         and (#root['priceMax'] == '' or #this['price'] <= #conversions.convert(#root['priceMax'], 'java.lang.Long') * 1000000)
-       ]},
-       lastPage=${shown.isEmpty() ? 0 : (shown.size() - 1) / size},
-       wanted=${param.page != null and param.page[0] matches '\d\d?' ? #conversions.convert(param.page[0], 'java.lang.Integer') : 0},
-       current=${wanted > lastPage ? lastPage : wanted},
-       stop=${current * size + size > shown.size() ? shown.size() : current * size + size},
-       page=${ {'content':shown.subList(current * size, stop), 'number':current, 'size':size,
-                'totalPages':(shown.size() + size - 1) / size, 'totalElements':shown.size(),
-                'numberOfElements':stop - current * size, 'empty':shown.isEmpty()} }">
+       q=${filter.q ?: ''},
+       status=${filter.status != null ? filter.status.name() : ''},
+       staffId=${filter.staffId},
+       dateFrom=${filter.from != null ? #temporals.format(filter.from, 'yyyy-MM-dd') : ''},
+       dateTo=${filter.to != null ? #temporals.format(filter.to, 'yyyy-MM-dd') : ''},
+       priceMin=${filter.priceMin},
+       priceMax=${filter.priceMax}">
 
   <div class="contracts-header">
     <div class="contracts-header-left">
@@ -104,7 +41,7 @@
           <span>/</span>
           <span>Quản lý tin đăng</span>
         </nav>
-        <p class="news-lead">Quản lý, duyệt và xuất bản tin đăng bán xe từ các hồ sơ ký gửi đã được kiểm định và định giá.</p>
+        <p class="news-lead">Quản lý và xuất bản tin đăng bán xe từ các hồ sơ ký gửi đã được kiểm định và định giá.</p>
       </div>
     </div>
     <div class="contracts-header-actions">
@@ -113,6 +50,9 @@
       </a>
     </div>
   </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
 
   <!--/* Số trên thẻ tính trên toàn bộ tin, nên bấm thẻ sẽ bỏ các bộ lọc khác để danh sách khớp đúng con số đó. */-->
   <nav class="kpis" aria-label="Lọc nhanh theo trạng thái">
@@ -123,38 +63,40 @@
       <span class="kpi-icon"><svg th:replace="~{shell/icons :: icon(${s.value.icon})}"></svg></span>
       <div>
         <p th:text="${s.value.label}">Trạng thái</p>
-        <strong><span th:text="${counts.get(s.key)}">0</span> <small>tin</small></strong>
+        <strong><span th:text="${counts.get(s.key) ?: 0}">0</span> <small>tin</small></strong>
       </div>
     </a>
   </nav>
 
-  <!--/* Form GET duy nhất giữ toàn bộ bộ lọc. Ô cỡ trang và nút phân trang gắn vào form này qua thuộc tính form=,
-         nên đổi trang không bị mất bộ lọc. */-->
+  <!--/* Form GET duy nhất giữ toàn bộ bộ lọc. */-->
   <form class="card toolbar news-toolbar" id="news-filter" method="get" th:action="@{/inspector/listings}">
     <label class="search">
       <svg th:replace="~{shell/icons :: icon('search')}"></svg>
       <span class="sr-only">Tìm tin đăng</span>
-      <input type="search" name="q" th:value="${q}" placeholder="Tìm theo mã tin, mã hồ sơ, xe, chủ xe...">
+      <input type="search" name="q" th:value="${q}" placeholder="Tìm theo mã tin, mã hồ sơ, xe, biển số, chủ xe...">
     </label>
 
     <input type="hidden" name="status" th:value="${status}">
+    <input type="hidden" name="staffId" th:if="${staffId != null}" th:value="${staffId}">
+    <input type="hidden" name="size" th:value="${size}">
 
     <details class="filter-dropdown news-staff-select">
-      <summary class="filter-dropdown-trigger" aria-label="Nhân viên phụ trách">
-        <span th:text="${staff == null or staff == ''} ? 'Tất cả nhân viên' : staff">Tất cả nhân viên</span>
+      <summary class="filter-dropdown-trigger" aria-label="Nhân viên phụ trách"
+               th:with="picked=${staffs.?[#this.id == #root['staffId']]}">
+        <span th:text="${picked.isEmpty() ? 'Tất cả nhân viên' : picked[0].fullName}">Tất cả nhân viên</span>
         <span class="filter-dropdown-caret" aria-hidden="true">
           <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
         </span>
       </summary>
       <div class="filter-dropdown-menu" role="listbox" aria-label="Nhân viên phụ trách">
         <a class="filter-dropdown-item" role="option"
-           th:classappend="${staff == null or staff == ''} ? 'is-active'"
+           th:classappend="${staffId == null} ? 'is-active'"
            th:href="@{/inspector/listings(q=${q},status=${status},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},size=${size})}"
-           th:attr="aria-selected=${staff == null or staff == ''}">Tất cả nhân viên</a>
+           th:attr="aria-selected=${staffId == null}">Tất cả nhân viên</a>
         <a class="filter-dropdown-item" role="option" th:each="p : ${staffs}"
-           th:classappend="${p == staff} ? 'is-active'"
-           th:href="@{/inspector/listings(q=${q},status=${status},staff=${p},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},size=${size})}"
-           th:text="${p}" th:attr="aria-selected=${p == staff}">Nhân viên</a>
+           th:classappend="${p.id == staffId} ? 'is-active'"
+           th:href="@{/inspector/listings(q=${q},status=${status},staffId=${p.id},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},size=${size})}"
+           th:text="${p.fullName}" th:attr="aria-selected=${p.id == staffId}">Nhân viên</a>
       </div>
     </details>
 
@@ -181,7 +123,7 @@
     <div class="news-toolbar-actions">
       <details class="filter-dropdown news-more">
         <summary class="filter-dropdown-trigger"
-                 th:classappend="${priceMin != '' or priceMax != ''} ? 'is-on'">
+                 th:classappend="${priceMin != null or priceMax != null} ? 'is-on'">
           <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
           <span>Lọc nâng cao</span>
         </summary>
@@ -220,46 +162,50 @@
           </tr>
         </thead>
         <tbody>
-          <tr th:each="n : ${page.content}" th:with="s=${statuses.get(n.status)}">
+          <tr th:each="n : ${page.content}" th:with="s=${statuses.get(n.status.name())}">
             <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn tin ' + n.code}"></td>
-            <td><a class="code" th:href="@{/inspector/listings/{id}(id=${n.id})}" th:text="${n.code}">TD-1</a></td>
-            <td th:text="${n.file}">KG-1</td>
+            <td><span class="code" th:text="${n.code}">TD-1</span></td>
+            <td th:text="${n.consignmentCode}">KG-1</td>
             <td>
               <div class="vehicle">
-                <!--/* Chờ BE: thay icon bằng ảnh đầu tiên trong imagePaths. */-->
                 <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
                 <span>
-                  <strong th:text="${n.car}" th:title="${n.car}">Xe</strong>
-                  <small th:text="${n.plate + ' · ' + #numbers.formatInteger(n.km, 1, 'POINT') + ' km'}">Biển số · km</small>
+                  <strong th:text="${n.carLabel}" th:title="${n.carLabel}">Xe</strong>
+                  <small th:text="${(n.plate ?: '—') + ' · ' + (n.odometerKm != null ? #numbers.formatInteger(n.odometerKm, 1, 'POINT') : '—') + ' km'}">Biển số · km</small>
                 </span>
               </div>
             </td>
-            <td class="num news-price" th:text="${#numbers.formatInteger(n.price, 1, 'POINT') + ' ₫'}">0 ₫</td>
+            <td class="num news-price" th:text="${n.listPrice != null ? #numbers.formatDecimal(n.listPrice, 1, 'POINT', 0, 'COMMA') + ' ₫' : '—'}">0 ₫</td>
             <td class="news-date">
-              <span th:text="${#temporals.format(#temporals.createDateTime(n.created), 'dd/MM/yyyy')}">01/01/2026</span>
-              <small th:text="${#temporals.format(#temporals.createDateTime(n.created), 'HH:mm')}">00:00</small>
+              <span th:text="${#temporals.format(n.createdAt, 'dd/MM/yyyy')}">01/01/2026</span>
+              <small th:text="${#temporals.format(n.createdAt, 'HH:mm')}">00:00</small>
             </td>
-            <td th:text="${n.staff}" th:title="${n.staff}">Nhân viên</td>
-            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td th:text="${n.staffName ?: '—'}" th:title="${n.staffName}">Nhân viên</td>
+            <td><span class="pill" th:classappend="${'pill--' + (s != null ? s.pill : 'closed')}"
+                      th:text="${s != null ? s.label : n.status.name()}">Trạng thái</span></td>
             <td>
               <div class="row-actions news-actions">
-                <a class="row-action" th:href="@{/inspector/listings/{id}(id=${n.id})}"
-                   th:attr="aria-label=${'Xem tin ' + n.code}" title="Xem tin">
-                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
-                </a>
-                <a class="row-action" th:href="@{/inspector/listings/{id}/edit(id=${n.id})}"
+                <a class="row-action" th:if="${n.status.name() != 'SOLD'}"
+                   th:href="@{/inspector/listings/{id}/edit(id=${n.id})}"
                    th:attr="aria-label=${'Sửa tin ' + n.code}" title="Sửa tin">
                   <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
                 </a>
-                <details class="user-menu row-menu" th:unless="${s.actions.isEmpty()}">
+                <details class="user-menu row-menu" th:if="${n.status.name() == 'LISTED' or n.status.name() == 'PAUSED'}">
                   <summary class="row-action" th:attr="aria-label=${'Thao tác khác cho ' + n.code}">
                     <svg th:replace="~{shell/icons :: icon('dots')}"></svg>
                   </summary>
                   <div class="menu-pop">
-                    <button type="button" th:each="action : ${s.actions}" th:text="${action}">Hành động</button>
+                    <form method="post" th:if="${n.status.name() == 'LISTED'}"
+                          th:action="@{/inspector/listings/{id}/pause(id=${n.id})}">
+                      <button type="submit">Tạm ẩn</button>
+                    </form>
+                    <form method="post" th:if="${n.status.name() == 'PAUSED'}"
+                          th:action="@{/inspector/listings/{id}/resume(id=${n.id})}">
+                      <button type="submit">Hiển thị lại</button>
+                    </form>
                   </div>
                 </details>
-                <span class="row-action is-off" th:if="${s.actions.isEmpty()}" aria-hidden="true">
+                <span class="row-action is-off" th:unless="${n.status.name() == 'LISTED' or n.status.name() == 'PAUSED'}" aria-hidden="true">
                   <svg th:replace="~{shell/icons :: icon('dots')}"></svg>
                 </span>
               </div>
@@ -293,23 +239,23 @@
             <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
               <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
                  th:classappend="${n == size} ? 'is-active'"
-                 th:href="@{/inspector/listings(q=${q},status=${status},channel=${channel},staff=${staff},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=0,size=${n})}"
+                 th:href="@{/inspector/listings(q=${q},status=${status},staffId=${staffId},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=0,size=${n})}"
                  th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
             </div>
           </details>
         </div>
         <div class="pager-links">
-          <a class="page-link" th:if="${page.number > 0}" aria-label="Trang trước"
-             th:href="@{/inspector/listings(q=${q},status=${status},channel=${channel},staff=${staff},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=${page.number - 1},size=${size})}">‹</a>
-          <span class="page-link is-off" th:unless="${page.number > 0}" aria-hidden="true">‹</span>
+          <a class="page-link" th:if="${page.hasPrevious()}" aria-label="Trang trước"
+             th:href="@{/inspector/listings(q=${q},status=${status},staffId=${staffId},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=${page.number - 1},size=${size})}">‹</a>
+          <span class="page-link is-off" th:unless="${page.hasPrevious()}" aria-hidden="true">‹</span>
           <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
              th:classappend="${n == page.number} ? 'is-active'"
              th:attr="aria-current=${n == page.number ? 'page' : null}"
-             th:href="@{/inspector/listings(q=${q},status=${status},channel=${channel},staff=${staff},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=${n},size=${size})}"
+             th:href="@{/inspector/listings(q=${q},status=${status},staffId=${staffId},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=${n},size=${size})}"
              th:text="${n + 1}">1</a>
-          <a class="page-link" th:if="${page.number + 1 < page.totalPages}" aria-label="Trang sau"
-             th:href="@{/inspector/listings(q=${q},status=${status},channel=${channel},staff=${staff},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=${page.number + 1},size=${size})}">›</a>
-          <span class="page-link is-off" th:unless="${page.number + 1 < page.totalPages}" aria-hidden="true">›</span>
+          <a class="page-link" th:if="${page.hasNext()}" aria-label="Trang sau"
+             th:href="@{/inspector/listings(q=${q},status=${status},staffId=${staffId},from=${dateFrom},to=${dateTo},priceMin=${priceMin},priceMax=${priceMax},page=${page.number + 1},size=${size})}">›</a>
+          <span class="page-link is-off" th:unless="${page.hasNext()}" aria-hidden="true">›</span>
         </div>
       </div>
     </nav>

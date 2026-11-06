@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Mock danh mục hãng/dòng xe (UI, chưa gắn BE). Loại xe / loại kiểm định nằm ở InspectionUiData. */
+/** Mock danh mục hãng/dòng xe (UI, chưa gắn BE). Loại xe / loại kiểm định đã lưu DB (VehicleTypeService, InspectionTypeService). */
 public final class CatalogUiData {
 
     private CatalogUiData() {}

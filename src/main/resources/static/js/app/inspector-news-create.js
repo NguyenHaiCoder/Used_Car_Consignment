@@ -1,4 +1,5 @@
-/* Nguyễn Vũ Trường An: màn Đăng tin: định dạng giá, chọn ảnh, xem trước và kiểm tra trước khi đăng. */
+/* Nguyễn Vũ Trường An: màn Đăng tin / Sửa tin: định dạng giá, chọn ảnh, xem trước và kiểm tra trước khi đăng.
+   Chỉ hỗ trợ nhập liệu; lỗi dữ liệu do server (DTO + service) báo khi Lưu. */
 (() => {
   'use strict';
   const MAX_PHOTOS = 10;
@@ -23,8 +24,8 @@
   const coverIcon = cover.querySelector('svg');
   const previewTitle = $('[data-preview-title]');
   const previewPrice = $('[data-preview-price]');
-  const publish = $('[data-publish]');
-  const flash = $('#news-flash');
+  const existingPhotos = Number(root.dataset.existingPhotos || 0);
+  const existingCover = root.dataset.existingCover || '';
 
   let photos = [];
 
@@ -52,14 +53,11 @@
     setPreviewText(previewTitle, title.value.trim(), 'Tiêu đề tin');
     setPreviewText(previewPrice, price.value ? `${price.value} ₫` : '', 'Giá niêm yết');
 
-    const checks = [
-      setCheck('vehicle', Boolean(form.elements.vehicleId)),
-      setCheck('title', title.value.trim() !== ''),
-      setCheck('body', body.value.trim() !== ''),
-      setCheck('price', listPrice.value !== ''),
-      setCheck('photos', photos.length > 0),
-    ];
-    publish.disabled = checks.includes(false);
+    setCheck('vehicle', Boolean(form.elements.consignmentId && form.elements.consignmentId.value));
+    setCheck('title', title.value.trim() !== '');
+    setCheck('body', body.value.trim() !== '');
+    setCheck('price', listPrice.value !== '');
+    setCheck('photos', photos.length > 0 || existingPhotos > 0);
   }
 
   function renderPhotos() {
@@ -98,12 +96,13 @@
     photoInput.files = transfer.files;
 
     photoAdd.hidden = photos.length >= MAX_PHOTOS;
-    photoCount.textContent = `${photos.length}/${MAX_PHOTOS} ảnh`;
+    photoCount.textContent = `${photos.length || existingPhotos}/${MAX_PHOTOS} ảnh`;
     cover.querySelector('img')?.remove();
-    coverIcon.style.display = photos.length ? 'none' : '';
-    if (photos.length) {
+    const coverUrl = photos.length ? photos[0].url : existingCover;
+    coverIcon.style.display = coverUrl ? 'none' : '';
+    if (coverUrl) {
       const image = document.createElement('img');
-      image.src = photos[0].url;
+      image.src = coverUrl;
       image.alt = '';
       cover.append(image);
     }
@@ -130,14 +129,5 @@
     refresh();
   });
 
-  // Chờ BE: bỏ khối này để form POST thật tới /inspector/listings.
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const status = form.elements.status?.value === 'PAUSED' ? 'Tạm ẩn' : 'Đang hiển thị';
-    flash.textContent = `UI demo: đã lưu tin "${title.value.trim()}" · ${status} (chưa lưu BE).`;
-    flash.hidden = false;
-    flash.scrollIntoView({ block: 'center' });
-  });
-
-  refresh();
+  renderPhotos();
 })();
