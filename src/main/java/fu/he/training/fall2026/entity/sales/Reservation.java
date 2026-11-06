@@ -26,11 +26,47 @@ import lombok.Setter;
 @Table(name = "reservations")
 public class Reservation extends BaseEntity {
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private fu.he.training.fall2026.entity.enums.DepositDisposition cancelDepositPolicy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private fu.he.training.fall2026.entity.enums.DepositDisposition expiryDepositPolicy;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal confirmedCollectedAmount;
+
+    @Column(precision = 18, scale = 2)
+    private BigDecimal processedLiabilityAmount;
+
+    private Long depositDecisionActorId;
+
+    @Column(length = 100)
+    private String depositOperationKey;
+
+    @Column(length = 200)
+    private String depositBalanceReference;
+
+    @Column(length = 200)
+    private String depositProcessingReference;
+
+    @Column(length = 200)
+    private String vehicleTransitionReference;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private fu.he.training.fall2026.entity.enums.DepositDisposition depositDisposition;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transfer_reservation_id")
+    private Reservation transferReservation;
+
     @Column(nullable = false, unique = true, length = 40)
     private String code;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "inquiry_id", nullable = false)
+    @ManyToOne(optional = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "inquiry_id", nullable = true)
     private Inquiry inquiry;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)

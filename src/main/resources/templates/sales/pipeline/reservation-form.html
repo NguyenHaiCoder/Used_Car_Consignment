@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Tạo giữ xe', 'reservations', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content">
+    <section class="content-card pipeline-card">
+        <form class="pipeline-form" method="get" th:action="@{/sales/reservations/new}">
+            <label for="inquiry">Chọn tư vấn — người mua và xe được kế thừa từ tư vấn</label><select id="inquiry"
+                                                                                                       name="inquiryId"
+                                                                                                       required>
+            <option value="">Chọn tư vấn</option>
+            <option th:each="i : ${inquiries}" th:selected="${i.id == form.inquiryId}" th:text="${i.label}"
+                    th:value="${i.id}"></option>
+        </select>
+            <button class="button">Tiếp tục</button>
+        </form>
+        <p th:if="${#lists.isEmpty(inquiries)}">Chưa có tư vấn phù hợp. <a th:href="@{/sales/inquiries/new}">Tạo
+            tư vấn</a></p></section>
+    <form class="content-card pipeline-card pipeline-form" method="post" th:action="@{/sales/reservations}" th:if="${form.inquiryId != null}"
+          th:object="${form}">
+        <div class="alert buyer-field-error" role="alert" th:if="${#fields.hasErrors('*')}"><p
+                th:each="e : ${#fields.allErrors()}" th:text="${e}"></p></div>
+        <input name="inquiryId" th:value="${form.inquiryId}" type="hidden"><input name="vehicleId" th:value="${form.vehicleId}"
+                                                                                  type="hidden"><input
+            name="buyerId" th:value="${form.buyerId}" type="hidden">
+        <p th:text="|Khách mua #${form.buyerId} · Xe #${form.vehicleId}|"></p>
+        <label for="deposit">Tiền cọc thỏa thuận (VND)</label><input id="deposit" min="100000" name="depositAmount"
+                                                                     required step="0.01" th:value="${form.depositAmount}"
+                                                                     type="number">
+        <label for="hold">Giữ xe đến ngày (giờ Việt Nam)</label><input id="hold" name="holdUntil" required th:value="${form.holdUntil}"
+                                                                       type="date">
+        <label for="terms">Điều khoản cọc và hết hạn</label><textarea id="terms" maxlength="2000" name="terms" required
+                                                                      th:text="${form.terms}"></textarea>
+        <label for="cancelPolicy">Chính sách khi hủy trước hạn — theo điều khoản đã đồng ý</label>
+        <select id="cancelPolicy" name="cancelDepositPolicy" required th:field="*{cancelDepositPolicy}">
+            <option value="">Chọn chính sách</option>
+            <option value="REFUND">Hoàn cọc</option>
+            <option value="FORFEIT">Tịch thu cọc</option>
+            <option value="TRANSFER">Chuyển cọc</option>
+        </select>
+        <label for="expiryPolicy">Chính sách khi hết hạn — áp dụng cả khi hủy đơn đã quá hạn</label>
+        <select id="expiryPolicy" name="expiryDepositPolicy" required th:field="*{expiryDepositPolicy}">
+            <option value="">Chọn chính sách</option>
+            <option value="REFUND">Hoàn cọc</option>
+            <option value="FORFEIT">Tịch thu cọc</option>
+            <option value="TRANSFER">Chuyển cọc</option>
+        </select>
+        <label><input name="consentStored" required th:checked="${form.consentStored}" type="checkbox" value="true"> Đã
+            lưu sự đồng ý của người mua với điều khoản và hai chính sách cọc trên</label>
+        <p class="panel-note">Tạo giữ xe chỉ ghi nhận thỏa thuận cọc. Thu tiền thực tế do bộ phận tài chính xử lý.</p>
+        <button class="button button-primary">Tạo giữ xe</button>
+    </form>
+</section>
+</body>
+</html>
