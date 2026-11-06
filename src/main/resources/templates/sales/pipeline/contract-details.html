@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Chi tiết hợp đồng', 'contracts', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content" id="contract-detail-page" class="contract-detail-page">
+    <link rel="stylesheet" th:href="@{/css/ui/contract-detail.css}">
+    <a class="contract-back-link" th:href="@{/sales/contracts}">← Danh sách hợp đồng</a>
+
+    <section class="content-card contract-detail-hero">
+        <div>
+            <p class="contract-detail-kicker">Hợp đồng mua bán</p>
+            <h2 th:text="${contract.code}">HĐB-101</h2>
+            <p>Thông tin người mua, xe, bên bán và tình trạng thanh toán của hợp đồng.</p>
+        </div>
+        <span class="contract-detail-status" th:attr="data-status=${contract.status}" th:text="${contract.status.toString() == 'DRAFT' ? 'Bản nháp' : (contract.status.toString() == 'SIGNED' ? 'Đã ký' : (contract.status.toString() == 'ACTIVE' ? 'Đang hiệu lực' : (contract.status.toString() == 'CLOSED' ? 'Đã đóng' : (contract.status.toString() == 'CANCELLED' ? 'Đã hủy' : contract.status))))}"></span>
+    </section>
+
+    <div class="contract-detail-summary">
+        <article class="content-card">
+            <span>Giá bán</span>
+            <strong th:text="|${#numbers.formatDecimal(contract.salePrice,1,'POINT',0,'COMMA')} ₫|"></strong>
+        </article>
+        <article class="content-card">
+            <span>Cọc thỏa thuận</span>
+            <strong th:text="${contract.depositAmount == null ? '—' : #numbers.formatDecimal(contract.depositAmount,1,'POINT',0,'COMMA') + ' ₫'}"></strong>
+            <small>Khoản cọc thỏa thuận trên đơn giữ xe</small>
+        </article>
+        <article class="content-card">
+            <span>Còn lại trước phân bổ cọc</span>
+            <strong th:text="|${#numbers.formatDecimal(contract.remainingAmount,1,'POINT',0,'COMMA')} ₫|"></strong>
+        </article>
+    </div>
+
+    <div class="contract-detail-grid">
+        <section class="content-card contract-detail-card">
+            <div class="content-card-header"><h3>Các bên và xe</h3></div>
+            <dl class="contract-detail-facts">
+                <div><dt>Người mua</dt><dd th:text="${contract.buyerName}"></dd></div>
+                <div><dt>Chủ xe ký gửi</dt><dd th:text="${contract.ownerName}"></dd></div>
+                <div><dt>Bên bán hợp pháp</dt><dd th:text="${contract.sellerName ?: 'Chưa có thông tin'}"></dd></div>
+                <div><dt>Tư cách bên bán</dt><dd th:text="${contract.sellerPartyType ?: 'Chưa xác minh'}"></dd></div>
+                <div><dt>Giấy tờ định danh bên bán</dt><dd th:text="${contract.sellerIdentityNumber ?: 'Chưa xác minh'}"></dd></div>
+                <div><dt>Xe</dt><dd th:text="|${contract.make} ${contract.model}|"></dd></div>
+                <div><dt>VIN</dt><dd th:text="${contract.vin}"></dd></div>
+                <div><dt>Vai trò cửa hàng</dt>
+                    <dd th:text="${contract.shopRole != null ? 'Trung gian ký gửi (agent), không phải chủ sở hữu' : 'Chưa ghi nhận'}"></dd></div>
+            </dl>
+        </section>
+        <section class="content-card contract-detail-card">
+            <div class="content-card-header"><h3>Ký kết và ủy quyền</h3></div>
+            <dl class="contract-detail-facts">
+                <div><dt>Ngày ký</dt><dd th:text="${contract.signedOn == null ? 'Chưa ký' : #temporals.format(contract.signedOn, 'dd/MM/yyyy')}"></dd></div>
+                <div><dt>Căn cứ ủy quyền</dt><dd th:text="${contract.authorizationReference ?: 'Không áp dụng hoặc chưa xác minh'}"></dd></div>
+                <div><dt>Ủy quyền có hiệu lực đến</dt>
+                    <dd th:text="${contract.authorizationValidUntil == null ? 'Không áp dụng' : #temporals.format(contract.authorizationValidUntil, 'dd/MM/yyyy')}"></dd></div>
+                <div><dt>Chữ ký người bán</dt><dd th:text="${contract.sellerSignaturePath ?: 'Chưa có'}"></dd></div>
+                <div><dt>Chữ ký người mua</dt><dd th:text="${contract.buyerSignaturePath ?: 'Chưa có'}"></dd></div>
+                <div><dt>Cọc đã thu và phân bổ</dt>
+                    <dd th:text="${contract.depositReconciled ? #numbers.formatDecimal(contract.appliedDepositAmount,1,'POINT',0,'COMMA') + ' ₫' : 'Chưa xác nhận thu tiền'}"></dd></div>
+            </dl>
+        </section>
+    </div>
+
+    <section class="content-card contract-detail-card">
+        <div class="content-card-header"><h3>Điều khoản hợp đồng</h3></div>
+        <p class="contract-detail-terms" th:text="${#strings.isEmpty(contract.terms) ? 'Chưa có điều khoản.' : contract.terms}"></p>
+    </section>
+
+    <div class="contract-detail-links">
+        <a class="button" th:href="@{/sales/reservations/{id}(id=${contract.reservationId})}">Xem đơn giữ xe</a>
+        <a class="button" th:href="@{/sales/contracts}">Quay lại danh sách</a>
+    </div>
+
+    <div th:object="${form}">
+        <div class="alert buyer-field-error" role="alert" th:if="${#fields.hasErrors('*')}">
+            <p th:each="error : ${#fields.allErrors()}" th:text="${error}"></p>
+        </div>
+    </div>
+    <form class="content-card pipeline-card pipeline-form contract-edit-card"
+          method="post" th:action="@{/sales/contracts/{id}(id=${contract.id})}"
+          th:if="${contract.status.name() == 'DRAFT'}" th:object="${form}" novalidate>
+        <h3>Cập nhật bản nháp hợp đồng</h3>
+        <label for="price">Giá bán (VND)</label>
+        <input id="price" th:field="*{salePrice}" type="text" inputmode="numeric" autocomplete="off"
+               data-sale-price>
+        <label for="terms">Điều khoản</label>
+        <textarea id="terms" maxlength="4000" name="terms" th:text="${form.terms}"></textarea>
+        <p>Chỉ lưu bản nháp. Việc ký và kích hoạt hợp đồng cần bằng chứng chữ ký được xác minh từ module hồ sơ.</p>
+        <label for="state">Trạng thái tiếp theo</label>
+        <select id="state" name="status">
+            <option value="DRAFT">Lưu nháp</option>
+        </select>
+        <button class="button button-primary">Lưu hợp đồng</button>
+    </form>
+    <form class="content-card pipeline-card contract-state-form"
+          method="post" th:action="@{/sales/contracts/{id}(id=${contract.id})}"
+          th:if="${contract.status.name() == 'DRAFT'}">
+        <input name="status" type="hidden" value="CANCELLED">
+        <p>Hủy hợp đồng nháp không tự giải phóng giữ xe. Xử lý cọc tại trang đơn giữ xe.</p>
+        <button class="button">Hủy hợp đồng nháp</button>
+    </form>
+    <p class="alert" th:if="${contract.status.name() == 'SIGNED'}">Chờ xác minh bằng chứng chữ ký trước khi kích hoạt hợp đồng.</p>
+    <script defer th:src="@{/js/sales/contract-price.js}"></script>
+</section>
+</body>
+</html>

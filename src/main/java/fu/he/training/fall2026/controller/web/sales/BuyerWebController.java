@@ -6,9 +6,8 @@ import fu.he.training.fall2026.dto.buyer.DeleteBuyerRequest;
 import fu.he.training.fall2026.exception.BuyerException;
 import fu.he.training.fall2026.service.BuyerService;
 import fu.he.training.fall2026.service.InquiryService;
-import fu.he.training.fall2026.validation.BuyerValidation;
+import fu.he.training.fall2026.validation.BuyerFormValidation;
 import jakarta.validation.Valid;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -54,60 +53,45 @@ public class BuyerWebController {
     @GetMapping("/new")
     public String createForm(Model model) {
         model.addAttribute("form", new BuyerRequest());
-        model.addAttribute("buyerId", null);
-        model.addAttribute("editing", false);
-        return "sales/buyers/form";
+        return showForm(model, null);
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable long id, Model model) {
         model.addAttribute("form", buyerService.formFor(id));
-        model.addAttribute("buyerId", id);
-        model.addAttribute("editing", true);
-        return "sales/buyers/form";
+        return showForm(model, id);
     }
 
     @PostMapping
     public String create(@Valid @ModelAttribute("form") BuyerRequest input, BindingResult binding,
                          Model model, RedirectAttributes redirect) {
-        validateFields(input, binding, false);
+        BuyerFormValidation.validateForCreate(input, binding);
         if (binding.hasErrors()) {
-            model.addAttribute("buyerId", null);
-            model.addAttribute("editing", false);
-            return "sales/buyers/form";
+            return showForm(model, null);
         }
         try {
             BuyerResponse buyer = buyerService.create(input);
-            redirect.addFlashAttribute("flashMessage", "Buyer created successfully.");
+            redirect.addFlashAttribute("flashMessage", "Đã tạo khách mua thành công.");
             return "redirect:/sales/buyers/" + buyer.getBuyerId();
         } catch (BuyerException ex) {
             if (ex.getReason() == BuyerException.Reason.NOT_FOUND) {
                 throw ex;
             }
             rejectBuyerError(binding, ex);
-            model.addAttribute("buyerId", null);
-            model.addAttribute("editing", false);
-            return "sales/buyers/form";
-        } catch (Exception ex) {
-            binding.reject("buyer.persistence", "Không thể lưu Buyer lúc này. Vui lòng kiểm tra thông tin và thử lại.");
-            model.addAttribute("buyerId", null);
-            model.addAttribute("editing", false);
-            return "sales/buyers/form";
+            return showForm(model, null);
         }
     }
 
     @PostMapping("/{id}/edit")
     public String update(@PathVariable long id, @Valid @ModelAttribute("form") BuyerRequest input,
                          BindingResult binding, Model model, RedirectAttributes redirect) {
-        validateFields(input, binding, true);
+        BuyerFormValidation.validateForUpdate(input, binding);
         if (binding.hasErrors()) {
-            model.addAttribute("buyerId", id);
-            model.addAttribute("editing", true);
-            return "sales/buyers/form";
+            return showForm(model, id);
         }
         try {
             buyerService.update(id, input);
-            redirect.addFlashAttribute("flashMessage", "Buyer updated successfully.");
+            redirect.addFlashAttribute("flashMessage", "Đã cập nhật khách mua thành công.");
             return "redirect:/sales/buyers/" + id;
         } catch (BuyerException ex) {
             if (ex.getReason() == BuyerException.Reason.NOT_FOUND) {
@@ -117,14 +101,7 @@ public class BuyerWebController {
                 model.addAttribute("revisionConflict", true);
             }
             rejectBuyerError(binding, ex);
-            model.addAttribute("buyerId", id);
-            model.addAttribute("editing", true);
-            return "sales/buyers/form";
-        } catch (Exception ex) {
-            binding.reject("buyer.persistence", "Không thể lưu Buyer lúc này. Vui lòng kiểm tra thông tin và thử lại.");
-            model.addAttribute("buyerId", id);
-            model.addAttribute("editing", true);
-            return "sales/buyers/form";
+            return showForm(model, id);
         }
     }
 
@@ -144,7 +121,7 @@ public class BuyerWebController {
         }
         try {
             buyerService.delete(id, form.getReason());
-            redirect.addFlashAttribute("flashMessage", "Buyer deleted successfully.");
+            redirect.addFlashAttribute("flashMessage", "Đã xóa khách mua thành công.");
             return "redirect:/sales/buyers";
         } catch (BuyerException ex) {
             if (ex.getReason() == BuyerException.Reason.NOT_FOUND) {
@@ -153,28 +130,19 @@ public class BuyerWebController {
             if (ex.getReason() == BuyerException.Reason.VALIDATION) {
                 binding.rejectValue("reason", "buyer.invalid", ex.getMessage());
             }
-            prepareDeleteModel(id, model);
             if (ex.getReason() == BuyerException.Reason.CONFLICT) {
-                model.addAttribute("deleteBlockedReason", ex.getMessage());
+                prepareDeleteModel(id, model, ex.getMessage());
+            } else {
+                prepareDeleteModel(id, model);
             }
-            return "sales/buyers/details";
-        } catch (Exception ex) {
-            model.addAttribute("error", "Không thể xóa Buyer lúc này. Vui lòng tải lại trang và thử lại.");
-            prepareDeleteModel(id, model);
             return "sales/buyers/details";
         }
     }
 
-    private void validateFields(BuyerRequest input, BindingResult binding, boolean editing) {
-        for (Map.Entry<String, String> error : BuyerValidation.errors(
-                input.getFullName(), input.getPhone(), input.getEmail(), input.getAddress()).entrySet()) {
-            if (!binding.hasFieldErrors(error.getKey())) {
-                binding.rejectValue(error.getKey(), "buyer.invalid", error.getValue());
-            }
-        }
-        if (!editing && !binding.hasFieldErrors("consentStored") && !input.isConsentStored()) {
-            binding.rejectValue("consentStored", "buyer.invalid", BuyerValidation.CONSENT_REQUIRED);
-        }
+    private String showForm(Model model, Long buyerId) {
+        model.addAttribute("buyerId", buyerId);
+        model.addAttribute("editing", buyerId != null);
+        return "sales/buyers/form";
     }
 
     private void rejectBuyerError(BindingResult binding, BuyerException ex) {
@@ -186,9 +154,13 @@ public class BuyerWebController {
     }
 
     private void prepareDeleteModel(long id, Model model) {
+        prepareDeleteModel(id, model, buyerService.deletionBlockReason(id));
+    }
+
+    private void prepareDeleteModel(long id, Model model, String blockedReason) {
         model.addAttribute("buyer", buyerService.getDetails(id));
         model.addAttribute("history", inquiryService.getBuyerHistory(id, 1, 10));
-        model.addAttribute("deleteBlockedReason", buyerService.deletionBlockReason(id));
+        model.addAttribute("deleteBlockedReason", blockedReason);
         model.addAttribute("confirmDelete", true);
     }
 }

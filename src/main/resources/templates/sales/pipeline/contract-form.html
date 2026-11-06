@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Lập hợp đồng mua bán', 'contracts', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content">
+    <form class="content-card pipeline-card pipeline-form" method="post" th:action="@{/sales/contracts}" novalidate
+          th:object="${form}">
+        <div class="alert buyer-field-error" role="alert" th:if="${#fields.hasErrors('*')}">
+            <p th:each="e : ${#fields.allErrors()}" th:text="${e}"></p>
+        </div>
+        <label for="reservation">Đơn giữ xe ACTIVE còn hạn</label>
+        <p>Hợp đồng lấy thông tin người mua và chủ xe từ hồ sơ đã lưu. Ký hợp đồng cần đủ hai chữ ký và hồ sơ ký gửi còn
+            hiệu lực.</p>
+        <select id="reservation" name="reservationId" required>
+            <option value="">Chọn đơn giữ xe</option>
+            <option th:each="r : ${options}" th:selected="${r.id == form.reservationId}" th:text="${r.label}"
+                    th:value="${r.id}"></option>
+        </select>
+        <p th:if="${#lists.isEmpty(options)}">Chưa có đơn phù hợp.
+            <a th:href="@{/sales/reservations/new}">Tạo giữ xe</a></p>
+        <label for="price">Giá bán (VND) <span class="required" aria-hidden="true">*</span></label>
+        <input id="price" th:field="*{salePrice}" type="text" inputmode="numeric" autocomplete="off"
+               data-sale-price>
+        <label for="terms">Điều khoản mua bán</label>
+        <textarea id="terms" maxlength="4000" name="terms" th:text="${form.terms}"></textarea>
+        <p>Cửa hàng là bên trung gian ký gửi. Thông tin người bán được lấy trực tiếp từ chủ xe trong hồ sơ ký gửi.</p>
+        <p>Tiền cọc trên đơn giữ xe là số thỏa thuận, chưa xác nhận thu tiền và chưa được trừ vào số còn phải trả.</p>
+        <button class="button button-primary">Tạo hợp đồng nháp</button>
+    </form>
+    <script defer th:src="@{/js/sales/contract-price.js}"></script>
+</section>
+</body>
+</html>

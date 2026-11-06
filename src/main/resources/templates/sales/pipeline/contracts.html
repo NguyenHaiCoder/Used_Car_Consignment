@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi" th:replace="~{sales/pipeline/layout :: shell('Hợp đồng mua bán', 'contracts', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+<section th:fragment="content" id="contract-list">
+    <section class="content-card contract-list-card">
+        <div class="contract-list-actions">
+            <a class="button contract-create" th:href="@{/sales/contracts/new}">Lập hợp đồng</a>
+        </div>
+        <form id="contract-filters" method="get" role="search" th:action="@{/sales/contracts}">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="size" th:value="${rows.size}">
+            <div class="contract-search-bar">
+                <label for="contract-keyword">Tìm kiếm</label>
+                <input id="contract-keyword" name="keyword" type="search" maxlength="180"
+                       placeholder="Mã hợp đồng, người mua hoặc VIN" th:value="${keyword}">
+                <button class="contract-search-submit" type="submit">Tìm</button>
+                <a class="contract-clear" th:href="@{/sales/contracts}">Xóa lọc</a>
+            </div>
+            <div class="contract-table-wrap">
+                <table class="contract-table">
+                    <colgroup>
+                        <col class="contract-col-code"><col class="contract-col-buyer"><col class="contract-col-vehicle">
+                        <col class="contract-col-price"><col class="contract-col-remaining"><col class="contract-col-date">
+                        <col class="contract-col-status"><col class="contract-col-actions">
+                    </colgroup>
+                    <thead>
+                    <tr class="contract-filter-row">
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td>
+                            <label class="contract-visually-hidden" for="contract-status">Lọc theo trạng thái</label>
+                            <select id="contract-status" name="status" onchange="this.form.submit()">
+                                <option value="">Tất cả</option>
+                                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.toString() == 'DRAFT' ? 'Bản nháp' : (s.toString() == 'SIGNED' ? 'Đã ký' : (s.toString() == 'ACTIVE' ? 'Đang hiệu lực' : (s.toString() == 'CLOSED' ? 'Đã đóng' : (s.toString() == 'CANCELLED' ? 'Đã hủy' : s))))}"
+                                        th:selected="${s == status}"></option>
+                            </select>
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr class="contract-heading-row">
+                        <th scope="col">Mã hợp đồng</th><th scope="col">Người mua</th><th scope="col">Xe</th>
+                        <th scope="col" class="contract-money">Giá bán</th>
+                        <th scope="col" class="contract-money">Còn lại</th>
+                        <th scope="col">Ngày ký</th><th scope="col">Trạng thái</th>
+                        <th scope="col" class="contract-actions-cell">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${rows.content}">
+                        <td><a class="contract-code" th:href="@{/sales/contracts/{id}(id=${c.id})}" th:text="${c.code}"></a></td>
+                        <td th:text="${c.buyerName}"></td>
+                        <td th:text="|${c.make} ${c.model}|"></td>
+                        <td class="contract-money" th:text="|${#numbers.formatDecimal(c.salePrice,1,'POINT',0,'COMMA')} ₫|"></td>
+                        <td class="contract-money" th:text="|${#numbers.formatDecimal(c.remainingAmount,1,'POINT',0,'COMMA')} ₫|"></td>
+                        <td th:text="${c.signedOn == null ? '—' : #temporals.format(c.signedOn, 'dd/MM/yyyy')}"></td>
+                        <td><span class="contract-status" th:attr="data-status=${c.status}" th:text="${c.status.toString() == 'DRAFT' ? 'Bản nháp' : (c.status.toString() == 'SIGNED' ? 'Đã ký' : (c.status.toString() == 'ACTIVE' ? 'Đang hiệu lực' : (c.status.toString() == 'CLOSED' ? 'Đã đóng' : (c.status.toString() == 'CANCELLED' ? 'Đã hủy' : c.status))))}"></span></td>
+                        <td class="contract-actions-cell">
+                            <a class="action-icon action-view" th:href="@{/sales/contracts/{id}(id=${c.id})}"
+                               th:aria-label="|Xem hợp đồng ${c.code}|" title="Xem chi tiết">
+                                <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${rows.empty}"><td class="contract-empty" colspan="8">Không có hợp đồng phù hợp.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+        <div class="contract-table-footer">
+            <form class="contract-page-size" method="get" th:action="@{/sales/contracts}">
+                <label for="contract-size">Số dòng</label>
+                <select id="contract-size" name="size" onchange="this.form.submit()">
+                    <option th:each="s : ${ {10,20,50,100} }" th:value="${s}" th:text="${s.toString() == 'DRAFT' ? 'Bản nháp' : (s.toString() == 'SIGNED' ? 'Đã ký' : (s.toString() == 'ACTIVE' ? 'Đang hiệu lực' : (s.toString() == 'CLOSED' ? 'Đã đóng' : (s.toString() == 'CANCELLED' ? 'Đã hủy' : s))))}"
+                            th:selected="${s == rows.size}"></option>
+                </select>
+                <input type="hidden" name="keyword" th:value="${keyword}">
+                <input type="hidden" name="status" th:value="${status}">
+            </form>
+            <span class="contract-count" th:text="|${rows.totalElements} hợp đồng|"></span>
+            <nav class="contract-pagination" aria-label="Phân trang hợp đồng"
+                 th:with="currentPage=${rows.number + 1},totalPages=${T(java.lang.Math).max(1, rows.totalPages)},startPage=${T(java.lang.Math).max(1, currentPage - 2)},endPage=${T(java.lang.Math).min(totalPages, currentPage + 2)}">
+                <a class="contract-page-link" th:if="${rows.hasPrevious()}"
+                   th:href="@{/sales/contracts(page=${currentPage - 1},size=${rows.size},keyword=${keyword},status=${status})}">Trước</a>
+                <span class="contract-page-link is-disabled" th:unless="${rows.hasPrevious()}">Trước</span>
+                <a class="contract-page-link" th:if="${startPage > 1}"
+                   th:href="@{/sales/contracts(page=1,size=${rows.size},keyword=${keyword},status=${status})}">1</a>
+                <span th:if="${startPage > 2}" aria-hidden="true">…</span>
+                <a class="contract-page-link" th:each="number : ${#numbers.sequence(startPage, endPage)}"
+                   th:text="${number}" th:classappend="${number == currentPage} ? 'is-current'"
+                   th:attr="aria-current=${number == currentPage} ? 'page' : null"
+                   th:href="@{/sales/contracts(page=${number},size=${rows.size},keyword=${keyword},status=${status})}"></a>
+                <span th:if="${endPage < totalPages - 1}" aria-hidden="true">…</span>
+                <a class="contract-page-link" th:if="${endPage < totalPages}" th:text="${totalPages}"
+                   th:href="@{/sales/contracts(page=${totalPages},size=${rows.size},keyword=${keyword},status=${status})}"></a>
+                <a class="contract-page-link" th:if="${rows.hasNext()}"
+                   th:href="@{/sales/contracts(page=${currentPage + 1},size=${rows.size},keyword=${keyword},status=${status})}">Sau</a>
+                <span class="contract-page-link is-disabled" th:unless="${rows.hasNext()}">Sau</span>
+            </nav>
+        </div>
+    </section>
+</section>
+</body>
+</html>

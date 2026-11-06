@@ -2,6 +2,8 @@ package fu.he.training.fall2026.entity.sales;
 
 import fu.he.training.fall2026.entity.common.BaseEntity;
 import fu.he.training.fall2026.entity.enums.ContractStatus;
+import fu.he.training.fall2026.entity.enums.SellerPartyType;
+import fu.he.training.fall2026.entity.enums.ShopRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,6 +25,13 @@ import lombok.Setter;
 @Table(name = "sales_contracts")
 public class SalesContract extends BaseEntity {
 
+    @Column(length = 4000)
+    private String terms;
+
+    @jakarta.persistence.ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "consignment_agreement_id")
+    private fu.he.training.fall2026.entity.consignment.ConsignmentAgreement consignmentAgreement;
+
     @Column(nullable = false, unique = true, length = 40)
     private String code;
 
@@ -42,6 +51,25 @@ public class SalesContract extends BaseEntity {
 
     @Column(precision = 18, scale = 2)
     private BigDecimal remainingAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private SellerPartyType sellerPartyType;
+
+    @Column(length = 160)
+    private String sellerName;
+
+    @Column(length = 40)
+    private String sellerIdentityNumber;
+
+    @Column(length = 500)
+    private String authorizationReference;
+
+    private LocalDate authorizationValidUntil;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 40)
+    private ShopRole shopRole;
 
     private LocalDate signedOn;
 

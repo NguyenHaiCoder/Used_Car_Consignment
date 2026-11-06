@@ -1,17 +1,75 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+<html lang="vi" th:replace="~{common/layout :: shell(~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Hợp đồng bán HĐB-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/contracts/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
-  </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: steps}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
+<section class="screen-content contract-detail-page" id="contract-detail-preview"
+         data-template="sales/contracts/detail" th:fragment="content">
+    <link rel="stylesheet" th:href="@{/css/ui/contract-detail.css}">
+    <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+    <a class="contract-back-link" th:href="@{/ui/sales/contracts}">← Danh sách hợp đồng</a>
+
+    <section class="content-card contract-detail-hero">
+        <div>
+            <p class="contract-detail-kicker">Hợp đồng mua bán</p>
+            <h2 th:text="${screen.title}">Hợp đồng bán HĐB-101</h2>
+            <p th:text="${screen.description}"></p>
+        </div>
+        <span class="contract-detail-status" th:attr="data-status=${screen.status}" th:text="${screen.status}"></span>
+    </section>
+
+    <div class="contract-detail-summary is-preview">
+        <article class="content-card" th:each="field : ${screen.fields}"
+                 th:if="${field.name == 'agreedPrice' or field.name == 'depositHeld'}">
+            <span th:text="${field.name == 'agreedPrice' ? 'Giá thỏa thuận' : 'Cọc đang giữ'}"></span>
+            <strong th:text="|${#numbers.formatInteger(T(java.lang.Long).parseLong(field.value), 1, 'POINT')} ₫|"></strong>
+            <small th:if="${field.name == 'depositHeld'}">Theo reservation mẫu</small>
+        </article>
+    </div>
+
+    <div class="contract-detail-grid">
+        <section class="content-card contract-detail-card">
+            <div class="content-card-header"><h3>Các bên và hồ sơ liên quan</h3></div>
+            <dl class="contract-detail-facts">
+                <div th:each="fact : ${screen.facts}">
+                    <dt th:text="${fact.label}"></dt>
+                    <dd th:text="${fact.value}"></dd>
+                </div>
+                <div th:each="field : ${screen.fields}"
+                     th:if="${field.name == 'sellerPartyType' or field.name == 'shopRole'}">
+                    <dt th:text="${field.name == 'sellerPartyType' ? 'Tư cách bên bán' : 'Vai trò cửa hàng'}"></dt>
+                    <dd th:text="${#strings.isEmpty(field.value) ? 'Chưa xác minh' : field.value}"></dd>
+                </div>
+            </dl>
+        </section>
+        <section class="content-card contract-detail-card">
+            <div class="content-card-header"><h3>Điều kiện và ký kết</h3></div>
+            <ul class="contract-detail-checks">
+                <li th:each="check : ${screen.checks}" th:classappend="${check.passed ? 'is-passed' : 'is-blocked'}">
+                    <span aria-hidden="true" th:text="${check.passed ? '✓' : '!'}"></span>
+                    <div><strong th:text="${check.label}"></strong>
+                        <small th:if="${!#strings.isEmpty(check.explanation)}" th:text="${check.explanation}"></small>
+                    </div>
+                </li>
+            </ul>
+            <dl class="contract-detail-facts contract-detail-signing">
+                <div th:each="field : ${screen.fields}" th:if="${field.name == 'signedAt'}">
+                    <dt>Ngày ký</dt><dd th:text="${#strings.isEmpty(field.value) ? 'Chưa ghi nhận' : field.value}"></dd>
+                </div>
+                <div th:each="field : ${screen.fields}" th:if="${field.name == 'powerOfAttorney'}">
+                    <dt>Giấy ủy quyền</dt><dd>Chưa có tệp mẫu</dd>
+                </div>
+                <div th:each="field : ${screen.fields}" th:if="${field.name == 'signatureEvidence'}">
+                    <dt>Bằng chứng chữ ký</dt><dd>Chưa có tệp mẫu</dd>
+                </div>
+            </dl>
+        </section>
+    </div>
+
+    <th:block th:if="${screen.status == 'DRAFT'}">
+        <section th:replace="~{common/fragments/forms :: form}"></section>
+    </th:block>
+    <section th:replace="~{common/fragments/components :: steps}"></section>
+    <section th:replace="~{common/fragments/components :: history}"></section>
 </section>
 </body>
 </html>

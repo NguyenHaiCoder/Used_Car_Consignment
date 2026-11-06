@@ -28,11 +28,6 @@ public class RoleDashboardController {
         return render(session, model, "inspector");
     }
 
-    @GetMapping("/sales/dashboard")
-    public String salesDashboard(HttpSession session, Model model) {
-        return render(session, model, "sales");
-    }
-
     @GetMapping("/finance/dashboard")
     public String financeDashboard(HttpSession session, Model model) {
         return render(session, model, "finance");
