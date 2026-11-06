@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" th:replace="~{sales/scheduling/layout :: shell(${editing} ? 'Edit Viewing / Test Drive' : 'Schedule Viewing', ~{::content})}"
+<html lang="vi" th:replace="~{sales/scheduling/layout :: shell(${editing} ? 'Sửa lịch xem xe / lái thử' : 'Đặt lịch xem xe', ~{::content})}"
       xmlns:th="http://www.thymeleaf.org">
 <body>
 <section class="screen-content" id="viewing-editor" th:fragment="content">
@@ -7,20 +7,20 @@
     <script defer th:if="${inquiryCreated == true}" th:src="@{/js/sales/inquiry-form.js}"
             th:attr="data-clear-draft=|inquiry:create:${session.AUTH_USER_ID}|"></script>
 
-    <section class="content-card viewing-summary" aria-label="Selected inquiry" th:if="${details != null}">
+    <section class="content-card viewing-summary" aria-label="Tư vấn đã chọn" th:if="${details != null}">
         <div class="viewing-summary-item">
-            <span class="viewing-summary-label">Buyer</span>
+            <span class="viewing-summary-label">Khách mua</span>
             <strong th:text="${details.buyer}"></strong>
         </div>
         <div class="viewing-summary-item">
-            <span class="viewing-summary-label">Vehicle</span>
+            <span class="viewing-summary-label">Xe</span>
             <strong th:text="${details.vehicle}"></strong>
             <span class="viewing-vin" th:text="|VIN: ${details.vin}|"></span>
         </div>
     </section>
 
     <section class="content-card viewing-card">
-        <h2 th:text="${editing} ? 'Edit appointment' : 'Appointment details'">Appointment details</h2>
+        <h2 th:text="${editing} ? 'Sửa lịch hẹn' : 'Chi tiết lịch hẹn'">Chi tiết lịch hẹn</h2>
         <form data-viewing-form id="viewing-create-form" method="post" novalidate
               th:action="${editing} ? @{/sales/viewings/{id}/edit(id=${viewingId})} : @{/sales/viewings}"
               th:object="${viewingForm}">
@@ -33,47 +33,47 @@
 
             <div class="viewing-fields">
                 <div class="viewing-field">
-                    <label for="type">Type <span class="viewing-required" aria-hidden="true">*</span></label>
+                    <label for="type">Loại <span class="viewing-required" aria-hidden="true">*</span></label>
                     <select id="type" required th:field="*{type}" aria-describedby="type-error">
-                        <option value="VIEWING">Viewing</option>
-                        <option value="TEST_DRIVE">Test Drive</option>
+                        <option value="VIEWING">Xem xe</option>
+                        <option value="TEST_DRIVE">Lái thử</option>
                     </select>
                     <span class="buyer-field-error" id="type-error" th:errors="*{type}"></span>
                 </div>
                 <div class="viewing-field">
-                    <label for="salespersonId">Salesperson <span class="viewing-required" aria-hidden="true">*</span></label>
+                    <label for="salespersonId">Nhân viên phụ trách <span class="viewing-required" aria-hidden="true">*</span></label>
                     <select id="salespersonId" required th:field="*{salespersonId}" aria-describedby="salesperson-error">
-                        <option value="">Select...</option>
+                        <option value="">Chọn...</option>
                         <option th:each="o : ${salespeople}" th:text="${o.label}" th:value="${o.id}"></option>
                     </select>
                     <span class="buyer-field-error" id="salesperson-error" th:errors="*{salespersonId}"></span>
                 </div>
 
-                <p class="viewing-timezone">Vietnam time (UTC+07:00)</p>
+                <p class="viewing-timezone">Giờ Việt Nam (UTC+07:00)</p>
                 <div class="viewing-field">
-                    <label for="startTime">Start Time <span class="viewing-required" aria-hidden="true">*</span></label>
+                    <label for="startTime">Bắt đầu <span class="viewing-required" aria-hidden="true">*</span></label>
                     <input id="startTime" required th:field="*{startTime}" type="datetime-local" aria-describedby="startTime-error">
                     <span class="buyer-field-error" id="startTime-error" th:errors="*{startTime}"></span>
                 </div>
                 <div class="viewing-field">
-                    <label for="endTime">End Time <span class="viewing-required" aria-hidden="true">*</span></label>
+                    <label for="endTime">Kết thúc <span class="viewing-required" aria-hidden="true">*</span></label>
                     <input id="endTime" required th:field="*{endTime}" type="datetime-local" aria-describedby="endTime-error">
                     <span class="buyer-field-error" id="endTime-error" th:errors="*{endTime}"></span>
                 </div>
                 <div class="viewing-field viewing-field-wide">
-                    <label for="location">Location <span class="viewing-required" aria-hidden="true">*</span></label>
+                    <label for="location">Địa điểm <span class="viewing-required" aria-hidden="true">*</span></label>
                     <input id="location" maxlength="160" required th:field="*{location}" aria-describedby="location-error">
                     <span class="buyer-field-error" id="location-error" th:errors="*{location}"></span>
                 </div>
                 <div class="viewing-field viewing-field-wide">
-                    <label for="notes">Notes</label>
+                    <label for="notes">Ghi chú</label>
                     <textarea id="notes" maxlength="1000" rows="3" th:field="*{notes}" aria-describedby="notes-error"></textarea>
                     <span class="buyer-field-error" id="notes-error" th:errors="*{notes}"></span>
                 </div>
             </div>
             <div class="viewing-actions">
-                <a class="button" th:href="${editing} ? @{/sales/viewings} : @{/sales/inquiries}">Cancel</a>
-                <button class="button button-primary" type="submit" th:text="${editing} ? 'Save changes' : 'Schedule Viewing'">Schedule Viewing</button>
+                <a class="button" th:href="${editing} ? @{/sales/viewings} : @{/sales/inquiries}">Hủy</a>
+                <button class="button button-primary" type="submit" th:text="${editing} ? 'Lưu thay đổi' : 'Đặt lịch xem xe'">Đặt lịch xem xe</button>
             </div>
         </form>
     </section>

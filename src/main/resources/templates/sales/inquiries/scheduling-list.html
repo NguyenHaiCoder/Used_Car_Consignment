@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Sales Inquiries', ~{::content})}"
+<html lang="vi" th:replace="~{sales/scheduling/layout :: shell('Tư vấn bán hàng', ~{::content})}"
       xmlns:th="http://www.thymeleaf.org">
 <body>
 <section class="screen-content" th:fragment="content">
     <link rel="stylesheet" th:href="@{/css/ui/inquiries-list.css}">
     <section class="content-card inquiry-list" id="buyer-list">
-        <div class="inquiry-toolbar"><a class="button buyer-primary" th:href="@{/sales/inquiries/new}">Create Inquiry</a>
+        <div class="inquiry-toolbar"><a class="button buyer-primary" th:unless="${session.AUTH_ROLE_CODE == 'MANAGER'}" th:href="@{/sales/inquiries/new}">Tạo tư vấn</a>
         </div>
         <form class="buyer-search" id="inquiry-list-filters" method="get" role="search" th:action="@{/sales/inquiries}">
             <input name="page" type="hidden" value="1">
-            <label for="search">Search</label><input id="search" type="search" maxlength="180" name="search" placeholder="ID, code, buyer, VIN or vehicle model"
+            <label for="search">Tìm kiếm</label><input id="search" type="search" maxlength="180" name="search" placeholder="Mã, khách mua, VIN hoặc mẫu xe"
                                                      th:value="${search}">
-            <button hidden type="submit">Search</button>
-            <a th:href="@{/sales/inquiries}">Clear</a></form>
+            <button hidden type="submit">Tìm kiếm</button>
+            <a th:href="@{/sales/inquiries}">Xóa lọc</a></form>
         <div class="buyer-table-wrap">
             <table class="custom-table buyer-table">
                 <colgroup>
@@ -23,26 +23,26 @@
                 <thead>
                 <tr class="buyer-filter-row">
                     <td></td><td></td><td></td>
-                    <td><select aria-label="Filter by salesperson" form="inquiry-list-filters" id="salespersonId" name="salespersonId">
-                        <option value="">All</option>
+                    <td><select aria-label="Lọc theo nhân viên" form="inquiry-list-filters" id="salespersonId" name="salespersonId">
+                        <option value="">Tất cả</option>
                         <option th:each="o : ${salespeople}" th:selected="${o.id == salespersonId}" th:text="${o.label}"
                                 th:value="${o.id}"></option>
                     </select></td>
                     <td></td>
-                    <td><select aria-label="Filter by status" form="inquiry-list-filters" id="status" name="status">
-                        <option value="">All</option>
-                        <option th:each="s : ${statuses}" th:selected="${s == status}" th:text="${s}" th:value="${s}"></option>
+                    <td><select aria-label="Lọc theo trạng thái" form="inquiry-list-filters" id="status" name="status">
+                        <option value="">Tất cả</option>
+                        <option th:each="s : ${statuses}" th:selected="${s == status}" th:text="${s == 'OPEN' ? 'Đang mở' : (s == 'SCHEDULED' ? 'Đã đặt lịch' : (s == 'CONVERTED' ? 'Đã chuyển đổi' : (s == 'CLOSED' ? 'Đã đóng' : s)))}" th:value="${s}"></option>
                     </select></td>
                     <td></td>
                 </tr>
                 <tr>
                     <th>ID</th>
-                    <th>Buyer</th>
-                    <th>Vehicle</th>
-                    <th>Salesperson</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th class="action-cell">Actions</th>
+                    <th>Khách mua</th>
+                    <th>Xe</th>
+                    <th>Nhân viên phụ trách</th>
+                    <th>Ngày tư vấn</th>
+                    <th>Trạng thái</th>
+                    <th class="action-cell">Thao tác</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -52,40 +52,40 @@
                     <td th:text="${i.vehicle}"></td>
                     <td th:text="${i.salesperson}"></td>
                     <td th:text="${#temporals.format(i.date, 'dd/MM/yyyy')}"></td>
-                    <td th:text="${i.status}"></td>
+                    <td th:text="${i.status == 'OPEN' ? 'Đang mở' : (i.status == 'SCHEDULED' ? 'Đã đặt lịch' : (i.status == 'CONVERTED' ? 'Đã chuyển đổi' : (i.status == 'CLOSED' ? 'Đã đóng' : i.status)))}"></td>
                     <td class="action-cell">
                         <div class="row-actions">
                             <a class="action-icon action-view" th:href="@{/sales/inquiries/{id}(id=${i.id})}"
-                               th:attr="aria-label=|View inquiry ${i.id} details|" title="View inquiry details">
+                               th:attr="aria-label=|Xem tư vấn ${i.id} chi tiết|" title="Xem tư vấn details">
                                 <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
                             </a>
-                            <a class="action-icon action-edit" th:href="@{/sales/inquiries/{id}/edit(id=${i.id})}"
-                               th:attr="aria-label=|Edit inquiry ${i.id}|" title="Edit inquiry">
+                            <a class="action-icon action-edit" th:unless="${session.AUTH_ROLE_CODE == 'MANAGER'}" th:href="@{/sales/inquiries/{id}/edit(id=${i.id})}"
+                               th:attr="aria-label=|Sửa tư vấn ${i.id}|" title="Sửa tư vấn">
                                 <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg>
                             </a>
-                            <a class="action-icon action-delete" th:href="@{/sales/inquiries/{id}/delete(id=${i.id})}"
-                               th:attr="aria-label=|Delete inquiry ${i.id}|" title="Delete inquiry">
+                            <a class="action-icon action-delete" th:unless="${session.AUTH_ROLE_CODE == 'MANAGER'}" th:href="@{/sales/inquiries/{id}/delete(id=${i.id})}"
+                               th:attr="aria-label=|Xóa tư vấn ${i.id}|" title="Xóa tư vấn">
                                 <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
                             </a>
                         </div>
                     </td>
                 </tr>
-                <tr th:if="${rows.empty}"><td colspan="7">No inquiries found.</td></tr>
+                <tr th:if="${rows.empty}"><td colspan="7">Không tìm thấy tư vấn.</td></tr>
                 </tbody>
             </table>
         </div>
         <div class="inquiry-table-footer">
             <div class="inquiry-rows">
-                <label for="size">Rows</label><select form="inquiry-list-filters" id="size" name="size">
-                    <option th:each="s : ${ {10,25,50,100} }" th:selected="${s == rows.size}" th:text="${s}"
+                <label for="size">Số dòng</label><select form="inquiry-list-filters" id="size" name="size">
+                    <option th:each="s : ${ {10,25,50,100} }" th:selected="${s == rows.size}" th:text="${s == 'OPEN' ? 'Đang mở' : (s == 'SCHEDULED' ? 'Đã đặt lịch' : (s == 'CONVERTED' ? 'Đã chuyển đổi' : (s == 'CLOSED' ? 'Đã đóng' : s)))}"
                             th:value="${s}"></option>
                 </select>
             </div>
-            <nav aria-label="Inquiry pagination" class="pagination"
+            <nav aria-label="Phân trang tư vấn" class="pagination"
                  th:with="currentPage=${rows.number + 1},totalPages=${T(java.lang.Math).max(1, rows.totalPages)},startPage=${T(java.lang.Math).max(1, currentPage - 2)},endPage=${T(java.lang.Math).min(totalPages, currentPage + 2)}">
-                <a class="button" aria-label="Previous page" th:classappend="${!rows.hasPrevious()} ? 'is-disabled'"
+                <a class="button" aria-label="Trang trước" th:classappend="${!rows.hasPrevious()} ? 'is-disabled'"
                    th:attr="aria-disabled=${!rows.hasPrevious()}"
-                   th:href="${rows.hasPrevious()} ? @{/sales/inquiries(page=${currentPage - 1},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})} : null">Previous</a>
+                   th:href="${rows.hasPrevious()} ? @{/sales/inquiries(page=${currentPage - 1},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})} : null">Trước</a>
                 <a class="button" th:if="${startPage > 1}"
                    th:href="@{/sales/inquiries(page=1,size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})}">1</a>
                 <span th:if="${startPage > 2}" aria-hidden="true">&hellip;</span>
@@ -96,9 +96,9 @@
                 <span th:if="${endPage < totalPages - 1}" aria-hidden="true">&hellip;</span>
                 <a class="button" th:if="${endPage < totalPages}" th:text="${totalPages}"
                    th:href="@{/sales/inquiries(page=${totalPages},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})}"></a>
-                <a class="button" aria-label="Next page" th:classappend="${!rows.hasNext()} ? 'is-disabled'"
+                <a class="button" aria-label="Trang sau" th:classappend="${!rows.hasNext()} ? 'is-disabled'"
                    th:attr="aria-disabled=${!rows.hasNext()}"
-                   th:href="${rows.hasNext()} ? @{/sales/inquiries(page=${currentPage + 1},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})} : null">Next</a>
+                   th:href="${rows.hasNext()} ? @{/sales/inquiries(page=${currentPage + 1},size=${rows.size},search=${search},status=${status},salespersonId=${salespersonId})} : null">Sau</a>
             </nav>
         </div>
     </section>

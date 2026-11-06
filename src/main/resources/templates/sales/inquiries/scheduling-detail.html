@@ -1,50 +1,50 @@
 <!DOCTYPE html>
-<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Inquiry Details', ~{::content})}" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" th:replace="~{sales/scheduling/layout :: shell('Chi tiết tư vấn', ~{::content})}" xmlns:th="http://www.thymeleaf.org">
 
 <body>
     <section class="screen-content" id="buyer-details" th:fragment="content">
         <link rel="stylesheet" th:href="@{/css/ui/inquiry-detail.css}">
-        <script defer th:if="${inquiryCreated == true or inquiryUpdated == true}" th:src="@{/js/sales/inquiry-form.js}"
-                th:attr="data-clear-draft=|inquiry:${inquiryCreated == true ? 'create' : details.id}:${session.AUTH_USER_ID}|"></script>
+        <script defer th:if="${inquiryCreated == true or inquiryUpdated == true}" th:src="@{/js/sales/inquiry-form.js}" th:attr="data-clear-draft=|inquiry:${inquiryCreated == true ? 'create' : details.id}:${session.AUTH_USER_ID}|"></script>
         <!-- Top Navigation & Action -->
         <div class="buyer-page-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 10px;">
-            <a class="button" th:href="@{/sales/inquiries}">← Back to Inquiries</a>
-            <a class="button button-primary" th:href="@{/sales/viewings/new(inquiryId=${details.id})}" th:if="${details.status == 'OPEN' or details.status == 'SCHEDULED'}">
-            + Schedule Viewing / Test Drive
+            <a class="button" th:href="@{/sales/inquiries}">← Quay lại danh sách tư vấn</a>
+            <a class="button button-primary" th:href="@{/sales/viewings/new(inquiryId=${details.id})}" th:if="${session.AUTH_ROLE_CODE != 'MANAGER' and (details.status == 'OPEN' or details.status == 'SCHEDULED')}">
+            + Đặt lịch xem xe / lái thử
         </a>
         </div>
 
-        <a class="button button-primary" th:href="@{/sales/reservations/new(inquiryId=${details.id})}" th:if="${details.status == 'OPEN' or details.status == 'SCHEDULED'}">Tạo giữ xe / cọc</a>
-        <!-- Inquiry Information Card -->
+        <a class="button button-primary" th:href="@{/sales/reservations/new(inquiryId=${details.id})}" th:if="${session.AUTH_ROLE_CODE != 'MANAGER' and (details.status == 'OPEN' or details.status == 'SCHEDULED')}">Tạo giữ xe / cọc</a>
+        <!-- Thông tin tư vấn Card -->
         <section class="content-card" th:with="i=${details}">
             <div class="content-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Inquiry Information</h2>
-                <span class="badge" th:data-status="${i.status}" th:text="${i.status}"></span>
+                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Thông tin tư vấn</h2>
+                <span class="badge" th:data-status="${i.status}" th:text="${i.status == 'OPEN' ? 'Đang mở' : (i.status == 'SCHEDULED' ? 'Đã đặt lịch' : (i.status == 'CONVERTED' ? 'Đã chuyển đổi' : (i.status == 'CLOSED' ? 'Đã đóng' : i.status)))}"></span>
             </div>
             <div class="buyer-card-body" style="padding: 24px;">
                 <div class="scheduling-detail-grid">
                     <div class="scheduling-detail-item">
-                        <span class="scheduling-detail-label">Inquiry ID</span>
+                        <span class="scheduling-detail-label">Mã tư vấn</span>
                         <span class="scheduling-detail-value">
             <strong th:text="${i.id}"></strong>
           </span>
                     </div>
 
                     <div class="scheduling-detail-item">
-                        <span class="scheduling-detail-label">Buyer</span>
+                        <span class="scheduling-detail-label">Khách mua</span>
                         <span class="scheduling-detail-value">
-            <a style="font-weight: 600; color: #2169f5;" th:href="@{/sales/buyers/{id}(id=${i.buyerId})}"
-               th:text="${i.buyer}"></a>
+            <a style="font-weight: 600; color: #2169f5;" th:unless="${session.AUTH_ROLE_CODE == 'MANAGER'}"
+               th:href="@{/sales/buyers/{id}(id=${i.buyerId})}" th:text="${i.buyer}"></a>
+            <strong th:if="${session.AUTH_ROLE_CODE == 'MANAGER'}" th:text="${i.buyer}"></strong>
           </span>
                     </div>
 
                     <div class="scheduling-detail-item">
-                        <span class="scheduling-detail-label">Phone / Email</span>
+                        <span class="scheduling-detail-label">Số điện thoại / Email</span>
                         <span class="scheduling-detail-value" th:text="|${i.phone} / ${i.email ?: '—'}|"></span>
                     </div>
 
                     <div class="scheduling-detail-item">
-                        <span class="scheduling-detail-label">Vehicle / VIN</span>
+                        <span class="scheduling-detail-label">Xe / VIN</span>
                         <span class="scheduling-detail-value">
             <strong th:text="${i.vehicle}"></strong>
             <span style="color: var(--color-muted); font-size: 13px;" th:text="|/ ${i.vin}|"></span>
@@ -52,12 +52,12 @@
                     </div>
 
                     <div class="scheduling-detail-item">
-                        <span class="scheduling-detail-label">Assigned Salesperson</span>
+                        <span class="scheduling-detail-label">Nhân viên phụ trách</span>
                         <span class="scheduling-detail-value" th:text="${i.salesperson}"></span>
                     </div>
 
                     <div class="scheduling-detail-item">
-                        <span class="scheduling-detail-label">Inquiry Date</span>
+                        <span class="scheduling-detail-label">Ngày tư vấn</span>
                         <span class="scheduling-detail-value" th:text="${#temporals.format(i.date, 'dd/MM/yyyy')}"></span>
                     </div>
 
@@ -65,30 +65,32 @@
                         <span class="scheduling-detail-label">Kênh liên hệ</span>
                         <span class="scheduling-detail-value" th:switch="${i.channel}">
                             <span th:case="'SHOWROOM'">Tại showroom</span>
-                            <span th:case="'PHONE'">Điện thoại</span>
-                            <span th:case="'WEBSITE'">Website</span>
-                            <span th:case="*" th:text="${i.channel ?: 'Chưa cập nhật'}"></span>
+                        <span th:case="'PHONE'">Điện thoại</span>
+                        <span th:case="'WEBSITE'">Website</span>
+                        <span th:case="*" th:text="${i.channel ?: 'Chưa cập nhật'}"></span>
                         </span>
                     </div>
                     <div class="scheduling-detail-item">
                         <span class="scheduling-detail-label">Nhu cầu</span>
                         <span class="scheduling-detail-value" th:switch="${i.need}">
                             <span th:case="'PRICE'">Hỏi giá</span>
-                            <span th:case="'VIEWING'">Xem xe</span>
-                            <span th:case="'TEST_DRIVE'">Lái thử</span>
-                            <span th:case="*" th:text="${i.need ?: 'Chưa cập nhật'}"></span>
+                        <span th:case="'VIEWING'">Xem xe</span>
+                        <span th:case="'TEST_DRIVE'">Lái thử</span>
+                        <span th:case="*" th:text="${i.need ?: 'Chưa cập nhật'}"></span>
                         </span>
                     </div>
                     <div class="scheduling-detail-item" style="grid-column: 1 / -1; border-bottom: none;">
-                        <span class="scheduling-detail-label">Notes</span>
-                        <span class="scheduling-detail-value" style="color: var(--color-muted); font-style: italic;" th:text="${#strings.isEmpty(i.notes) ? 'No notes provided.' : i.notes}"></span>
+                        <span class="scheduling-detail-label">Ghi chú</span>
+                        <span class="scheduling-detail-value" style="color: var(--color-muted); font-style: italic;" th:text="${#strings.isEmpty(i.notes) ? 'Chưa có ghi chú.' : i.notes}"></span>
                     </div>
                 </div>
             </div>
         </section>
 
         <section class="content-card inquiry-history" aria-labelledby="inquiry-history-title">
-            <div class="content-card-header"><h2 id="inquiry-history-title">Lịch sử &amp; bằng chứng</h2></div>
+            <div class="content-card-header">
+                <h2 id="inquiry-history-title">Lịch sử &amp; bằng chứng</h2>
+            </div>
             <ol class="timeline" th:if="${!#lists.isEmpty(details.activities)}">
                 <li th:each="event : ${details.activities}">
                     <time th:datetime="${event.occurredAt}" th:text="${#temporals.format(event.occurredAt, 'dd/MM/yyyy · HH:mm')}"></time>
@@ -99,29 +101,28 @@
             <p class="panel-note" th:if="${#lists.isEmpty(details.activities)}">Chưa có lịch sử được ghi nhận cho tư vấn này.</p>
         </section>
 
-        <!-- Related Viewings Card -->
         <section class="content-card">
             <div class="content-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Related Viewings &amp; Test Drives</h2>
-                <span class="caption" th:text="|${#lists.size(details.viewings)} appointment(s)|"></span>
+                <h2 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Lịch xem xe &amp; lái thử liên quan</h2>
+                <span class="caption" th:text="|${#lists.size(details.viewings)} lịch hẹn|"></span>
             </div>
             <div class="buyer-card-body" style="padding: 20px 24px;">
                 <p class="panel-note" style="text-align: center; padding: 24px 12px; margin: 0;" th:if="${#lists.isEmpty(details.viewings)}">
-                    No viewing or test drive appointments scheduled for this inquiry yet.
+                    Chưa có lịch xem xe hoặc lái thử cho tư vấn này.
                 </p>
                 <div class="buyer-table-wrap" th:unless="${#lists.isEmpty(details.viewings)}" th:with="viewingRows=${details.viewings}">
                     <table class="custom-table buyer-table">
                         <thead>
                             <tr>
                                 <th style="width: 50px;">ID</th>
-                                <th>Buyer</th>
-                                <th>Vehicle</th>
-                                <th>Type</th>
-                                <th>Start (ICT)</th>
-                                <th>End (ICT)</th>
-                                <th>Salesperson</th>
-                                <th>Status</th>
-                                <th>Location &amp; Notes</th>
+                                <th>Khách mua</th>
+                                <th>Xe</th>
+                                <th>Loại</th>
+                                <th>Bắt đầu (ICT)</th>
+                                <th>Kết thúc (ICT)</th>
+                                <th>Nhân viên phụ trách</th>
+                                <th>Trạng thái</th>
+                                <th>Địa điểm &amp; ghi chú</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -130,12 +131,12 @@
                                 <td th:text="${v.buyer}"></td>
                                 <td th:text="${v.vehicle}"></td>
                                 <td>
-                                    <span class="badge" th:data-type="${v.type}" th:text="${v.type == 'TEST_DRIVE' ? 'Test Drive' : 'Viewing'}"></span>
+                                    <span class="badge" th:data-type="${v.type}" th:text="${v.type == 'TEST_DRIVE' ? 'Lái thử' : 'Xem xe'}"></span>
                                 </td>
                                 <td th:text="${#temporals.format(v.startTime, 'dd/MM/yyyy HH:mm')}"></td>
                                 <td th:text="${v.endTime == null ? '—' : #temporals.format(v.endTime, 'dd/MM/yyyy HH:mm')}"></td>
                                 <td th:text="${v.salesperson}"></td>
-                                <td><span class="badge" th:data-status="${v.status}" th:text="${v.status}"></span></td>
+                                <td><span class="badge" th:data-status="${v.status}" th:text="${v.status == 'SCHEDULED' ? 'Đã đặt lịch' : (v.status == 'COMPLETED' ? 'Hoàn tất' : (v.status == 'CANCELLED' ? 'Đã hủy' : v.status))}"></span></td>
                                 <td>
                                     <div style="font-weight: 600;" th:text="${v.location}"></div>
                                     <div style="font-size: 12px; color: var(--color-muted); margin-top: 2px;" th:if="${not #strings.isEmpty(v.notes)}" th:text="${v.notes}"></div>

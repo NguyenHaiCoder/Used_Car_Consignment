@@ -1,29 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" th:replace="~{sales/scheduling/layout :: shell('Delete Inquiry', ~{::content})}"
+<html lang="vi" th:replace="~{sales/scheduling/layout :: shell('Xóa tư vấn', ~{::content})}"
       xmlns:th="http://www.thymeleaf.org">
 <body>
 <section class="screen-content" id="buyer-details" th:fragment="content">
     <section class="content-card">
-        <div class="content-card-header"><h2>Confirm Inquiry Deletion</h2></div>
+        <div class="content-card-header"><h2>Xác nhận xóa tư vấn</h2></div>
         <div class="buyer-card-body">
-            <p th:text="|Delete inquiry #${deletion.inquiry.id} (${deletion.inquiry.code})?|"></p>
+            <p th:text="|Xóa tư vấn #${deletion.inquiry.id} (${deletion.inquiry.code})?|"></p>
             <dl class="buyer-information">
-                <dt>Buyer</dt><dd th:text="${deletion.inquiry.buyer}"></dd>
-                <dt>Vehicle</dt><dd th:text="|${deletion.inquiry.vehicle} / ${deletion.inquiry.vin}|"></dd>
-                <dt>Salesperson</dt><dd th:text="${deletion.inquiry.salesperson}"></dd>
+                <dt>Khách mua</dt><dd th:text="${deletion.inquiry.buyer}"></dd>
+                <dt>Xe</dt><dd th:text="|${deletion.inquiry.vehicle} / ${deletion.inquiry.vin}|"></dd>
+                <dt>Nhân viên phụ trách</dt><dd th:text="${deletion.inquiry.salesperson}"></dd>
             </dl>
-            <p>This inquiry will be removed from active lists. Its stored record will be retained.</p>
+            <p>Tư vấn sẽ không còn trong danh sách đang hoạt động. Bản ghi vẫn được lưu.</p>
             <p class="buyer-field-error" role="alert" th:if="${deletion.linkedRecords}">
-                Cannot delete an inquiry with Viewings or Reservations, including cancelled or completed records.
+                Không thể xóa tư vấn có lịch xem xe hoặc giữ xe, kể cả bản ghi đã hủy hoặc hoàn tất.
             </p>
             <form method="post" th:action="@{/sales/inquiries/{id}/delete(id=${deletion.inquiry.id})}"
                   th:object="${deleteForm}">
                 <input th:field="*{revision}" type="hidden">
                 <p class="buyer-field-error" role="alert" th:each="error : ${#fields.allErrors()}" th:text="${error}"></p>
+                <p class="buyer-field-error" th:if="${#fields.hasErrors('revision')}">
+                    <a th:href="@{/sales/inquiries/{id}/delete(id=${deletion.inquiry.id})}">Mở lại trang xóa để xem bản ghi mới nhất</a>
+                </p>
                 <div class="buyer-create-actions">
-                    <a class="button" th:href="@{/sales/inquiries}">Cancel</a>
+                    <a class="button" th:href="@{/sales/inquiries}">Hủy</a>
                     <button class="button buyer-danger" type="submit" name="confirmed" value="true"
-                            th:disabled="${deletion.linkedRecords}">Confirm Delete</button>
+                            th:disabled="${deletion.linkedRecords}">Xác nhận xóa</button>
                 </div>
             </form>
         </div>

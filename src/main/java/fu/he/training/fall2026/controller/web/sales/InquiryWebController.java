@@ -61,18 +61,14 @@ public class InquiryWebController {
         }
         try {
             long id = inquiryService.create(inquiryForm);
-            redirect.addFlashAttribute("success", "Inquiry created successfully.");
+            redirect.addFlashAttribute("success", "Đã tạo tư vấn thành công.");
             redirect.addFlashAttribute("inquiryCreated", true);
             if ("schedule".equals(next)) {
                 return "redirect:/sales/viewings/new?inquiryId=" + id;
             }
             return "redirect:/sales/inquiries/" + id;
         } catch (SalesSchedulingException ex) {
-            if ("salespersonId".equals(ex.getField())) {
-                binding.reject("sales.invalid", ex.getMessage());
-            } else {
-                binding.rejectValue(ex.getField(), "sales.invalid", ex.getMessage());
-            }
+            rejectSaveError(binding, ex);
         } catch (ConcurrencyFailureException ex) {
             SalesFormErrors.rejectConcurrentChange(binding);
         }
@@ -98,12 +94,12 @@ public class InquiryWebController {
         if (!binding.hasErrors()) {
             try {
                 inquiryService.update(id, form);
-                redirect.addFlashAttribute("success", "Inquiry updated successfully.");
+                redirect.addFlashAttribute("success", "Đã cập nhật tư vấn thành công.");
                 redirect.addFlashAttribute("inquiryUpdated", true);
                 return "redirect:/sales/inquiries/" + id;
             } catch (SalesSchedulingException ex) {
                 if ("inquiryId".equals(ex.getField())) throw ex;
-                binding.rejectValue(ex.getField(), "sales.invalid", ex.getMessage());
+                rejectSaveError(binding, ex);
             } catch (ConcurrencyFailureException ex) {
                 SalesFormErrors.rejectConcurrentChange(binding);
             }
@@ -135,7 +131,7 @@ public class InquiryWebController {
         if (!binding.hasErrors()) {
             try {
                 inquiryService.delete(id, form);
-                redirect.addFlashAttribute("success", "Inquiry deleted successfully.");
+                redirect.addFlashAttribute("success", "Đã xóa tư vấn thành công.");
                 return "redirect:/sales/inquiries";
             } catch (SalesSchedulingException ex) {
                 if ("inquiryId".equals(ex.getField())) throw ex;
@@ -157,6 +153,14 @@ public class InquiryWebController {
     private String renderInquiryDetails(long id, Model model) {
         model.addAttribute("details", inquiryService.getDetails(id));
         return "sales/inquiries/scheduling-detail";
+    }
+
+    private void rejectSaveError(BindingResult binding, SalesSchedulingException ex) {
+        if ("salespersonId".equals(ex.getField())) {
+            binding.reject("sales.invalid", ex.getMessage());
+        } else {
+            binding.rejectValue(ex.getField(), "sales.invalid", ex.getMessage());
+        }
     }
 
     private String renderInquiryForm(InquirySaveRequest form, Model model) {

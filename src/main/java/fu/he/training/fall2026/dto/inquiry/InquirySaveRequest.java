@@ -38,7 +38,6 @@ public class InquirySaveRequest {
     @Size(max = 2000)
     private String notes;
 
-    /** Used by the edit flow for optimistic concurrency; blank on create. */
     @Size(max = 80)
     private String revision;
 

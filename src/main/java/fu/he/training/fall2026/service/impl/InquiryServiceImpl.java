@@ -70,7 +70,7 @@ public class InquiryServiceImpl implements InquiryService {
     }
     private ConsignmentStatus vehicleStatus(Long id) {
         return consignments.findFirstByVehicleIdOrderByIdDesc(id)
-                .orElseThrow(() -> invalid("vehicleId", "Vehicle has no consignment.")).getStatus();
+                .orElseThrow(() -> invalid("vehicleId", "Xe chưa có hồ sơ ký gửi.")).getStatus();
     }
     private boolean inquiryVehicleEligible(Long vehicleId, Long buyerId, ConsignmentStatus status) {
         if (status != ConsignmentStatus.LISTED && status != ConsignmentStatus.RESERVED) return false;
@@ -84,12 +84,12 @@ public class InquiryServiceImpl implements InquiryService {
 
     private Inquiry existing(long id) {
         return inquiries.findById(id).filter(i -> i.getDeletedAt() == null)
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+                .orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
     }
 
     private void requireOwner(Inquiry inquiry, User actor) {
         if (inquiry.getAssignedTo() == null || !actor.getId().equals(inquiry.getAssignedTo().getId())) {
-            throw new BusinessException("Only the assigned salesperson can edit or delete this inquiry.", HttpStatus.FORBIDDEN);
+            throw new BusinessException("Chỉ nhân viên được phân công mới có thể sửa hoặc xóa tư vấn này.", HttpStatus.FORBIDDEN);
         }
     }
 
@@ -99,24 +99,24 @@ public class InquiryServiceImpl implements InquiryService {
 
     private void requireRevision(Inquiry inquiry, String revision) {
         if (!Objects.equals(inquiry.getUpdatedAt().toString(), revision)) {
-            throw invalid("revision", "Inquiry has changed. Reload this page before trying again.");
+            throw invalid("revision", "Tư vấn đã thay đổi. Vui lòng tải lại trang trước khi thử tiếp.");
         }
     }
 
     // All relation writers lock user -> vehicle(s) -> inquiry. Recheck after waiting.
     private Inquiry lockInquiry(long id, Long requestedVehicleId) {
         Long vehicleId = inquiries.findVehicleId(id)
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+                .orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
         SortedSet<Long> ids = new TreeSet<>();
         ids.add(vehicleId);
         if (requestedVehicleId != null) ids.add(requestedVehicleId);
         for (Long lockId : ids) {
-            vehicles.lockById(lockId).orElseThrow(() -> invalid("vehicleId", "Vehicle does not exist."));
+            vehicles.lockById(lockId).orElseThrow(() -> invalid("vehicleId", "Không tìm thấy xe."));
         }
         Inquiry inquiry = inquiries.lockById(id).filter(i -> i.getDeletedAt() == null)
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+                .orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
         if (!vehicleId.equals(inquiry.getVehicle().getId())) {
-            throw new ConcurrencyFailureException("Inquiry vehicle changed while waiting for locks.");
+            throw new ConcurrencyFailureException("Xe của tư vấn đã thay đổi. Vui lòng tải lại trang.");
         }
         return inquiry;
     }
@@ -153,14 +153,14 @@ public class InquiryServiceImpl implements InquiryService {
                 || !inquiry.getVehicle().getId().equals(vehicleId);
         if (changed) {
             if (linkedRecords(id)) {
-                throw invalid("buyerId", "Cannot change Buyer or Vehicle while this inquiry has Viewings or Reservations.");
+                throw invalid("buyerId", "Không thể đổi khách mua hoặc xe khi tư vấn đã có lịch xem xe hoặc đơn giữ xe.");
             }
             Buyer buyer = buyers.findByIdAndDeletedAtIsNull(buyerId)
-                    .orElseThrow(() -> invalid("buyerId", "Select an existing, non-deleted buyer."));
+                    .orElseThrow(() -> invalid("buyerId", "Vui lòng chọn khách mua còn hoạt động."));
             Vehicle vehicle = vehicles.lockById(vehicleId)
-                    .orElseThrow(() -> invalid("vehicleId", "Vehicle does not exist."));
+                    .orElseThrow(() -> invalid("vehicleId", "Không tìm thấy xe."));
             if (!inquiryVehicleEligible(vehicle.getId(), buyer.getId(), vehicleStatus(vehicle.getId()))) {
-                throw invalid("vehicleId", "Vehicle must be LISTED or RESERVED for this buyer. Any current hold must have a verified buyer and expiry date.");
+                throw invalid("vehicleId", "Xe phải đang được đăng bán hoặc được giữ cho khách mua này. Đơn giữ xe hiện tại phải có khách mua và ngày hết hạn đã xác minh.");
             }
             inquiry.setBuyer(buyer);
             inquiry.setVehicle(vehicle);
@@ -190,7 +190,7 @@ public class InquiryServiceImpl implements InquiryService {
         requireOwner(inquiry, actor);
         requireRevision(inquiry, form.getRevision());
         if (linkedRecords(id)) {
-            throw invalid("confirmed", "Cannot delete an inquiry with Viewings or Reservations, including cancelled or completed records.");
+            throw invalid("confirmed", "Không thể xóa tư vấn có lịch xem xe hoặc đơn giữ xe, kể cả bản ghi đã hủy hoặc hoàn tất.");
         }
         inquiry.setDeletedAt(time.now());
         inquiries.saveAndFlush(inquiry);
@@ -234,7 +234,7 @@ public class InquiryServiceImpl implements InquiryService {
         validate(form);
         User salesperson = salesperson(form.getSalespersonId());
         Inquiry inquiry = inquiries.lockById(id)
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+                .orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
         inquiry.setAssignedTo(salesperson);
         inquiries.saveAndFlush(inquiry);
     }
@@ -251,7 +251,7 @@ public class InquiryServiceImpl implements InquiryService {
     }
     @Override
     public InquiryResponse getDetails(long id) {
-        Inquiry inquiry = inquiries.findById(id).orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+        Inquiry inquiry = inquiries.findById(id).orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
         InquiryResponse response = inquiryRow(inquiry);
         response.setViewings(schedulingService.viewingsForInquiry(id));
         List<AuditEvent> events = auditEvents.findByEntityTypeAndEntityIdOrderByOccurredAtDescIdDesc("Inquiry", id);
@@ -295,7 +295,7 @@ public class InquiryServiceImpl implements InquiryService {
     private InquiryResponse inquiryRow(Inquiry i) {
         InquiryResponse response = new InquiryResponse(i.getId(), i.getCode(), i.getBuyer().getId(), i.getBuyer().getFullName(),
                 i.getBuyer().getPhone(), i.getBuyer().getEmail(), i.getVehicle().getDisplayLabel(),
-                i.getVehicle().getVin(), i.getAssignedTo() == null ? "Unassigned" : i.getAssignedTo().getFullName(),
+                i.getVehicle().getVin(), i.getAssignedTo() == null ? "Chưa phân công" : i.getAssignedTo().getFullName(),
                 i.getAssignedTo() == null ? null : i.getAssignedTo().getId(),
                 i.getInquiryDate() == null ? i.getCreatedAt().atZone(ZONE).toLocalDate() : i.getInquiryDate(),
                 i.getStatus().name(), i.getNotes());
@@ -311,7 +311,7 @@ public class InquiryServiceImpl implements InquiryService {
         validatePagination(page, size);
 
         if (buyers.findById(buyerId).isEmpty()) {
-            throw new BuyerException(Reason.NOT_FOUND, "Buyer not found.");
+            throw new BuyerException(Reason.NOT_FOUND, "Không tìm thấy khách mua.");
         }
 
         Page<Inquiry> result = inquiries.findByBuyerId(buyerId,
@@ -325,14 +325,14 @@ public class InquiryServiceImpl implements InquiryService {
 
     private void validateId(long id) {
         if (id <= 0) {
-            throw new IllegalArgumentException("Buyer ID must be a positive integer.");
+            throw new IllegalArgumentException("Mã khách mua phải là số nguyên dương.");
         }
     }
 
     private void validatePagination(int page, int size) {
         if (page < 1 || size < 1 || size > 100 || (long) (page - 1) * size > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(
-                    "page must be >= 1; size must be between 1 and 100; offset must fit an integer.");
+                    "Trang phải từ 1; số dòng mỗi trang từ 1 đến 100; vị trí bắt đầu phải hợp lệ.");
         }
     }
 

@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 public class InquiryAssignmentRequest {
-    @NotNull(message = "Select a salesperson.")
-    @Positive(message = "Select a valid salesperson.")
+    @NotNull(message = "Vui lòng chọn nhân viên bán hàng.")
+    @Positive(message = "Vui lòng chọn nhân viên bán hàng hợp lệ.")
     private Long salespersonId;
 }

@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 
-<html lang="en" th:fragment="shell(title, description, content)" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" th:fragment="shell(title, description, content)" xmlns:th="http://www.thymeleaf.org">
 
 <head th:replace="~{common/header :: head(${title})}"></head>
 
 <body class="ui-app" data-app="1" data-role="sales">
-    <a class="skip-link" href="#main">Skip navigation</a>
+    <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
     <div th:replace="~{common/sidebar :: sidebar(active='buyers')}"></div>
-    <button aria-label="Close navigation" class="nav-overlay" hidden></button>
+    <button aria-label="Đóng điều hướng" class="nav-overlay" hidden></button>
     <header th:replace="~{common/header :: header}"></header>
     <main class="main-content" id="main" tabindex="-1">
         <div class="page-header" th:classappend="${buyers != null} ? 'buyer-list-header' : ''">
@@ -16,7 +16,7 @@
                 <h1 th:text="${title}"></h1>
                 <p class="page-description" th:text="${description}"></p>
             </div>
-            <a class="button buyer-primary" th:if="${buyers != null}" th:href="@{/sales/buyers/new}">Add Buyer</a>
+            <a class="button buyer-primary" th:if="${buyers != null}" th:href="@{/sales/buyers/new}">Thêm khách mua</a>
         </div>
         <section th:replace="${content}"></section>
         <footer th:replace="~{common/footer :: footer}"></footer>

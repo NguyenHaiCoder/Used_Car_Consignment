@@ -71,7 +71,7 @@ public class SalesSchedulingController {
         }
         try {
             schedulingService.scheduleViewingFromForm(viewingForm);
-            redirect.addFlashAttribute("success", "Viewing scheduled successfully.");
+            redirect.addFlashAttribute("success", "Đã đặt lịch xem xe thành công.");
             return "redirect:/sales/inquiries/" + viewingForm.getInquiryId();
         } catch (SalesSchedulingException ex) {
             binding.rejectValue("vehicleId".equals(ex.getField()) ? "inquiryId" : ex.getField(), "sales.invalid", ex.getMessage());
@@ -99,7 +99,7 @@ public class SalesSchedulingController {
         if (!binding.hasErrors()) {
             try {
                 schedulingService.updateViewing(id, form);
-                redirect.addFlashAttribute("success", "Viewing updated successfully.");
+                redirect.addFlashAttribute("success", "Đã cập nhật lịch xem xe thành công.");
                 return "redirect:/sales/viewings";
             } catch (SalesSchedulingException ex) {
                 if ("viewingId".equals(ex.getField())) throw ex;
@@ -123,7 +123,7 @@ public class SalesSchedulingController {
             Model model, RedirectAttributes redirect) {
         try {
             schedulingService.deleteViewing(id, revision);
-            redirect.addFlashAttribute("success", "Viewing deleted successfully.");
+            redirect.addFlashAttribute("success", "Đã xóa lịch xem xe thành công.");
             return "redirect:/sales/viewings";
         } catch (SalesSchedulingException ex) {
             if ("viewingId".equals(ex.getField())) throw ex;

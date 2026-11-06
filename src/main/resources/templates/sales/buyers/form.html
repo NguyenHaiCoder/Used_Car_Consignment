@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" th:replace="~{sales/buyers/layout :: shell(${editing ? 'Edit Buyer' : 'Add Buyer'}, 'Fields marked * are required.', ~{::content})}"
+<html lang="vi" th:replace="~{sales/buyers/layout :: shell(${editing ? 'Sửa khách mua' : 'Thêm khách mua'}, 'Các trường đánh dấu * là bắt buộc.', ~{::content})}"
       xmlns:th="http://www.thymeleaf.org">
 
 <body>
@@ -13,21 +13,21 @@
                 <input th:field="*{revision}" th:if="${editing}" type="hidden">
                 <p class="buyer-field-error" role="alert" th:errors="*{revision}" th:if="${#fields.hasErrors('revision')}"></p>
                 <p class="buyer-field-error" role="alert" th:if="${editing and #fields.hasErrors('revision')}">
-                    Please reopen this buyer's Edit page before saving again.
-                    <a th:href="@{/sales/buyers/{id}/edit(id=${buyerId})}">Reopen Edit</a>
+                    Vui lòng mở lại trang sửa khách mua trước khi lưu.
+                    <a th:href="@{/sales/buyers/{id}/edit(id=${buyerId})}">Mở lại trang sửa</a>
                 </p>
                 <p class="buyer-field-error" role="alert" th:if="${revisionConflict == true}">
-                    The buyer changed while you were editing. Review the latest record before saving again.
-                    <a th:href="@{/sales/buyers/{id}/edit(id=${buyerId})}">Reopen Edit</a>
+                    Thông tin khách mua đã thay đổi. Vui lòng kiểm tra bản ghi mới nhất trước khi lưu.
+                    <a th:href="@{/sales/buyers/{id}/edit(id=${buyerId})}">Mở lại trang sửa</a>
                 </p>
                 <div class="buyer-editor-field">
-                    <label for="fullName">Full Name<span class="required" aria-hidden="true"> *</span></label>
+                    <label for="fullName">Họ và tên<span class="required" aria-hidden="true"> *</span></label>
                     <input aria-describedby="fullName-error" id="fullName" maxlength="160" required
                            th:field="*{fullName}" th:attr="aria-invalid=${#fields.hasErrors('fullName')}" type="text">
                     <small class="buyer-field-error" id="fullName-error" role="alert" th:errors="*{fullName}"></small>
                 </div>
                 <div class="buyer-editor-field">
-                    <label for="phone">Phone Number<span class="required" aria-hidden="true"> *</span></label>
+                    <label for="phone">Số điện thoại<span class="required" aria-hidden="true"> *</span></label>
                     <input aria-describedby="phone-error" id="phone" maxlength="30" required
                            th:field="*{phone}" th:attr="aria-invalid=${#fields.hasErrors('phone')}" type="tel">
                     <small class="buyer-field-error" id="phone-error" role="alert" th:errors="*{phone}"></small>
@@ -39,29 +39,29 @@
                     <small class="buyer-field-error" id="email-error" role="alert" th:errors="*{email}"></small>
                 </div>
                 <div class="buyer-editor-field">
-                    <label for="address">Address</label>
+                    <label for="address">Địa chỉ</label>
                     <textarea aria-describedby="address-error" id="address" maxlength="255" rows="3"
                               th:field="*{address}" th:attr="aria-invalid=${#fields.hasErrors('address')}"></textarea>
                     <small class="buyer-field-error" id="address-error" role="alert" th:errors="*{address}"></small>
                 </div>
                 <div class="buyer-editor-field" th:if="${editing}">
-                    <label for="buyer-edit-status">Status</label>
+                    <label for="buyer-edit-status">Trạng thái</label>
                     <select id="buyer-edit-status" th:field="*{status}" th:attr="aria-invalid=${#fields.hasErrors('status')}">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="active">Hoạt động</option>
+                        <option value="inactive">Ngừng hoạt động</option>
                     </select>
                     <small class="buyer-field-error" role="alert" th:errors="*{status}"></small>
-                    <small>Use Delete Buyer to change an Active buyer to Inactive.</small>
+                    <small>Dùng chức năng xóa khách mua để chuyển từ hoạt động sang ngừng hoạt động.</small>
                 </div>
                 <div th:unless="${editing}">
-                    <label class="buyer-consent-label"><input required th:field="*{consentStored}" th:attr="aria-invalid=${#fields.hasErrors('consentStored')}" aria-describedby="consentStored-error" type="checkbox"> Buyer consent has
-                    been stored<span class="required" aria-hidden="true"> *</span></label>
-                    <small>Confirm only after the buyer's actual consent has been recorded.</small>
+                    <label class="buyer-consent-label"><input required th:field="*{consentStored}" th:attr="aria-invalid=${#fields.hasErrors('consentStored')}" aria-describedby="consentStored-error" type="checkbox"> Đã lưu sự đồng ý của khách mua
+                    <span class="required" aria-hidden="true"> *</span></label>
+                    <small>Chỉ xác nhận sau khi đã ghi nhận sự đồng ý của khách mua.</small>
                     <small class="buyer-field-error" id="consentStored-error" role="alert" th:errors="*{consentStored}"></small>
                 </div>
                 <div class="buyer-create-actions">
-                    <a class="button" th:href="${editing} ? @{/sales/buyers/{id}(id=${buyerId})} : @{/sales/buyers}">Cancel</a>
-                    <button class="button buyer-primary" type="submit">Save</button>
+                    <a class="button" th:href="${editing} ? @{/sales/buyers/{id}(id=${buyerId})} : @{/sales/buyers}">Hủy</a>
+                    <button class="button buyer-primary" type="submit">Lưu</button>
                 </div>
             </form>
         </section>

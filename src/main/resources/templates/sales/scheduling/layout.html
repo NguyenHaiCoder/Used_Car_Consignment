@@ -1,33 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" th:fragment="shell(title, content)" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" th:fragment="shell(title, content)" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{common/header :: head(${title})}"></head>
-<body class="ui-app" data-app="1" data-role="sales">
-<a class="skip-link" href="#main">Skip navigation</a>
+<body class="ui-app" data-app="1" th:attr="data-role=${session.AUTH_ROLE_CODE == 'MANAGER' ? 'manager' : 'sales'}">
+<a class="skip-link" href="#main">Bỏ qua điều hướng</a>
 <div th:replace="~{common/sidebar :: sidebar(active='scheduling')}"></div>
-<button aria-label="Close navigation" class="nav-overlay" hidden></button>
+<button aria-label="Đóng điều hướng" class="nav-overlay" hidden></button>
 <header th:replace="~{common/header :: header}"></header>
 <main class="main-content" id="main" tabindex="-1">
     <div class="page-header">
-        <div><p class="eyebrow">Kinh doanh</p>
+        <div><p class="eyebrow" th:text="${session.AUTH_ROLE_CODE == 'MANAGER' ? 'Quản lý' : 'Kinh doanh'}">Kinh doanh</p>
             <h1>
-                <svg th:if="${title == 'Schedule Viewing'}" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                <svg th:if="${title == 'Đặt lịch xem xe'}" viewBox="0 0 36 36" fill="none" aria-hidden="true">
                     <rect x="4" y="7" width="28" height="25" rx="3" stroke="currentColor" stroke-width="2.5"/>
                     <path d="M4 15h28M11 3v8M25 3v8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
                 </svg>
                 <span th:text="${title}"></span>
             </h1>
-            <p class="page-description" th:if="${title == 'Schedule Viewing'}">Schedule a vehicle viewing appointment for a sales inquiry. Times shown in Vietnam (UTC+07:00).</p>
-            <p class="page-description" th:unless="${title == 'Schedule Viewing'}">Sales inquiries and vehicle appointments. Times shown in Vietnam
+            <p class="page-description" th:if="${title == 'Đặt lịch xem xe'}">Đặt lịch xem xe cho một tư vấn. Thời gian theo giờ Việt Nam (UTC+07:00).</p>
+            <p class="page-description" th:unless="${title == 'Đặt lịch xem xe'}">Tư vấn và lịch hẹn xem xe. Thời gian theo giờ Việt Nam
                 (UTC+07:00).</p></div>
     </div>
     <link rel="stylesheet" th:href="@{/css/ui/buyers.css}">
-    <nav aria-label="Sales scheduling tabs" class="buyer-toolbar">
+    <nav aria-label="Các mục tư vấn và lịch xem xe" class="buyer-toolbar">
         <a class="button"
-           th:classappend="${title == 'Sales Inquiries' or title == 'Create Inquiry' or title == 'Edit Inquiry' or title == 'Delete Inquiry' or title == 'Inquiry Details'} ? 'buyer-primary' : ''"
-           th:href="@{/sales/inquiries}">Sales Inquiries</a>
-        <a class="button"
-           th:classappend="${title == 'Viewings / Test Drive' or title == 'Schedule Viewing' or title == 'Schedule Viewing / Test Drive' or title == 'Edit Viewing / Test Drive' or title == 'Delete Viewing / Test Drive'} ? 'buyer-primary' : ''"
-           th:href="@{/sales/viewings}">Viewings / Test Drive</a>
+           th:classappend="${title == 'Tư vấn bán hàng' or title == 'Tạo tư vấn' or title == 'Sửa tư vấn' or title == 'Xóa tư vấn' or title == 'Chi tiết tư vấn'} ? 'buyer-primary' : ''"
+           th:href="@{/sales/inquiries}">Tư vấn bán hàng</a>
+        <a class="button" th:unless="${session.AUTH_ROLE_CODE == 'MANAGER'}"
+           th:classappend="${title == 'Lịch xem xe / lái thử' or title == 'Đặt lịch xem xe' or title == 'Sửa lịch xem xe / lái thử' or title == 'Xóa lịch xem xe / lái thử'} ? 'buyer-primary' : ''"
+           th:href="@{/sales/viewings}">Lịch xem xe / lái thử</a>
     </nav>
     <p class="alert" role="status" th:if="${success != null}" th:text="${success}"></p>
     <p class="alert buyer-field-error" role="alert" th:if="${error != null}" th:text="${error}"></p>

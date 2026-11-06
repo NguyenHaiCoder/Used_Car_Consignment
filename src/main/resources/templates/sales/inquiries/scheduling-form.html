@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" th:replace="~{sales/scheduling/layout :: shell(${editing == true ? 'Edit Inquiry' : 'Create Inquiry'}, ~{::content})}" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" th:replace="~{sales/scheduling/layout :: shell(${editing == true ? 'Sửa tư vấn' : 'Tạo tư vấn'}, ~{::content})}" xmlns:th="http://www.thymeleaf.org">
 <body>
 <section class="screen-content" id="inquiry-editor" th:fragment="content">
     <link rel="stylesheet" th:href="@{/css/ui/inquiry-form.css}">
@@ -11,7 +11,8 @@
         <form id="buyer-create-form" class="inquiry-form" method="post"
               th:action="${editing == true} ? @{/sales/inquiries/{id}/edit(id=${inquiryId})} : @{/sales/inquiries}"
               th:object="${inquiryForm}"
-              th:attr="novalidate=${editing == true ? null : 'novalidate'},data-draft-key=|inquiry:${editing == true ? inquiryId : 'create'}:${session.AUTH_USER_ID}|,data-restore-draft=${restoreDraft == true and inquiryForm.buyerId == null},data-has-errors=${#fields.hasAnyErrors()}">
+              novalidate
+              th:attr="data-draft-key=|inquiry:${editing == true ? inquiryId : 'create'}:${session.AUTH_USER_ID}|,data-restore-draft=${restoreDraft == true and inquiryForm.buyerId == null},data-has-errors=${#fields.hasAnyErrors()}">
             <input th:if="${editing == true}" th:field="*{revision}" type="hidden">
             <th:block th:unless="${editing == true}">
                 <input th:field="*{inquiryDate}" type="hidden">

@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.dto.inquiry;
 
+import fu.he.training.fall2026.validation.InquiryIdValidator;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 import java.lang.annotation.ElementType;

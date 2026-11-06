@@ -10,6 +10,6 @@ public class InquiryDeleteRequest {
     @NotBlank @Size(max = 80)
     private String revision;
 
-    @AssertTrue(message = "Confirm deletion before submitting.")
+    @AssertTrue(message = "Vui lòng xác nhận xóa trước khi gửi.")
     private boolean confirmed;
 }

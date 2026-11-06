@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/buyers/layout :: shell('Buyer Management', 'View saved buyer profiles.', ~{::content})}"
+<html lang="vi" th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/buyers/layout :: shell('Quản lý khách mua', 'Xem danh sách khách mua đã lưu.', ~{::content})}"
       xmlns:th="http://www.thymeleaf.org">
 
 <body>
@@ -11,21 +11,21 @@
         <section class="content-card" id="buyer-list">
             <form class="buyer-search" id="buyer-list-filters" method="get" role="search" th:action="@{/sales/buyers}">
                 <input id="buyer-id-sort" name="idSort" th:value="${idSort}" type="hidden">
-                <label for="buyer-search">Search buyers</label>
-                <input id="buyer-search" maxlength="180" name="search" placeholder="Buyer ID, full name, phone or email" th:value="${search}"
+                <label for="buyer-search">Tìm khách mua</label>
+                <input id="buyer-search" maxlength="180" name="search" placeholder="Mã khách mua, họ tên, số điện thoại hoặc email" th:value="${search}"
                        type="search">
-                <label for="buyer-created-sort">Created Date</label>
-                <select aria-label="Sort by Created Date" id="buyer-created-sort" name="createdSort">
+                <label for="buyer-created-sort">Ngày tạo</label>
+                <select aria-label="Sắp xếp theo ngày tạo" id="buyer-created-sort" name="createdSort">
                     <option value="default" th:selected="${createdSort == 'default'}">Mặc định</option>
                     <option value="newest" th:selected="${createdSort == 'newest'}">Mới nhất</option>
                     <option value="oldest" th:selected="${createdSort == 'oldest'}">Cũ nhất</option>
                 </select>
-                <label for="buyer-size">Rows per page</label>
+                <label for="buyer-size">Số dòng mỗi trang</label>
                 <select id="buyer-size" name="size">
                     <option th:each="size : ${ {10,25,50,100} }" th:selected="${size == buyers.pagination.size}" th:text="${size}"
                             th:value="${size}"></option>
                 </select>
-                <a class="button" th:href="@{/sales/buyers}">Clear</a>
+                <a class="button" th:href="@{/sales/buyers}">Xóa lọc</a>
             </form>
             <div class="buyer-table-wrap">
                 <table class="custom-table buyer-table">
@@ -38,16 +38,16 @@
                     <tr class="buyer-filter-row">
                         <th>
                             <button class="buyer-id-sort-button" form="buyer-list-filters" id="buyer-id-sort-toggle" type="button"
-                                    th:attr="aria-label=${idSort == 'asc' ? 'Buyer ID ascending. Sort descending' : 'Buyer ID descending. Sort ascending'}"
-                                    title="Sort by Buyer ID first">
+                                    th:attr="aria-label=${idSort == 'asc' ? 'Mã khách mua tăng dần. Sắp xếp giảm dần' : 'Mã khách mua giảm dần. Sắp xếp tăng dần'}"
+                                    title="Sắp xếp theo mã khách mua">
                                 <span aria-hidden="true" th:text="${idSort == 'asc' ? '↑' : '↓'}">↓</span>
                             </button>
                         </th>
                         <th></th><th></th>
-                        <th><select aria-label="Filter by status" form="buyer-list-filters" id="buyer-status" name="status">
-                            <option value="all" th:selected="${status == 'all'}">All</option>
-                            <option value="active" th:selected="${status == 'active'}">Active</option>
-                            <option value="inactive" th:selected="${status == 'inactive'}">Inactive</option>
+                        <th><select aria-label="Lọc theo trạng thái" form="buyer-list-filters" id="buyer-status" name="status">
+                            <option value="all" th:selected="${status == 'all'}">Tất cả</option>
+                            <option value="active" th:selected="${status == 'active'}">Hoạt động</option>
+                            <option value="inactive" th:selected="${status == 'inactive'}">Ngừng hoạt động</option>
                         </select></th>
                         <th></th>
                         <th></th>
@@ -56,11 +56,11 @@
                         <th scope="col" th:attr="aria-sort=${createdSort == 'default' ? (idSort == 'asc' ? 'ascending' : 'descending') : 'none'}">
                             ID
                         </th>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Status</th>
+                        <th>Họ tên</th>
+                        <th>Số điện thoại</th>
+                        <th>Trạng thái</th>
                         <th>Email</th>
-                        <th>Actions</th>
+                        <th>Thao tác</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -69,34 +69,34 @@
                         <td th:text="${buyer.fullName}"></td>
                         <td th:text="${buyer.phone}"></td>
                         <td><span class="buyer-status" th:classappend="${buyer.active} ? ' buyer-status-active' : ' buyer-status-inactive'"
-                                  th:text="${buyer.status}"></span></td>
+                                  th:text="${buyer.active ? 'Hoạt động' : 'Ngừng hoạt động'}"></span></td>
                         <td class="buyer-email-cell" th:text="${buyer.email ?: '—'}" th:title="${buyer.email}"></td>
                         <td class="action-cell">
                             <div class="row-actions">
                                 <a class="action-icon action-view" th:href="@{/sales/buyers/{id}(id=${buyer.buyerId})}"
-                                   aria-label="View buyer details" title="View buyer details">
+                                   aria-label="Xem chi tiết khách mua" title="Xem chi tiết khách mua">
                                     <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
                                 </a>
                                 <a class="action-icon action-edit" th:href="@{/sales/buyers/{id}/edit(id=${buyer.buyerId})}"
-                                   aria-label="Edit buyer" title="Edit buyer">
+                                   aria-label="Sửa khách mua" title="Sửa khách mua">
                                     <svg th:replace="~{common/fragments/icons :: actionIcon('edit')}"></svg>
                                 </a>
                                 <a class="action-icon action-delete" th:if="${buyer.active}" th:href="@{/sales/buyers/{id}/delete(id=${buyer.buyerId})}"
-                                   aria-label="Delete buyer" title="Delete buyer">
+                                   aria-label="Xóa khách mua" title="Xóa khách mua">
                                     <svg th:replace="~{common/fragments/icons :: actionIcon('delete')}"></svg>
                                 </a>
                             </div>
                         </td>
                     </tr>
-                    <tr th:if="${#lists.isEmpty(buyers.data)}"><td colspan="6">No buyers found</td></tr>
+                    <tr th:if="${#lists.isEmpty(buyers.data)}"><td colspan="6">Không tìm thấy khách mua</td></tr>
                     </tbody>
                 </table>
             </div>
-            <nav aria-label="Buyer pagination" class="pagination">
-                <span class="buyer-pagination-count" th:text="|${buyers.pagination.totalElements} buyers|"></span>
-                <a class="button" aria-label="Previous page" th:classappend="${buyers.pagination.page <= 1} ? ' is-disabled' : ''"
+            <nav aria-label="Phân trang khách mua" class="pagination">
+                <span class="buyer-pagination-count" th:text="|${buyers.pagination.totalElements} khách mua|"></span>
+                <a class="button" aria-label="Trang trước" th:classappend="${buyers.pagination.page <= 1} ? ' is-disabled' : ''"
                    th:href="${buyers.pagination.page > 1} ? @{/sales/buyers(page=${buyers.pagination.page - 1},size=${buyers.pagination.size},search=${search},idSort=${idSort},status=${status},createdSort=${createdSort})} : null"
-                   th:attr="aria-disabled=${buyers.pagination.page <= 1}">Previous</a>
+                   th:attr="aria-disabled=${buyers.pagination.page <= 1}">Trước</a>
                 <th:block th:each="number : ${buyers.pagination.pageItems}">
                     <span class="buyer-pagination-ellipsis" th:if="${number == -1}">…</span>
                     <a class="button" th:unless="${number == -1}" th:text="${number}"
@@ -104,9 +104,9 @@
                        th:attr="aria-current=${number == buyers.pagination.page} ? 'page' : null"
                        th:href="@{/sales/buyers(page=${number},size=${buyers.pagination.size},search=${search},idSort=${idSort},status=${status},createdSort=${createdSort})}"></a>
                 </th:block>
-                <a class="button" aria-label="Next page" th:classappend="${buyers.pagination.page >= buyers.pagination.totalPages} ? ' is-disabled' : ''"
+                <a class="button" aria-label="Trang sau" th:classappend="${buyers.pagination.page >= buyers.pagination.totalPages} ? ' is-disabled' : ''"
                    th:href="${buyers.pagination.page < buyers.pagination.totalPages} ? @{/sales/buyers(page=${buyers.pagination.page + 1},size=${buyers.pagination.size},search=${search},idSort=${idSort},status=${status},createdSort=${createdSort})} : null"
-                   th:attr="aria-disabled=${buyers.pagination.page >= buyers.pagination.totalPages}">Next</a>
+                   th:attr="aria-disabled=${buyers.pagination.page >= buyers.pagination.totalPages}">Sau</a>
             </nav>
         </section>
         <script defer th:src="@{/js/sales/buyers-list.js}"></script>
