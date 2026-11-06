@@ -5,7 +5,7 @@
 <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
 <div th:replace="~{common/sidebar :: sidebar (active='consignments')}"></div>
 <button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
-<header th:replace="~{common/header :: header}"></header>
+<header th:replace="~{common/header :: header(heading=${'Yêu cầu rút ký gửi · ' + consignment.code})}"></header>
 
 <main id="main" class="main-content" tabindex="-1">
   <div class="page-header">
@@ -62,6 +62,6 @@
 
   <footer th:replace="~{common/footer :: footer}"></footer>
 </main>
-<script th:src="@{/js/ui/app.js}" defer></script>
+<script th:src="@{/js/ui/shell.js}" defer></script>
 </body>
 </html>

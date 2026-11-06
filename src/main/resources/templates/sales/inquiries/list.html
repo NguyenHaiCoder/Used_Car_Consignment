@@ -1,11 +1,360 @@
 <!DOCTYPE html>
+<!--/* Đỗ Lan Anh: Màn Tư vấn & lịch xem xe (Inquiry) của Nhân viên kinh doanh. Dữ liệu từ SalesInquiryWebController (mock trong bộ nhớ).
+       Yêu cầu vào từ modal Liên hệ ở /tin-ban-xe (channel WEBSITE, chưa có người phụ trách) hoặc do Sales tạo. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Tư vấn &amp; lịch xem xe', 'Kinh doanh', 'sales-inquiries',
+                    null, ~{::link}, ~{::#inquiry-list})}">
+<head>
+  <title>Tư vấn &amp; lịch xem xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiries.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <script th:src="@{/js/app/sales-inquiries.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Tư vấn &amp; lịch xem xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/inquiries/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="inquiry-list" class="workflow"
+     th:with="kpiKeys=${ {'NEW','OPEN','SCHEDULED','VIEWED','CLOSED'} },
+              base=${'/sales/inquiries?q=' + #uris.escapeQueryParam(q) + '&amp;status=' + status + '&amp;viewing=' + viewing + '&amp;from=' + dateFrom + '&amp;to=' + dateTo + '&amp;channel=' + channel + '&amp;need=' + need}">
+
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg></div>
+      <div>
+        <h2>Tư vấn &amp; lịch xem xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Kinh doanh</a>
+          <span>/</span>
+          <span>Tư vấn &amp; lịch xem xe</span>
+        </nav>
+        <p class="inq-lead">Quản lý các yêu cầu tư vấn, liên hệ với khách hàng và lịch hẹn xem xe tại showroom.</p>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/sales/inquiries/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tạo tư vấn
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <!--/* Bấm thẻ sẽ bỏ các bộ lọc khác để danh sách khớp đúng con số trên thẻ. */-->
+  <nav class="kpis" aria-label="Lọc nhanh theo trạng thái tư vấn">
+    <a class="card kpi" th:each="k : ${kpiKeys}" th:with="s=${statuses.get(k)}"
+       th:classappend="${'kpi--' + s.tone + (status == k ? ' is-active' : '')}"
+       th:attr="aria-current=${status == k ? 'true' : null}"
+       th:href="@{/sales/inquiries(status=${k},size=${size})}">
+      <span class="kpi-icon"><svg th:replace="~{shell/icons :: icon(${s.icon})}"></svg></span>
+      <div>
+        <p th:text="${k == 'SCHEDULED' ? 'Lịch xem sắp tới' : s.label}">Trạng thái</p>
+        <strong th:text="${counts.get(k)}">0</strong>
+      </div>
+    </a>
+  </nav>
+
+  <form class="card toolbar inq-toolbar" method="get" th:action="@{/sales/inquiries}">
+    <input type="hidden" name="size" th:value="${size}">
+    <label class="search">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <span class="sr-only">Tìm tư vấn</span>
+      <input type="search" name="q" th:value="${q}" placeholder="Tìm theo khách hàng, SĐT, mã tư vấn...">
+    </label>
+
+    <div class="inq-field">
+      <label for="inq-status">Trạng thái tư vấn</label>
+      <span class="select">
+        <select id="inq-status" name="status" onchange="this.form.requestSubmit()">
+          <option value="">Tất cả</option>
+          <option th:each="s : ${statuses}" th:value="${s.key}" th:text="${s.value.label}"
+                  th:selected="${s.key == status}">Trạng thái</option>
+        </select>
+      </span>
+    </div>
+
+    <div class="inq-field">
+      <label for="inq-viewing">Trạng thái lịch xem</label>
+      <span class="select">
+        <select id="inq-viewing" name="viewing" onchange="this.form.requestSubmit()">
+          <option value="">Tất cả</option>
+          <option th:each="v : ${viewingNames}" th:value="${v.key}" th:text="${v.value}"
+                  th:selected="${v.key == viewing}">Lịch</option>
+        </select>
+      </span>
+    </div>
+
+    <div class="inq-field">
+      <span class="inq-field-label">Ngày tạo</span>
+      <!--/* shell.js tự hiện dd/mm/yyyy và gửi form khi chọn ngày */-->
+      <div class="date-range" role="group" aria-label="Khoảng ngày tạo" data-date-range lang="vi-VN">
+        <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+        <label class="date-range-field">
+          <span class="sr-only">Từ ngày</span>
+          <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+                 placeholder="Từ ngày" autocomplete="off" aria-label="Từ ngày">
+          <input class="date-range-native" type="date" name="from" lang="vi-VN"
+                 th:value="${dateFrom}" tabindex="-1" aria-hidden="true">
+        </label>
+        <span class="date-range-sep" aria-hidden="true">–</span>
+        <label class="date-range-field">
+          <span class="sr-only">Đến ngày</span>
+          <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+                 placeholder="Đến ngày" autocomplete="off" aria-label="Đến ngày">
+          <input class="date-range-native" type="date" name="to" lang="vi-VN"
+                 th:value="${dateTo}" tabindex="-1" aria-hidden="true">
+        </label>
+      </div>
+    </div>
+
+    <details class="filter-dropdown inq-more">
+      <summary class="filter-dropdown-trigger" th:classappend="${channel != '' or need != ''} ? 'is-on'">
+        <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
+        <span>Lọc nâng cao</span>
+      </summary>
+      <div class="filter-dropdown-menu">
+        <div class="inq-field">
+          <label for="inq-channel">Nguồn yêu cầu</label>
+          <span class="select">
+            <select id="inq-channel" name="channel">
+              <option value="">Tất cả</option>
+              <option th:each="c : ${channels}" th:value="${c.key}" th:text="${c.value}"
+                      th:selected="${c.key == channel}">Nguồn</option>
+            </select>
+          </span>
+        </div>
+        <div class="inq-field">
+          <label for="inq-need">Nhu cầu</label>
+          <span class="select">
+            <select id="inq-need" name="need">
+              <option value="">Tất cả</option>
+              <option th:each="c : ${needs}" th:value="${c.key}" th:text="${c.value}"
+                      th:selected="${c.key == need}">Nhu cầu</option>
+            </select>
+          </span>
+        </div>
+        <button class="btn btn--primary" type="submit">Áp dụng</button>
+      </div>
+    </details>
+
+    <a class="btn" th:href="@{/sales/inquiries}">
+      <svg th:replace="~{shell/icons :: icon('refresh')}"></svg>Làm mới
+    </a>
+  </form>
+
+  <div class="workflow-grid">
+    <section class="card records">
+      <div class="table-wrap" th:unless="${page.empty}">
+        <table class="table">
+          <caption class="sr-only">Danh sách yêu cầu tư vấn</caption>
+          <thead>
+            <tr>
+              <th scope="col">Mã tư vấn</th>
+              <th scope="col">Khách hàng</th>
+              <th scope="col">Xe quan tâm</th>
+              <th scope="col">Trạng thái tư vấn</th>
+              <th scope="col">Lịch xem</th>
+              <th scope="col">Nhân viên</th>
+              <th scope="col">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="n : ${page.content}"
+                th:with="s=${statuses.get(n.status)}, v=${viewings.get(n.id)},
+                         editable=${n.status != 'CLOSED' and n.status != 'CONVERTED'},
+                         selectUrl=${base + '&amp;page=' + page.number + '&amp;size=' + size + '&amp;selected=' + n.id}"
+                th:classappend="${cur != null and cur.id == n.id} ? 'is-selected'"
+                th:attr="aria-selected=${cur != null and cur.id == n.id}">
+              <td class="inq-code" th:text="${n.code}">TV-1</td>
+              <td>
+                <div class="inq-person">
+                  <span class="inq-avatar" th:text="${n.ini}">KH</span>
+                  <span>
+                    <strong th:text="${n.buyer}" th:title="${n.buyer}">Khách</strong>
+                    <small th:text="${n.phone}">SĐT</small>
+                  </span>
+                </div>
+              </td>
+              <td class="inq-car">
+                <strong th:text="${n.car}" th:title="${n.car}">Xe</strong>
+                <small th:text="${#numbers.formatInteger(n.price, 1, 'POINT') + ' ₫'}">Giá</small>
+              </td>
+              <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+              <td class="inq-when">
+                <th:block th:if="${v != null}">
+                  <span th:text="${#temporals.format(#temporals.createDateTime(v.start), 'dd/MM/yyyy')}">01/01/2026</span>
+                  <small th:text="${#temporals.format(#temporals.createDateTime(v.start), 'HH:mm')}">00:00</small>
+                </th:block>
+                <span class="muted" th:unless="${v != null}">—</span>
+              </td>
+              <td>
+                <span class="inq-staff" th:if="${n.staff != ''}" th:text="${n.staffIni}" th:title="${n.staff}"
+                      th:attr="aria-label=${n.staff}">NV</span>
+                <span class="inq-unassigned" th:unless="${n.staff != ''}">Chưa nhận</span>
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a class="row-action" th:unless="${editable}"
+                     th:href="@{/sales/inquiries/{id}(id=${n.id})}"
+                     th:attr="aria-label=${'Xem chi tiết ' + n.code}" title="Xem chi tiết">
+                    <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                  </a>
+                  <th:block th:if="${editable}">
+                    <a class="row-action" th:href="@{${selectUrl}}" data-select
+                       th:attr="aria-label=${'Xem nhanh ' + n.code}" title="Xem nhanh">
+                      <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                    </a>
+                    <a class="row-action" th:href="@{/sales/inquiries/{id}/edit(id=${n.id})}"
+                       th:attr="aria-label=${'Sửa ' + n.code}" title="Sửa tư vấn">
+                      <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                    </a>
+                    <details class="user-menu row-menu">
+                      <summary class="row-action" th:attr="aria-label=${'Thao tác khác cho ' + n.code}">
+                        <svg th:replace="~{shell/icons :: icon('dots')}"></svg>
+                      </summary>
+                      <div class="menu-pop">
+                        <form th:if="${n.status == 'NEW'}" method="post" th:action="@{/sales/inquiries/{id}/claim(id=${n.id})}">
+                          <button type="submit">Nhận tư vấn</button>
+                        </form>
+                        <a th:href="@{/sales/inquiries/{id}(id=${n.id})}">Xem chi tiết</a>
+                        <a th:if="${n.status == 'OPEN' or n.status == 'VIEWED'}"
+                           th:href="@{/sales/inquiries/{id}/viewings/new(id=${n.id})}">Đặt lịch xem</a>
+                        <a th:if="${n.status == 'OPEN' or n.status == 'SCHEDULED' or n.status == 'VIEWED'}"
+                           th:href="@{/sales/reservations/new(inquiryId=${n.id})}">Đặt cọc giữ xe</a>
+                        <a th:if="${v != null and (v.status == 'BOOKED' or v.status == 'CONFIRMED')}"
+                           th:href="@{/sales/inquiries/{id}/viewings/{v}/edit(id=${n.id},v=${v.id})}">Đổi lịch xem</a>
+                        <form th:if="${v != null and (v.status == 'BOOKED' or v.status == 'CONFIRMED')}" method="post"
+                              th:action="@{/sales/inquiries/{id}/viewings/{v}/done(id=${n.id},v=${v.id})}">
+                          <button type="submit">Đánh dấu đã xem</button>
+                        </form>
+                        <a th:href="@{/sales/inquiries/{id}(id=${n.id},close=1)}">Đóng tư vấn</a>
+                      </div>
+                    </details>
+                  </th:block>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty" th:if="${page.empty}">
+        <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+        <h4>Không có yêu cầu tư vấn phù hợp</h4>
+        <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+      </div>
+
+      <nav class="pager" aria-label="Phân trang"
+           th:with="last=${page.totalPages > 0 ? page.totalPages - 1 : 0},
+                    from=${page.number > 2 ? page.number - 2 : 0},
+                    to=${page.number + 2 < last ? page.number + 2 : last},
+                    first=${page.number * page.size + 1}">
+        <span th:text="${page.empty ? 'Không có bản ghi' : 'Hiển thị ' + first + ' – ' + (first + page.numberOfElements - 1) + ' trên ' + page.totalElements + ' bản ghi'}">Hiển thị</span>
+        <div class="pager-side">
+          <div class="pager-meta">
+            <span class="pager-size-label">Hiển thị</span>
+            <details class="filter-dropdown pager-size-dropdown">
+              <summary class="filter-dropdown-trigger" aria-label="Số dòng mỗi trang">
+                <span th:text="${size}">10</span>
+                <span class="filter-dropdown-caret" aria-hidden="true">
+                  <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+                </span>
+              </summary>
+              <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
+                <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
+                   th:classappend="${n == size} ? 'is-active'"
+                   th:href="@{${base + '&amp;page=0&amp;size=' + n}}"
+                   th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
+              </div>
+            </details>
+          </div>
+          <div class="pager-links">
+            <a class="page-link" th:if="${page.number > 0}" aria-label="Trang trước"
+               th:href="@{${base + '&amp;page=' + (page.number - 1) + '&amp;size=' + size}}">‹</a>
+            <span class="page-link is-off" th:unless="${page.number > 0}" aria-hidden="true">‹</span>
+            <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
+               th:classappend="${n == page.number} ? 'is-active'"
+               th:attr="aria-current=${n == page.number ? 'page' : null}"
+               th:href="@{${base + '&amp;page=' + n + '&amp;size=' + size}}"
+               th:text="${n + 1}">1</a>
+            <a class="page-link" th:if="${page.number + 1 < page.totalPages}" aria-label="Trang sau"
+               th:href="@{${base + '&amp;page=' + (page.number + 1) + '&amp;size=' + size}}">›</a>
+            <span class="page-link is-off" th:unless="${page.number + 1 < page.totalPages}" aria-hidden="true">›</span>
+          </div>
+        </div>
+      </nav>
+    </section>
+
+    <aside class="card inq-panel" aria-label="Chi tiết tư vấn">
+      <th:block th:if="${cur != null}" th:with="s=${statuses.get(cur.status)}">
+        <header class="inq-panel-head">
+          <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+          <h3 th:text="${'Chi tiết tư vấn: ' + cur.code}">Chi tiết tư vấn</h3>
+        </header>
+        <div class="inq-panel-body">
+          <div class="inq-person inq-person--lg">
+            <span class="inq-avatar" th:text="${cur.ini}">KH</span>
+            <span>
+              <strong th:text="${cur.buyer}">Khách</strong>
+              <small th:text="${cur.phone}">SĐT</small>
+            </span>
+            <span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span>
+          </div>
+
+          <div class="inq-source">
+            <span th:text="${'Nguồn: ' + channels.get(cur.channel)}">Nguồn</span>
+            <span th:text="${'Nhu cầu: ' + needs.get(cur.need)}">Nhu cầu</span>
+          </div>
+
+          <div class="inq-vehicle">
+            <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+            <div>
+              <strong th:text="${cur.car}">Xe</strong>
+              <b th:text="${#numbers.formatInteger(cur.price, 1, 'POINT') + ' ₫'}">Giá</b>
+              <small th:text="${#numbers.formatInteger(cur.km, 1, 'POINT') + ' km · ' + cur.fuel + ' · ' + cur.color}">km · nhiên liệu · màu</small>
+            </div>
+          </div>
+
+          <section class="inq-block">
+            <h4><svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>Lịch xem xe</h4>
+            <th:block th:if="${curView != null}"
+                      th:with="start=${#temporals.createDateTime(curView.start)}">
+              <p th:text="${#temporals.format(start, 'dd/MM/yyyy') + ' (' + dayNames[#temporals.dayOfWeek(start) - 1] + ')'}">Ngày</p>
+              <p class="inq-line">
+                <svg th:replace="~{shell/icons :: icon('clock')}"></svg>
+                <span th:text="${#temporals.format(start, 'HH:mm') + ' – ' + curView.end + ' · ' + curView.type}">Giờ</span>
+              </p>
+              <p class="inq-line">
+                <svg th:replace="~{shell/icons :: icon('pin')}"></svg>
+                <span th:text="${curView.place}">Địa điểm</span>
+                <span class="pill" th:classappend="${'pill--' + viewingPills.get(curView.status)}"
+                      th:text="${viewingNames.get(curView.status)}">Trạng thái</span>
+              </p>
+            </th:block>
+            <p class="muted" th:unless="${curView != null}">Chưa có lịch xem xe.</p>
+          </section>
+
+          <section class="inq-block">
+            <h4><svg th:replace="~{shell/icons :: icon('file')}"></svg>Ghi chú tư vấn</h4>
+            <p th:if="${cur.note != ''}" th:text="${cur.note}">Ghi chú</p>
+            <p class="muted" th:unless="${cur.note != ''}">Chưa có ghi chú.</p>
+          </section>
+        </div>
+        <footer class="inq-panel-foot">
+          <form th:if="${cur.status == 'NEW'}" method="post" th:action="@{/sales/inquiries/{id}/claim(id=${cur.id})}">
+            <button class="btn-c btn-c--primary" type="submit">Nhận tư vấn</button>
+          </form>
+          <a class="btn-c btn-c--primary" th:if="${cur.status == 'OPEN' or cur.status == 'VIEWED'}"
+             th:href="@{/sales/inquiries/{id}/viewings/new(id=${cur.id})}">Đặt lịch xem</a>
+          <a class="btn-c btn-c--primary" th:if="${curView != null and (curView.status == 'BOOKED' or curView.status == 'CONFIRMED')}"
+             th:href="@{/sales/inquiries/{id}/viewings/{v}/edit(id=${cur.id},v=${curView.id})}">Đổi lịch xem</a>
+          <a class="btn-c btn-c--outline" th:href="@{/sales/inquiries/{id}(id=${cur.id})}">Xem chi tiết</a>
+        </footer>
+      </th:block>
+      <p class="inq-panel-empty" th:unless="${cur != null}">Chọn một yêu cầu để xem chi tiết.</p>
+    </aside>
+  </div>
+</div>
 </body>
 </html>

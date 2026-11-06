@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!--/* Đỗ Lan Anh: màn Tạo và Sửa phiếu đặt cọc giữ xe. Có biến item là đang sửa, khi đó xe và khách không đổi được.
+       Xe chọn từ hồ sơ ký gửi: chọn xong trang tải lại để chỉ hiện khách đang tư vấn đúng xe đó.
+       Xe đã có người đặt cọc hoặc đã có hợp đồng không nằm trong danh sách. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(${item != null ? 'Sửa phiếu đặt cọc' : 'Tạo phiếu đặt cọc'}, 'Kinh doanh', 'sales-reservations',
+                    null, ~{::link}, ~{::#deal-form})}">
+<head>
+  <title>Phiếu đặt cọc</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <script th:src="@{/js/app/sales-deals.js}" defer></script>
+  </th:block>
+</head>
+<body>
+<div id="deal-form" class="create-wrap inq-form-page"
+     th:with="editing=${item != null}, title=${item != null ? 'Sửa phiếu đặt cọc' : 'Tạo phiếu đặt cọc'}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('coins')}"></svg></div>
+      <div>
+        <h2 th:text="${title}">Phiếu đặt cọc</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/sales/reservations}">Quản lý đặt cọc</a>
+          <span>/</span>
+          <span th:text="${editing ? item.code : 'Tạo mới'}">Tạo mới</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
+
+  <form class="section-card" method="get" th:action="@{/sales/reservations/new}" th:unless="${editing}">
+    <div class="section-head">
+      <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+      <h3>Xe từ hồ sơ ký gửi</h3>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label for="deal-car">Chọn xe <span class="req">*</span></label>
+        <span class="select">
+          <select id="deal-car" name="car" required data-auto-submit>
+            <option value="">Chọn theo mã hồ sơ, xe hoặc biển số</option>
+            <option th:each="c : ${cars}" th:value="${c.key}" th:selected="${c.key == carTitle}"
+                    th:text="${c.value['file'] + ' · ' + c.key + ' · ' + c.value['plate']}">Xe</option>
+          </select>
+        </span>
+        <small class="deal-hint">Chỉ hiện xe còn bán được, chưa có khách đặt cọc.</small>
+      </div>
+    </div>
+  </form>
+
+  <form class="inq-form" method="post" th:if="${picked != null}"
+        th:action="${editing} ? @{/sales/reservations/{id}(id=${item.id})} : @{/sales/reservations}">
+    <input type="hidden" name="car" th:value="${carTitle}" th:unless="${editing}">
+    <div class="inq-viewing-grid">
+      <div class="inq-form">
+        <section class="section-card">
+          <div class="section-head">
+            <svg th:replace="~{shell/icons :: icon('user')}"></svg>
+            <h3>Khách đặt cọc</h3>
+          </div>
+          <div class="section-body">
+            <div class="field" th:if="${editing}">
+              <label>Khách hàng</label>
+              <strong th:text="${item.buyer + ' · ' + item.phone}">Khách</strong>
+            </div>
+            <th:block th:unless="${editing}">
+              <div class="field" th:unless="${#lists.isEmpty(buyers)}">
+                <label for="deal-buyer">Khách đang tư vấn xe này <span class="req">*</span></label>
+                <span class="select">
+                  <select id="deal-buyer" name="inquiryId" required>
+                    <option value="">Chọn khách hàng</option>
+                    <option th:each="b : ${buyers}" th:value="${b.id}" th:selected="${b.id.toString() == form['inquiryId']}"
+                            th:text="${b.buyer + ' · ' + b.phone + ' · ' + b.code}">Khách</option>
+                  </select>
+                </span>
+              </div>
+              <p class="muted" th:if="${#lists.isEmpty(buyers)}">
+                Xe này chưa có khách đang tư vấn.
+                <a class="deal-link" th:href="@{/sales/inquiries/new(car=${carTitle})}">Tạo tư vấn</a> trước rồi quay lại đặt cọc.
+              </p>
+            </th:block>
+          </div>
+        </section>
+
+        <section class="section-card" th:if="${editing or !#lists.isEmpty(buyers)}">
+          <div class="section-head">
+            <svg th:replace="~{shell/icons :: icon('coins')}"></svg>
+            <h3>Tiền cọc và thời hạn giữ xe</h3>
+          </div>
+          <div class="section-body">
+            <div class="form-row form-row--2">
+              <div class="field">
+                <label for="deal-deposit">Tiền cọc (₫) <span class="req">*</span></label>
+                <div class="field-input">
+                  <input id="deal-deposit" name="deposit" inputmode="numeric" maxlength="17" required data-money
+                         th:value="${form['deposit']}" placeholder="Ví dụ: 50.000.000">
+                </div>
+              </div>
+              <div class="field">
+                <label for="deal-hold">Hạn giữ xe <span class="req">*</span></label>
+                <div class="date-range" data-date-range lang="vi-VN">
+                  <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+                  <label class="date-range-field">
+                    <input class="date-range-display" id="deal-hold" type="text" inputmode="numeric" maxlength="10"
+                           placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Hạn giữ xe">
+                    <input class="date-range-native" type="date" name="holdUntil" required lang="vi-VN"
+                           th:min="${today}" th:value="${form['holdUntil']}" tabindex="-1" aria-hidden="true">
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="deal-terms">Điều khoản giữ xe</label>
+              <textarea class="field-textarea" id="deal-terms" name="terms" rows="4" maxlength="2000"
+                        th:text="${form['terms']}"></textarea>
+            </div>
+            <label class="check-item" th:unless="${editing}">
+              <input type="checkbox" name="consent" required th:checked="${form['consent'] != null}">
+              Khách đã đồng ý lưu thông tin và các điều khoản giữ xe <span class="req">*</span>
+            </label>
+          </div>
+        </section>
+      </div>
+
+      <aside class="create-sidebar">
+        <div class="sidebar-card" th:attr="data-deal-price=${picked['price']}">
+          <div class="sidebar-card-head">
+            <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+            <h4>Xe được giữ</h4>
+          </div>
+          <div class="sidebar-card-body">
+            <div class="inq-summary">
+              <strong th:text="${carTitle}">Xe</strong>
+              <small th:text="${picked['plate'] + ' · ' + #numbers.formatInteger(picked['km'], 1, 'POINT') + ' km'}">Biển số</small>
+              <small th:text="${picked['fuel'] + ' · ' + picked['color']}">Nhiên liệu</small>
+            </div>
+            <div class="inq-summary">
+              <strong th:text="${'Hồ sơ ' + picked['file']}">Hồ sơ</strong>
+              <small th:text="${'Chủ xe: ' + picked['owner']}">Chủ xe</small>
+            </div>
+            <dl class="deal-money">
+              <div><dt>Giá niêm yết</dt><dd th:text="${#numbers.formatInteger(picked['price'], 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+              <div><dt>Tiền cọc</dt><dd data-deal-deposit>0 ₫</dd></div>
+              <div><dt>Còn lại</dt><dd data-deal-remaining>0 ₫</dd></div>
+            </dl>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="create-actions">
+      <a class="btn-c btn-c--ghost" th:href="${editing} ? @{/sales/reservations/{id}(id=${item.id})} : @{/sales/reservations}">Hủy</a>
+      <button class="btn-c btn-c--primary" type="submit" th:if="${editing or !#lists.isEmpty(buyers)}"
+              th:text="${editing ? 'Lưu thay đổi' : 'Tạo phiếu đặt cọc'}">Tạo phiếu đặt cọc</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

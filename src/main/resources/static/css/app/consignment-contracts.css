@@ -1,0 +1,383 @@
+/* Hà Lệ Quyên: giao diện hợp đồng ký gửi xe — hiển thị văn bản hợp đồng pháp lý thật + sidebar. */
+
+/* Danh sách hợp đồng: khung 1 màn hình lấy từ .workflow, phần đầu trang và card lấy từ màn tạo hợp đồng */
+#contracts-list .toolbar { grid-template-columns: minmax(200px, 1fr) minmax(160px, 200px); }
+#contracts-list .filter-dropdown-menu { max-height: none; }
+#contracts-list .row-action-form { display: inline-grid; margin: 0; }
+#contracts-list .row-action-form .row-action {
+  border: 0; background: transparent; padding: 0; font: inherit; color: var(--blue-600); cursor: pointer;
+}
+#contracts-list .row-action-form .row-action:hover { background: var(--blue-100); }
+
+/* Khóa độ rộng cột để chuyển trang không làm bảng nhảy; ghi đè cột của bảng hồ sơ ký gửi */
+#contracts-list .records .table { min-width: 760px; }
+#contracts-list .records th:nth-child(1) { width: 108px; }
+#contracts-list .records th:nth-child(2) { width: 112px; }
+#contracts-list .records th:nth-child(3) { width: 112px; }
+#contracts-list .records th:nth-child(4) { width: 92px; }
+#contracts-list .records th:nth-child(5) { width: auto; }
+#contracts-list .records th:nth-child(6) { width: 68px; }
+#contracts-list .records th:nth-child(7) { width: 96px; }
+#contracts-list .records th:nth-child(8) { width: 88px; }
+#contracts-list .records .table .num { text-align: right; }
+#contracts-list .records td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.contract-version { display: block; font-size: 11px; color: var(--ink-soft); }
+.contract-term { font-variant-numeric: tabular-nums; }
+.days-left { font-weight: 600; white-space: nowrap; }
+.days-left--soon { color: var(--amber-ink); }
+.days-left--over { color: var(--red); }
+
+/* .csb-card có overflow:hidden nên hàng lưới bị ép co khi thiếu chỗ; giữ đủ chiều cao để cột phải tự cuộn */
+#contracts-list .side-stack { grid-auto-rows: max-content; }
+
+/* Luồng trạng thái ở cột phải, mỗi dòng là một bộ lọc */
+.csb-reset { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--blue-600); }
+.csb-reset:hover { text-decoration: underline; }
+#contracts-list .csb-body { padding: 8px; }
+.status-flow li:nth-child(4) { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+.status-flow .tl-item { padding: 3px 6px; border-radius: 8px; }
+.status-flow .tl-item:hover, .status-flow .tl-item.is-current { background: var(--blue-50); }
+.status-flow .tl-text { flex: 1; min-width: 0; padding-top: 1px; }
+.tl-count {
+  align-self: center; flex: none; min-width: 30px; padding: 1px 7px; border-radius: 9px;
+  background: var(--blue-100); font-size: 11.5px; font-weight: 700; text-align: center;
+}
+.contract-rules { padding-top: 8px; }
+
+@media (max-width: 1180px) {
+  #contracts-list .toolbar .search { grid-column: auto; }
+}
+@media (max-width: 800px) {
+  #contracts-list .toolbar { grid-template-columns: 1fr; }
+}
+@media (min-width: 1181px) and (max-height: 900px) {
+  #contracts-list .contracts-header { padding: 6px 14px; }
+  #contracts-list .contracts-title-icon { width: 36px; height: 36px; }
+  #contracts-list .contracts-header h2 { font-size: 17px; line-height: 1.2; }
+  /* Màn thấp bỏ dòng mô tả để cột phải vừa 1 màn hình; nội dung vẫn có ở tooltip của pill trạng thái */
+  .status-flow .tl-text small { display: none; }
+  .status-flow .tl-text { align-self: center; padding-top: 0; }
+}
+
+/* ───── Page wrapper ───── */
+.contracts-wrap { display: flex; flex-direction: column; gap: 14px; }
+
+/* ───── Page header ───── */
+.contracts-header {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 11px 16px; background: #fff;
+  border: 1px solid var(--line); border-radius: var(--radius);
+}
+.contracts-header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.contracts-title-icon {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border-radius: 10px; background: var(--blue-50); color: var(--navy-700);
+}
+.contracts-title-icon .ic { width: 26px; height: 26px; stroke-width: 1.6; }
+.contracts-breadcrumb {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: var(--mute); margin-bottom: 2px;
+}
+.contracts-breadcrumb a { color: var(--blue-600); }
+.contracts-breadcrumb a:hover { text-decoration: underline; }
+.contracts-header h2 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.badge-active {
+  padding: 3px 10px; border-radius: 9px;
+  background: var(--green-soft); color: var(--green);
+  font-size: 11px; font-weight: 800;
+}
+.badge-draft-contract {
+  padding: 3px 10px; border-radius: 9px;
+  background: var(--amber-soft); color: var(--amber-ink);
+  font-size: 11px; font-weight: 800;
+}
+.contracts-header-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ───── 2-column layout ───── */
+.contracts-layout {
+  display: grid; grid-template-columns: minmax(0,1fr) 284px;
+  gap: 14px; align-items: start;
+}
+
+/* ═══════════════════════════════════════════════
+   HỢP ĐỒNG — Văn bản pháp lý
+══════════════════════════════════════════════= */
+.contract-doc {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 36px 44px 40px;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 13.5px; line-height: 1.65; color: #111;
+}
+
+/* Republic header */
+.contract-republic-block { text-align: center; margin-bottom: 20px; }
+.contract-republic { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.contract-freedom { font-size: 13px; font-style: italic; }
+.contract-underline-row { margin: 2px auto 0; width: 160px; border-top: 1.5px solid #111; }
+
+/* Contract title block */
+.contract-title-block { text-align: center; margin: 24px 0 20px; }
+.contract-doc-title { font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.contract-doc-num { font-size: 13px; font-style: italic; margin-bottom: 2px; }
+.contract-doc-num input.inline-field {
+  font: italic 13px/1 "Times New Roman", Times, serif;
+  border: none; border-bottom: 1px dashed #999; background: transparent;
+  width: 140px; padding: 0 2px; color: var(--navy-700); font-weight: 700;
+  outline: none;
+}
+.contract-doc-num input.inline-field:focus { border-bottom-color: var(--blue-600); background: var(--blue-50); }
+
+/* Preamble */
+.contract-preamble { margin: 16px 0; font-size: 13px; line-height: 1.7; }
+.contract-preamble p { margin-bottom: 6px; }
+
+/* Divider between articles */
+.contract-divider { border: none; border-top: 1px solid #ccc; margin: 18px 0; }
+
+/* Article heading */
+.article { margin: 18px 0; }
+.article-heading {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  padding-bottom: 5px; border-bottom: 1.5px solid #333;
+  font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+  font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+}
+.article-heading .ic { width: 17px; height: 17px; color: var(--navy-700); flex: none; }
+.article-body { font-size: 13.5px; }
+
+/* Party grid (side by side) */
+.parties-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 4px;
+}
+.party-block {
+  padding: 12px 14px;
+  border: 1px solid #c8d8ee; border-radius: 8px;
+  background: #f9fbff;
+}
+.party-label {
+  font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+  font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--navy-700); margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.party-label .ic { width: 15px; height: 15px; }
+
+/* Inline contract fields (label: value) */
+.contract-row {
+  display: grid; grid-template-columns: 148px 1fr;
+  gap: 2px 8px; align-items: baseline; margin-bottom: 5px;
+  font-size: 13px;
+}
+.contract-row .cl { font-weight: 600; color: #444; white-space: nowrap; }
+.contract-row .cv { color: #111; }
+.inline-field {
+  font: 13.5px/1.4 "Times New Roman", Times, serif;
+  border: none; border-bottom: 1px dashed #bbb; background: transparent;
+  padding: 0 3px; color: #111; outline: none; width: 100%;
+}
+.inline-field:focus { border-bottom-color: var(--blue-600); background: #eef5fd; border-radius: 2px; }
+.inline-field::placeholder { color: #bbb; font-style: italic; }
+
+/* Vehicle section */
+.vehicle-contract-grid {
+  display: grid; grid-template-columns: 148px 1fr;
+  gap: 14px; align-items: start;
+}
+.vehicle-contract-img {
+  border-radius: 8px; overflow: hidden; border: 1px solid #c8d8ee; background: var(--blue-50);
+  aspect-ratio: 4/3; display: grid; place-items: center; color: var(--navy-700);
+}
+.vehicle-contract-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vehicle-contract-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
+
+/* Terms fields (Điều 3) */
+.terms-inline-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 10px;
+}
+.terms-inline-field { display: flex; flex-direction: column; gap: 3px; }
+.terms-inline-field label {
+  font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
+  font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
+}
+.terms-inline-field .field-row {
+  display: flex; align-items: center; gap: 4px;
+  border-bottom: 1px dashed #bbb; padding-bottom: 2px;
+}
+.terms-inline-field .field-row input {
+  font: 13.5px/1 "Times New Roman", Times, serif;
+  border: none; background: transparent; outline: none; flex: 1; min-width: 0;
+  color: #111;
+}
+.terms-inline-field .field-row input:focus { background: #eef5fd; }
+.terms-inline-field .field-row span { font-size: 12px; color: #666; flex: none; }
+
+/* Editable terms textarea */
+.terms-textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid #c8d8ee; border-radius: 7px;
+  font: 13px/1.65 "Times New Roman", Times, serif; color: #111;
+  background: #fafcff; resize: vertical; outline: none; min-height: 80px;
+}
+.terms-textarea:focus { border-color: var(--blue-600); background: #fff; }
+.terms-hint { font-size: 11px; color: var(--mute); margin-top: 3px; text-align: right; font-family: "Be Vietnam Pro", sans-serif; }
+
+/* Signatures */
+.contract-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; padding-top: 20px; border-top: 1px solid #ccc; }
+.sig-block { text-align: center; }
+.sig-role { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+.sig-note { font-size: 12px; font-style: italic; color: #555; margin-bottom: 10px; }
+.sig-pad {
+  position: relative; height: 96px; margin-bottom: 8px;
+  border: 1px dashed #aaa; border-radius: 7px; background: #fafafa;
+  overflow: hidden; touch-action: none; user-select: none;
+}
+.sig-pad:hover, .sig-pad.is-drawing { border-color: var(--blue-600); background: #fff; }
+.sig-pad.has-ink { border-style: solid; border-color: var(--navy-700); background: #fff; }
+.sig-canvas {
+  display: block; width: 100%; height: 100%;
+  cursor: crosshair; touch-action: none;
+}
+.sig-placeholder {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  pointer-events: none; color: #aaa;
+  font: 11.5px "Be Vietnam Pro", sans-serif;
+}
+.sig-pad.has-ink .sig-placeholder,
+.sig-pad.is-drawing .sig-placeholder { opacity: 0; }
+.sig-clear {
+  display: inline-flex; align-items: center; justify-content: center;
+  margin: 0 0 8px; padding: 4px 12px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: #fff; color: var(--navy-700);
+  font: 600 12px "Be Vietnam Pro", sans-serif;
+  cursor: pointer;
+}
+.sig-clear:hover { border-color: var(--blue-600); color: var(--blue-600); background: var(--blue-50); }
+.sig-name { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+.sig-title-role { font-size: 12px; color: #555; }
+
+.sig-preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sig-preview { text-align: center; }
+.sig-preview-label { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin-bottom: 5px; }
+.sig-preview-box {
+  height: 52px; border: 1px dashed #bbb; border-radius: 7px;
+  display: grid; place-items: center; overflow: hidden;
+  font-size: 11px; color: #bbb; background: #fafafa;
+}
+.sig-preview-box.is-signed { border-style: solid; border-color: var(--green); background: #fff; }
+.sig-preview-box img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sig-preview-name { font-size: 12px; font-weight: 600; margin-top: 4px; }
+
+/* Attached docs */
+.doc-attach-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.doc-slot {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  width: 100px; padding: 10px 8px 8px;
+  border: 1px solid #c8d8ee; border-radius: 9px; background: #f9fbff;
+  font-family: "Be Vietnam Pro", sans-serif; font-size: 11px; color: var(--ink-soft);
+  text-align: center; cursor: pointer; transition: border-color .15s;
+}
+.doc-slot:hover { border-color: var(--blue-600); background: var(--blue-50); }
+.doc-slot .ic { width: 28px; height: 28px; color: var(--navy-700); }
+.doc-slot.is-uploaded { border-color: var(--green); background: var(--green-soft); }
+.doc-slot.is-uploaded .ic { color: var(--green); }
+.doc-slot-check {
+  display: none; position: absolute; top: 5px; right: 5px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--green); color: #fff;
+  font-size: 9px; place-items: center;
+}
+.doc-slot { position: relative; }
+.doc-slot.is-uploaded .doc-slot-check { display: grid; }
+.doc-add {
+  width: 100px; padding: 10px 8px 8px;
+  border: 1.5px dashed var(--blue-600); border-radius: 9px; background: var(--blue-50);
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  font-family: "Be Vietnam Pro", sans-serif; font-size: 11px; color: var(--blue-600); font-weight: 600;
+  text-align: center; cursor: pointer;
+}
+.doc-add .ic { width: 24px; height: 24px; }
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════= */
+.contracts-sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
+.csb-card {
+  background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+}
+.csb-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 14px;
+  background: var(--blue-50); border-bottom: 1px solid var(--line);
+  font-family: "Be Vietnam Pro", sans-serif;
+}
+.csb-head .ic { width: 17px; height: 17px; color: var(--navy-700); }
+.csb-head h4 { font-size: 13px; font-weight: 700; }
+.csb-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; font-family: "Be Vietnam Pro", sans-serif; }
+
+/* Meta info rows */
+.meta-row { display: grid; grid-template-columns: 118px 1fr; gap: 2px 6px; align-items: start; font-size: 12.5px; }
+.meta-row .mk { color: var(--ink-soft); }
+.meta-row .mv { font-weight: 600; color: var(--ink); }
+.meta-row .mv.code { color: var(--blue-600); font-weight: 700; }
+.meta-sep { border: none; border-top: 1px solid var(--line); margin: 4px 0; }
+
+/* Timeline */
+.timeline { display: flex; flex-direction: column; }
+.tl-item { display: flex; gap: 10px; padding: 5px 0; }
+.tl-line-wrap { display: flex; flex-direction: column; align-items: center; width: 28px; flex: none; }
+.tl-dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; flex: none;
+  border: 2px solid var(--line); background: #fff; color: var(--mute);
+}
+.tl-dot .ic { width: 13px; height: 13px; }
+.tl-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+.tl-dot.current { background: var(--blue-50); border-color: var(--blue-600); color: var(--blue-600); }
+.tl-dot.current .ic { width: 14px; height: 14px; }
+.tl-connector { width: 2px; flex: 1; min-height: 10px; background: var(--line); margin: 2px 0; }
+.tl-connector.done { background: var(--green); }
+.tl-text { font-size: 12px; padding-top: 3px; }
+.tl-text strong { display: block; font-weight: 700; line-height: 1.2; }
+.tl-text small { color: var(--ink-soft); font-size: 11px; }
+.tl-item.is-current .tl-text strong { color: var(--blue-600); }
+
+/* ───── Action bar ───── */
+.contracts-actions {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px 16px; background: #fff;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  position: sticky; bottom: 0; z-index: 10;
+}
+.contracts-actions-right { display: flex; align-items: center; gap: 8px; }
+
+/* ───── Reuse btn system (same as create) ───── */
+.btn-c {
+  display: inline-flex; align-items: center; gap: 7px; padding: 0 15px; height: 36px;
+  border-radius: 9px; font: 600 13px/1 "Be Vietnam Pro", "Segoe UI", sans-serif;
+  cursor: pointer; border: 1px solid transparent; white-space: nowrap;
+  transition: background .15s, border-color .15s;
+}
+.btn-c .ic { width: 15px; height: 15px; }
+.btn-c--ghost { background: transparent; border-color: var(--line); color: var(--ink-soft); }
+.btn-c--ghost:hover { background: var(--blue-50); }
+.btn-c--outline { background: #fff; border-color: var(--line); color: var(--ink); }
+.btn-c--outline:hover { border-color: var(--blue-600); color: var(--blue-600); background: var(--blue-50); }
+.btn-c--danger { background: #fff; border-color: #fcc; color: var(--red); }
+.btn-c--danger:hover { background: #fff0f0; }
+.btn-c--secondary { background: var(--blue-100); border-color: var(--blue-100); color: var(--navy-700); }
+.btn-c--secondary:hover { background: #c5d9f8; }
+.btn-c--primary { background: var(--blue-600); border-color: var(--blue-600); color: #fff; }
+.btn-c--primary:hover { background: var(--navy-700); border-color: var(--navy-700); }
+
+/* ───── Responsive ───── */
+@media (max-width: 1100px) {
+  .contracts-layout { grid-template-columns: 1fr; }
+  .contracts-sidebar { position: static; }
+  .parties-grid { grid-template-columns: 1fr; }
+  .terms-inline-row { grid-template-columns: 1fr 1fr; }
+  .contract-doc { padding: 24px 28px 28px; }
+}
+@media (max-width: 680px) {
+  .terms-inline-row { grid-template-columns: 1fr; }
+  .vehicle-contract-grid { grid-template-columns: 1fr; }
+  .contract-signatures { grid-template-columns: 1fr; gap: 14px; }
+  .contract-doc { padding: 16px 16px 20px; }
+}

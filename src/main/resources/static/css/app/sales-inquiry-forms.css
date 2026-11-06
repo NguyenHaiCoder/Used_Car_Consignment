@@ -1,0 +1,93 @@
+/* Đỗ Lan Anh: Các màn Tạo, Sửa tư vấn, Đặt và Đổi lịch xem xe, Chi tiết tư vấn. */
+.flash--error { border-color: #f3b9b9; background: #fdecec; color: #a11c1c; }
+.create-wrap .flash--error { border-color: #f3b9b9; background: #fdecec; color: #a11c1c; }
+
+/* Form */
+.inq-form-page .contracts-breadcrumb { margin-bottom: 0; }
+.inq-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.inq-form .section-head .pill { flex: none; font-size: 11.5px; }
+.inq-form .select { width: 100%; }
+.inq-lookup { display: flex; gap: 8px; min-width: 0; }
+.inq-lookup .field-input { flex: 1; }
+.inq-lookup .btn-c { flex: none; padding: 0 12px; }
+.inq-form .pill--new { background: var(--violet-soft); color: var(--violet-ink); }
+
+.inq-need { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.inq-need--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inq-need legend { grid-column: 1 / -1; float: left; width: 100%; margin: 0 0 4px; padding: 0; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.inq-need .req { color: var(--red); }
+.inq-need label { display: block; position: relative; cursor: pointer; }
+.inq-need input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.inq-need label span { display: block; padding: 8px 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 12.5px; font-weight: 600; text-align: center; }
+.inq-need input:checked + span { border-color: var(--blue-600); background: var(--blue-50); color: var(--blue-600); }
+.inq-need input:focus-visible + span { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+
+.inq-viewing-grid { display: grid; grid-template-columns: minmax(0, 1fr) 296px; gap: 14px; align-items: start; }
+.inq-summary strong { display: block; font-size: 13px; font-weight: 700; }
+.inq-summary small { display: block; font-size: 12px; color: var(--ink-soft); }
+
+/* Chi tiết */
+.inq-detail { display: flex; flex-direction: column; gap: 10px; }
+.inq-detail .contracts-breadcrumb { margin-bottom: 0; }
+.inq-detail .contracts-header-actions { flex-wrap: wrap; }
+.inq-detail .contracts-header-actions form { margin: 0; }
+.inq-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.inq-facts--closed { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.inq-facts .card { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 14px; }
+.inq-facts .card > .ic { flex: none; width: 24px; height: 24px; color: var(--blue-600); }
+.inq-facts small { display: block; font-size: 11.5px; color: var(--ink-soft); }
+.inq-facts strong { display: block; font-size: 14px; font-weight: 700; }
+.inq-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.inq-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.inq-card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 0 14px 14px; overflow: hidden; }
+.inq-card > h3 {
+  display: flex; align-items: center; gap: 8px; margin: 0 -14px; padding: 9px 14px;
+  border-bottom: 1px solid var(--line); background: var(--blue-50); font-size: 14px; font-weight: 800;
+}
+.inq-card > h3 .ic { width: 18px; height: 18px; color: var(--navy-700); }
+.inq-h-action { height: 28px; margin-left: auto; padding: 0 10px; font-size: 12px; }
+.inq-buyer { display: flex; align-items: flex-start; gap: 14px; }
+.inq-buyer .inq-avatar { width: 60px; height: 60px; font-size: 19px; }
+.inq-rows { display: grid; gap: 6px; flex: 1; min-width: 0; margin: 0; font-size: 12.5px; }
+.inq-rows > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; }
+.inq-rows dt { color: var(--ink-soft); }
+.inq-rows dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.inq-chip { display: inline-block; margin: 0 4px 2px 0; padding: 2px 9px; border-radius: 10px; background: var(--blue-100); color: var(--navy-700); font-size: 11.5px; font-weight: 600; }
+.inq-car-box { display: flex; align-items: flex-start; gap: 12px; }
+.inq-car-box .vehicle-thumb { width: 64px; height: 48px; }
+.inq-car-box .vehicle-thumb .ic { width: 32px; height: 32px; }
+.inq-car-box strong { display: block; font-size: 14px; font-weight: 700; }
+.inq-car-box b { display: block; font-size: 15px; font-weight: 800; color: var(--blue-600); }
+.inq-car-box small { display: block; font-size: 12px; color: var(--ink-soft); }
+.inq-viewings { display: grid; gap: 8px; }
+.inq-viewings:empty { display: none; }
+.inq-viewings li { display: grid; gap: 3px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; font-size: 12.5px; }
+.inq-viewing-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.inq-viewing-head .pill { flex: none; font-size: 11px; padding: 2px 8px; }
+.inq-viewing-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.inq-viewing-actions form { margin: 0; }
+.inq-viewing-actions .btn-c { height: 28px; padding: 0 10px; font-size: 12px; }
+.inq-note-form { display: grid; gap: 8px; }
+.inq-note-form textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; font-size: 13px; color: var(--ink); resize: vertical; outline: none; }
+.inq-note-form textarea:focus { border-color: var(--blue-600); }
+.inq-note-form .btn-c { justify-self: end; height: 32px; }
+.inq-close-dialog form { display: grid; gap: 8px; padding: 18px; }
+.inq-close-dialog h3 { font-size: 16px; font-weight: 800; }
+.inq-close-dialog p { font-size: 12.5px; color: var(--ink-soft); }
+.inq-close-dialog label { font-size: 12.5px; font-weight: 600; }
+.inq-close-dialog .req { color: var(--red); }
+.inq-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.intake-dialog { width: min(440px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); box-shadow: 0 18px 48px rgba(10, 40, 90, .28); }
+.intake-dialog::backdrop { background: rgba(5, 25, 60, .45); }
+
+@media (max-width: 1100px) {
+  .inq-viewing-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .inq-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .inq-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .inq-facts { grid-template-columns: minmax(0, 1fr); }
+  .inq-buyer { flex-direction: column; }
+}

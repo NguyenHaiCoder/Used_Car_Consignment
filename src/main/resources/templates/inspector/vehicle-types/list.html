@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: danh sách Quản lý loại xe — UI mock. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Quản lý loại xe', 'Kiểm định và tiếp nhận xe', 'vehicle-types',
+                    null, ~{::link}, ~{::#vehicle-type-list})}">
+<head>
+  <title>Quản lý loại xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="vehicle-type-list" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <span>Kiểm định</span>
+          <span>/</span>
+          <span>Quản lý loại xe</span>
+        </nav>
+        <h2>Quản lý loại xe</h2>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/inspector/vehicle-types/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Thêm loại xe
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <section class="kpis" aria-label="Thống kê loại xe">
+    <article th:replace="~{shell/ui :: kpi('car', 'Tổng loại', ${total})}"></article>
+    <article th:replace="~{shell/ui :: kpi('check', 'Đang dùng', ${activeCount})}"></article>
+    <article th:replace="~{shell/ui :: kpi('box', 'Ngưng hoạt động', ${total - activeCount})}"></article>
+  </section>
+
+  <form class="card toolbar toolbar--catalog" method="get" th:action="@{/inspector/vehicle-types}">
+    <input type="hidden" name="status" th:if="${status != null and !#strings.isEmpty(status)}" th:value="${status}">
+    <input type="hidden" name="size" th:value="${size}">
+    <label class="search">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <input type="search" name="q" th:value="${q}" placeholder="Tìm theo mã, tên loại xe...">
+    </label>
+    <details class="filter-dropdown">
+      <summary class="filter-dropdown-trigger" aria-label="Lọc theo trạng thái">
+        <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
+        <span th:text="${status == 'ACTIVE'} ? 'Đang dùng' : (${status == 'INACTIVE'} ? 'Ngưng hoạt động' : 'Tất cả trạng thái')">Tất cả trạng thái</span>
+        <span class="filter-dropdown-caret" aria-hidden="true">
+          <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+        </span>
+      </summary>
+      <div class="filter-dropdown-menu" role="listbox" aria-label="Trạng thái">
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == null or status == ''} ? 'is-active'"
+           th:href="@{/inspector/vehicle-types(q=${q},size=${size})}"
+           th:attr="aria-selected=${status == null or status == ''}">Tất cả trạng thái</a>
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == 'ACTIVE'} ? 'is-active'"
+           th:href="@{/inspector/vehicle-types(q=${q},status='ACTIVE',size=${size})}"
+           th:attr="aria-selected=${status == 'ACTIVE'}">Đang dùng</a>
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == 'INACTIVE'} ? 'is-active'"
+           th:href="@{/inspector/vehicle-types(q=${q},status='INACTIVE',size=${size})}"
+           th:attr="aria-selected=${status == 'INACTIVE'}">Ngưng hoạt động</a>
+      </div>
+    </details>
+    <button class="btn btn--primary" type="submit">Tìm kiếm</button>
+  </form>
+
+  <section class="card records">
+    <header class="card-head">
+      <svg th:replace="~{shell/icons :: icon('list')}"></svg>
+      <h3 th:text="${'Danh sách loại xe (' + page.totalElements + ')'}">Danh sách loại xe</h3>
+    </header>
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mã</th>
+            <th>Tên hiển thị</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="t : ${page.content}">
+            <td><span class="code" th:text="${t.code}">SUV</span></td>
+            <td th:text="${t.label}">SUV / Crossover</td>
+            <td>
+              <span class="pill" th:classappend="${t.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+                    th:text="${t.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+            </td>
+            <td>
+              <div class="row-actions">
+                <a class="row-action" th:href="@{/inspector/vehicle-types/{id}/edit(id=${t.id})}" title="Sửa">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </a>
+                <form method="post" th:action="@{/inspector/vehicle-types/{id}/deactivate(id=${t.id})}"
+                      th:if="${t.status == 'ACTIVE'}"
+                      onsubmit="return confirm('Ngưng loại xe này?');">
+                  <button class="row-action is-danger" type="submit" title="Ngưng hoạt động">
+                    <svg th:replace="~{shell/icons :: icon('trash')}"></svg>
+                  </button>
+                </form>
+                <form method="post" th:action="@{/inspector/vehicle-types/{id}/activate(id=${t.id})}"
+                      th:if="${t.status != 'ACTIVE'}"
+                      onsubmit="return confirm('Kích hoạt lại loại xe này?');">
+                  <button class="row-action is-success" type="submit" title="Kích hoạt">
+                    <svg th:replace="~{shell/icons :: icon('check')}"></svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <h4>Chưa có loại xe</h4>
+    </div>
+    <div th:replace="~{consignment/catalog-pager :: pager('/inspector/vehicle-types', 'loại xe')}"></div>
+  </section>
+</div>
+</body>
+</html>

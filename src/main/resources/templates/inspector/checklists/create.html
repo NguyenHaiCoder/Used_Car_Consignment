@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: tạo loại kiểm định + các bước multipart — UI mock. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Thêm loại kiểm định', 'Kiểm định và tiếp nhận xe', 'checklists',
+                    null, ~{::link}, ~{::#checklist-create})}">
+<head>
+  <title>Thêm loại kiểm định</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <script th:src="@{/js/app/checklist-catalog.js}" defer></script>
+  </th:block>
+</head>
+<body>
+<div id="checklist-create" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('plus')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/inspector/checklists}">Loại kiểm định</a>
+          <span>/</span>
+          <span>Thêm mới</span>
+        </nav>
+        <h2>Thêm loại kiểm định</h2>
+      </div>
+    </div>
+  </div>
+
+  <form class="catalog-form" method="post" enctype="multipart/form-data" th:action="@{/inspector/checklists}">
+    <div class="form-row form-row--3">
+      <div class="field">
+        <label>Tên loại kiểm định <span class="req">*</span></label>
+        <input type="text" name="name" required placeholder="Loại kiểm định SUV / Crossover" th:value="${form.name}">
+      </div>
+      <div class="field">
+        <label>Loại xe <span class="req">*</span></label>
+        <select name="vehicleType" required>
+          <option value="" disabled th:selected="${form.vehicleType == null or form.vehicleType == ''}">— Chọn loại xe —</option>
+          <option th:each="t : ${vehicleTypes}"
+                  th:value="${t['code']}"
+                  th:text="${t['label']}"
+                  th:selected="${form.vehicleType == t['code']}">SUV / Crossover</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Trạng thái</label>
+        <select name="status">
+          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
+          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        </select>
+      </div>
+    </div>
+
+    <section id="steps-editor" class="steps-editor" aria-label="Các bước kiểm định">
+      <div class="steps-editor-head">
+        <div>
+          <h3>Các bước kiểm định</h3>
+        </div>
+        <button type="button" class="btn-c btn-c--outline" data-add-step>+ Thêm bước</button>
+      </div>
+      <div class="steps-list" data-steps-list>
+        <div class="step-row" data-step-row th:each="s : ${steps}" th:unless="${#lists.isEmpty(steps)}">
+          <div class="step-row-head">
+            <span class="step-order" data-step-order th:text="${'Bước ' + s.order}">Bước 1</span>
+            <button type="button" class="btn-c btn-c--ghost step-remove" data-remove-step>Xoá</button>
+          </div>
+          <div class="step-row-fields">
+            <div class="field">
+              <label>Kiểm định gì <span class="req">*</span></label>
+              <input type="text" name="stepTitles" required placeholder="Vd: Ngoại thất, giấy tờ, động cơ..."
+                     th:value="${s.title}">
+            </div>
+            <div class="field">
+              <label>Mô tả / gợi ý</label>
+              <input type="text" name="stepHints" placeholder="Chi tiết cần kiểm tra (tuỳ chọn)"
+                     th:value="${s.hint}">
+            </div>
+          </div>
+        </div>
+        <div class="step-row" data-step-row th:if="${#lists.isEmpty(steps)}">
+          <div class="step-row-head">
+            <span class="step-order" data-step-order>Bước 1</span>
+            <button type="button" class="btn-c btn-c--ghost step-remove" data-remove-step>Xoá</button>
+          </div>
+          <div class="step-row-fields">
+            <div class="field">
+              <label>Kiểm định gì <span class="req">*</span></label>
+              <input type="text" name="stepTitles" required placeholder="Vd: Ngoại thất, giấy tờ, động cơ...">
+            </div>
+            <div class="field">
+              <label>Mô tả / gợi ý</label>
+              <input type="text" name="stepHints" placeholder="Chi tiết cần kiểm tra (tuỳ chọn)">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="catalog-actions">
+      <button class="btn-c btn-c--primary" type="submit">Lưu loại kiểm định</button>
+      <a class="btn-c btn-c--ghost" th:href="@{/inspector/checklists}">Huỷ</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

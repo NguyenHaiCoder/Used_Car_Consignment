@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!--/* UI-only: tạo dòng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Thêm dòng xe', 'Hệ thống Quản lý Ký gửi xe', 'models',
+                    null, ~{::link}, ~{::#model-create})}">
+<head>
+  <title>Thêm dòng xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="model-create" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('plus')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/consignment/models}">Dòng xe</a>
+          <span>/</span>
+          <span>Thêm mới</span>
+        </nav>
+        <h2>Thêm dòng xe</h2>
+      </div>
+    </div>
+  </div>
+
+  <form class="catalog-form" method="post" th:action="@{/consignment/models}">
+    <div class="form-row">
+      <div class="field">
+        <label>Hãng xe <span class="req">*</span></label>
+        <select name="brandName" required>
+          <option value="" disabled th:selected="${form.brandName == null or form.brandName == ''}">Chọn hãng xe</option>
+          <option th:each="b : ${brands}" th:value="${b}" th:text="${b}"
+                  th:selected="${b == form.brandName}">Hyundai</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Dòng xe <span class="req">*</span></label>
+        <input type="text" name="name" required placeholder="Tucson" th:value="${form.name}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Trạng thái</label>
+        <select name="status">
+          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
+          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ghi chú</label>
+        <input type="text" name="note" placeholder="Tuỳ chọn" th:value="${form.note}">
+      </div>
+    </div>
+    <div class="catalog-actions">
+      <button class="btn-c btn-c--primary" type="submit">Lưu dòng xe</button>
+      <a class="btn-c btn-c--ghost" th:href="@{/consignment/models}">Huỷ</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

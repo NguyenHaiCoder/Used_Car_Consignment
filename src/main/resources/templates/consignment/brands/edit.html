@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--/* UI-only: sửa hãng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Sửa hãng xe', 'Hệ thống Quản lý Ký gửi xe', 'brands',
+                    null, ~{::link}, ~{::#brand-edit})}">
+<head>
+  <title>Sửa hãng xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="brand-edit" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('pencil')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/consignment/brands}">Hãng xe</a>
+          <span>/</span>
+          <a th:href="@{/consignment/brands/{id}(id=${form.id})}" th:text="${form.name}">Hyundai</a>
+          <span>/</span>
+          <span>Sửa</span>
+        </nav>
+        <h2 th:text="${'Sửa hãng xe · ' + form.name}">Sửa hãng xe</h2>
+      </div>
+    </div>
+  </div>
+
+  <form class="catalog-form" method="post" th:action="@{/consignment/brands}">
+    <input type="hidden" name="id" th:value="${form.id}">
+    <div class="form-row">
+      <div class="field">
+        <label>Tên hãng <span class="req">*</span></label>
+        <input type="text" name="name" required th:value="${form.name}">
+      </div>
+      <div class="field">
+        <label>Trạng thái</label>
+        <select name="status">
+          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
+          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Ghi chú</label>
+        <input type="text" name="note" th:value="${form.note}">
+      </div>
+    </div>
+    <div class="catalog-actions">
+      <button class="btn-c btn-c--primary" type="submit">Lưu thay đổi</button>
+      <a class="btn-c btn-c--ghost" th:href="@{/consignment/brands/{id}(id=${form.id})}">Huỷ</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<!--/* Đỗ Lan Anh: Màn Đặt lịch xem xe và Đổi lịch xem xe. Có biến viewing là đang đổi lịch.
+       Đổi xong lịch quay về Đã đặt, Sales phải xác nhận lại với khách. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(${viewing != null ? 'Đổi lịch xem xe' : 'Đặt lịch xem xe'}, 'Kinh doanh', 'sales-inquiries',
+                    null, ~{::link}, ~{::#inquiry-viewing})}">
+<head>
+  <title>Lịch xem xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+  </th:block>
+</head>
+<body>
+<div id="inquiry-viewing" class="create-wrap inq-form-page"
+     th:with="title=${viewing != null ? 'Đổi lịch xem xe' : 'Đặt lịch xem xe'},
+              action=${viewing != null ? '/sales/inquiries/' + item.id + '/viewings/' + viewing.id : '/sales/inquiries/' + item.id + '/viewings'}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg></div>
+      <div>
+        <h2 th:text="${title}">Lịch xem xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/sales/inquiries}">Tư vấn &amp; lịch xem xe</a>
+          <span>/</span>
+          <a th:href="@{/sales/inquiries/{id}(id=${item.id})}" th:text="${item.code}">TV</a>
+          <span>/</span>
+          <span th:text="${title}">Lịch</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
+
+  <form class="inq-form" method="post" th:action="@{${action}}">
+    <div class="inq-viewing-grid">
+      <section class="section-card">
+        <div class="section-head">
+          <svg th:replace="~{shell/icons :: icon('clock')}"></svg>
+          <h3>Thời gian và địa điểm</h3>
+        </div>
+        <div class="section-body">
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label for="v-date-display">Ngày hẹn <span class="req">*</span></label>
+              <!--/* shell.js hiện dd/mm/yyyy và mở lịch; ô native giữ giá trị yyyy-MM-dd để gửi đi */-->
+              <div class="date-range" data-date-range lang="vi-VN">
+                <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+                <label class="date-range-field">
+                  <span class="sr-only">Ngày hẹn</span>
+                  <input class="date-range-display" id="v-date-display" type="text" inputmode="numeric" maxlength="10"
+                         placeholder="dd/mm/yyyy" autocomplete="off">
+                  <input class="date-range-native" type="date" name="date" required lang="vi-VN"
+                         th:min="${today}" th:value="${form['date']}" tabindex="-1" aria-hidden="true">
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="v-time">Giờ bắt đầu <span class="req">*</span></label>
+              <span class="select">
+                <select id="v-time" name="time" required>
+                  <option th:each="s : ${slots}" th:value="${s}" th:text="${s}" th:selected="${s == form['time']}">09:00</option>
+                </select>
+              </span>
+            </div>
+            <div class="field">
+              <label for="v-minutes">Thời lượng</label>
+              <span class="select">
+                <select id="v-minutes" name="minutes">
+                  <option th:each="d : ${durations}" th:value="${d}" th:text="${d + ' phút'}"
+                          th:selected="${d.toString() == form['minutes']}">45 phút</option>
+                </select>
+              </span>
+            </div>
+            <div class="field">
+              <label for="v-place">Địa điểm <span class="req">*</span></label>
+              <span class="select">
+                <select id="v-place" name="place" required>
+                  <option th:each="p : ${places}" th:value="${p}" th:text="${p}" th:selected="${p == form['place']}">Showroom</option>
+                </select>
+              </span>
+            </div>
+          </div>
+          <fieldset class="inq-need inq-need--2">
+            <legend>Loại lịch <span class="req">*</span></legend>
+            <label th:each="t : ${viewingTypes}">
+              <input type="radio" name="type" th:value="${t.key}" th:checked="${t.key == form['type']}" required>
+              <span th:text="${t.value}">Loại</span>
+            </label>
+          </fieldset>
+          <div class="field">
+            <label for="v-note">Ghi chú lịch</label>
+            <textarea class="field-textarea" id="v-note" name="viewingNote" rows="3" maxlength="1000"
+                      th:text="${form['viewingNote'] ?: form['note']}" placeholder="Ví dụ: khách đi cùng gia đình"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <aside class="create-sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-card-head">
+            <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+            <h4>Thông tin tư vấn</h4>
+          </div>
+          <div class="sidebar-card-body">
+            <div class="inq-summary">
+              <strong th:text="${item.buyer}">Khách</strong>
+              <small th:text="${item.phone}">SĐT</small>
+            </div>
+            <div class="inq-summary">
+              <strong th:text="${item.car}">Xe</strong>
+              <small th:text="${#numbers.formatInteger(item.price, 1, 'POINT') + ' ₫ · ' + item.color}">Giá</small>
+            </div>
+            <div class="inq-summary" th:if="${viewing != null}"
+                 th:with="start=${#temporals.createDateTime(viewing.start)}">
+              <strong>Lịch hiện tại</strong>
+              <small th:text="${#temporals.format(start, 'dd/MM/yyyy') + ' · ' + #temporals.format(start, 'HH:mm') + ' – ' + viewing.end + ' · ' + viewing.place}">Lịch</small>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="create-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/sales/inquiries/{id}(id=${item.id})}">Hủy</a>
+      <button class="btn-c btn-c--primary" type="submit" th:text="${viewing != null ? 'Lưu lịch mới' : 'Đặt lịch'}">Đặt lịch</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

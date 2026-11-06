@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: màn Đăng tin bán xe.
+       Model (InspectorListingsWebController): ready, picked, staffs.
+       Vào từ: Đăng tin ở Kiểm định xe (?vehicleId= → picked) hoặc Tạo mới ở Quản lý tin đăng (picked = null).
+       Chờ BE: POST /inspector/listings → VehicleSaleNews. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Đăng tin', 'Kiểm định và tiếp nhận xe', 'inspector-listings',
+                    null, ~{::link}, ~{::#news-create})}">
+<head>
+  <title>Đăng tin</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news-create.css}">
+    <script th:src="@{/js/app/inspector-news-create.js}" defer></script>
+  </th:block>
+</head>
+<body>
+<div id="news-create" class="create-wrap">
+
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('megaphone')}"></svg></div>
+      <div>
+        <h2>Đăng tin bán xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <a th:href="@{/inspector/listings}">Quản lý tin đăng</a>
+          <span>/</span>
+          <span>Đăng tin</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash" id="news-flash" role="status" hidden></p>
+
+  <!--/* Form GET riêng cho ô chọn xe: chọn xong tải lại trang để nạp thông tin xe. */-->
+  <form id="news-pick" method="get" th:action="@{/inspector/listings/new}" hidden></form>
+
+  <form class="news-form" id="news-form" method="post" enctype="multipart/form-data"
+        th:action="@{/inspector/listings}">
+    <input type="hidden" name="vehicleId" th:if="${picked != null}" th:value="${picked.id}">
+
+    <div class="create-layout">
+      <div class="news-main">
+        <section class="section-card">
+          <div class="section-head">
+            <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+            <h3>Xe đăng bán</h3>
+            <a class="news-change" th:if="${picked != null}" th:href="@{/inspector/listings/new}">Đổi xe</a>
+          </div>
+          <div class="section-body">
+            <div class="field" th:if="${picked == null}">
+              <label for="news-vehicle">Chọn xe đã kiểm định <span class="req">*</span></label>
+              <span class="select">
+                <select id="news-vehicle" name="vehicleId" form="news-pick" onchange="this.form.requestSubmit()">
+                  <option value="">Chọn xe cần đăng tin</option>
+                  <option th:each="v : ${ready}" th:value="${v.id}"
+                          th:text="${v.code + ' · ' + v.car + ' · ' + v.owner}">Xe</option>
+                </select>
+              </span>
+              <small class="news-hint">Chọn xe để nạp thông tin và giá đã định giá vào tin.</small>
+            </div>
+
+            <th:block th:if="${picked != null}">
+              <div class="news-vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <div>
+                  <strong th:text="${picked.car + ' ' + picked.year}">Xe</strong>
+                  <small th:text="${'Hồ sơ ' + picked.code + ' · Chủ xe ' + picked.owner}">Hồ sơ · Chủ xe</small>
+                </div>
+                <span class="pill pill--approved"
+                      th:text="${picked.inspected == '' ? 'Đã kiểm định' : 'Đã kiểm định ' + picked.inspected}">Đã kiểm định</span>
+              </div>
+              <dl class="news-specs">
+                <div><dt>Biển số</dt><dd th:text="${picked.plate}">—</dd></div>
+                <div><dt>Số km</dt><dd th:text="${#numbers.formatInteger(picked.km, 1, 'POINT') + ' km'}">—</dd></div>
+                <div><dt>Loại xe</dt><dd th:text="${picked.type}">—</dd></div>
+                <div><dt>Màu sắc</dt><dd th:text="${picked.color}">—</dd></div>
+                <div><dt>Hộp số</dt><dd th:text="${picked.gearbox}">—</dd></div>
+                <div><dt>Nhiên liệu</dt><dd th:text="${picked.fuel}">—</dd></div>
+                <div class="news-spec-wide"><dt>Số VIN</dt><dd th:text="${picked.vin}">—</dd></div>
+              </dl>
+            </th:block>
+          </div>
+        </section>
+
+        <!--/* Chưa chọn xe thì khóa toàn bộ phần nhập */-->
+        <fieldset class="news-fields" th:disabled="${picked == null}">
+          <section class="section-card">
+            <div class="section-head">
+              <svg th:replace="~{shell/icons :: icon('file')}"></svg>
+              <h3>Nội dung tin</h3>
+            </div>
+            <div class="section-body">
+              <div class="field">
+                <label for="news-title">Tiêu đề <span class="req">*</span></label>
+                <div class="field-input">
+                  <input id="news-title" type="text" name="title" maxlength="200" required
+                         placeholder="Ví dụ: Hyundai Tucson 2.0 2022"
+                         th:value="${picked != null ? picked.car + ' ' + picked.year : ''}">
+                </div>
+                <small class="field-hint" data-count="title">0/200</small>
+              </div>
+              <div class="field">
+                <label for="news-body">Mô tả <span class="req">*</span></label>
+                <textarea class="field-textarea" id="news-body" name="body" rows="6" maxlength="8000" required
+                          placeholder="Tình trạng xe, lịch sử bảo dưỡng, đồ đi kèm..."></textarea>
+                <small class="field-hint" data-count="body">0/8000</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-head">
+              <svg th:replace="~{shell/icons :: icon('coins')}"></svg>
+              <h3>Giá và người phụ trách</h3>
+            </div>
+            <div class="section-body">
+              <div class="form-row form-row--3">
+                <div class="field">
+                  <label for="news-price">Giá niêm yết <span class="req">*</span></label>
+                  <div class="field-input">
+                    <input id="news-price" type="text" inputmode="numeric" maxlength="15" autocomplete="off" required
+                           placeholder="Ví dụ: 769.000.000"
+                           th:value="${picked != null ? #numbers.formatInteger(picked.proposed, 1, 'POINT') : ''}">
+                    <span class="news-unit">₫</span>
+                  </div>
+                  <input type="hidden" name="listPrice" th:value="${picked != null ? picked.proposed : ''}">
+                  <small class="news-hint" th:if="${picked != null}"
+                         th:text="${'Giá đã định giá: ' + #numbers.formatInteger(picked.proposed, 1, 'POINT') + ' ₫'}">Giá đã định giá</small>
+                </div>
+                <div class="field">
+                  <label for="news-staff">Người phụ trách <span class="req">*</span></label>
+                  <span class="select">
+                    <!--/* Chờ BE: chọn sẵn người đang đăng nhập. */-->
+                    <select id="news-staff" name="assignedToId" required>
+                      <option th:each="p : ${staffs}" th:value="${p.id}" th:text="${p.name}">Nhân viên</option>
+                    </select>
+                  </span>
+                </div>
+                <div class="field">
+                  <label for="news-status">Trạng thái tin <span class="req">*</span></label>
+                  <span class="select">
+                    <select id="news-status" name="status" required>
+                      <option value="LISTED" selected>Đang hiển thị</option>
+                      <option value="PAUSED">Tạm ẩn</option>
+                    </select>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section-card">
+            <div class="section-head">
+              <svg th:replace="~{shell/icons :: icon('box')}"></svg>
+              <h3>Hình ảnh xe</h3>
+              <span class="section-hint-pill" data-photo-count>0/10 ảnh</span>
+            </div>
+            <div class="section-body">
+              <div class="photo-grid" data-photo-grid>
+                <label class="photo-add" data-photo-add>
+                  <svg th:replace="~{shell/icons :: icon('plus')}"></svg>
+                  Thêm ảnh
+                  <small>JPG hoặc PNG</small>
+                  <input class="sr-only" type="file" name="images" accept=".jpg,.jpeg,.png" multiple data-photo-input>
+                </label>
+              </div>
+              <small class="news-hint">Mỗi ảnh tối đa 10MB. Ảnh đầu tiên là ảnh bìa của tin.</small>
+              <p class="news-error" data-photo-error role="alert" hidden></p>
+            </div>
+          </section>
+        </fieldset>
+      </div>
+
+      <aside class="create-sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-card-head">
+            <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+            <h4>Xem trước tin</h4>
+          </div>
+          <div class="news-preview">
+            <div class="news-preview-cover" data-preview-cover>
+              <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+            </div>
+            <strong data-preview-title>Tiêu đề tin</strong>
+            <b data-preview-price>Giá niêm yết</b>
+            <small th:if="${picked != null}"
+                   th:text="${picked.year + ' · ' + #numbers.formatInteger(picked.km, 1, 'POINT') + ' km · ' + picked.fuel}">Năm · km · nhiên liệu</small>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <div class="sidebar-card-head">
+            <svg th:replace="~{shell/icons :: icon('clipboard')}"></svg>
+            <h4>Kiểm tra trước khi đăng</h4>
+          </div>
+          <div class="sidebar-card-body">
+            <div class="checklist">
+              <div class="checklist-item" data-check="vehicle"
+                   th:classappend="${picked != null ? 'is-done' : 'is-pending'}">
+                <svg th:replace="~{shell/icons :: icon('check')}"></svg>Đã chọn xe
+              </div>
+              <div class="checklist-item is-pending" data-check="title">
+                <svg th:replace="~{shell/icons :: icon('check')}"></svg>Có tiêu đề
+              </div>
+              <div class="checklist-item is-pending" data-check="body">
+                <svg th:replace="~{shell/icons :: icon('check')}"></svg>Có mô tả
+              </div>
+              <div class="checklist-item is-pending" data-check="price">
+                <svg th:replace="~{shell/icons :: icon('check')}"></svg>Có giá niêm yết
+              </div>
+              <div class="checklist-item is-pending" data-check="photos">
+                <svg th:replace="~{shell/icons :: icon('check')}"></svg>Có ít nhất 1 ảnh
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="create-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/inspector/listings}">Hủy</a>
+      <button class="btn-c btn-c--primary" type="submit" data-publish disabled>
+        <svg th:replace="~{shell/icons :: icon('check')}"></svg>Lưu
+      </button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

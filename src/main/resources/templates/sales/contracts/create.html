@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<!--/* Đỗ Lan Anh: màn Tạo, xem Hợp đồng bán xe, giao diện văn bản pháp lý giống Hợp đồng ký gửi (dùng chung
+       consignment-contracts.css và consignment-contracts.js cho phần ký tên, nên giữ id contract-create).
+       Chỉ lập từ phiếu đặt cọc còn hiệu lực. Bản nháp sửa được, ký xong khóa nội dung.
+       Nút Thanh toán để sẵn cho luồng Thanh toán của Vũ Mạnh Cường, chưa nối. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(${contract != null ? contract.code : 'Tạo hợp đồng bán xe'}, 'Kinh doanh', 'sales-contracts',
+                    null, ~{::link}, ~{::#contract-create})}">
+<head>
+  <title>Hợp đồng bán xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <script th:src="@{/js/app/consignment-contracts.js}" defer></script>
+    <script th:src="@{/js/app/sales-deals.js}" defer></script>
+  </th:block>
+</head>
+<body>
+<div id="contract-create" class="contracts-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('handshake')}"></svg></div>
+      <div>
+        <h2>Hợp đồng bán xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/sales/contracts}">Hợp đồng bán xe</a>
+          <span>/</span>
+          <span th:text="${contract != null ? contract.code : 'Tạo mới'}">Tạo mới</span>
+        </nav>
+      </div>
+      <span class="pill" th:if="${contract != null}" th:with="s=${statuses.get(contract.status)}"
+            th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Lưu nháp</span>
+    </div>
+    <div class="contracts-header-actions" th:if="${contract != null}">
+      <button type="button" class="btn-c btn-c--outline" data-print>
+        <svg th:replace="~{shell/icons :: icon('file')}"></svg>In hợp đồng
+      </button>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
+
+  <!--/* Vào từ nút Tạo mới: phải chọn phiếu đặt cọc còn hiệu lực trước */-->
+  <section class="csb-card deal-pick" th:if="${contract == null}">
+    <div class="csb-head">
+      <svg th:replace="~{shell/icons :: icon('coins')}"></svg>
+      <h4>Chọn phiếu đặt cọc</h4>
+    </div>
+    <form class="csb-body" method="get" th:action="@{/sales/contracts/new}" th:unless="${#lists.isEmpty(reservations)}">
+      <label for="deal-reservation">Phiếu đặt cọc còn hiệu lực <span class="req">*</span></label>
+      <span class="select">
+        <select id="deal-reservation" name="reservationId" required data-auto-submit>
+          <option value="">Chọn phiếu đặt cọc</option>
+          <option th:each="r : ${reservations}" th:value="${r.id}"
+                  th:text="${r.code + ' · ' + r.buyer + ' · ' + r.car + ' · ' + r.plate}">Phiếu</option>
+        </select>
+      </span>
+      <small class="deal-hint">Đặt cọc giữ xe xong mới lập được hợp đồng.</small>
+    </form>
+    <div class="csb-body" th:if="${#lists.isEmpty(reservations)}">
+      <p class="muted">Chưa có phiếu đặt cọc nào còn hiệu lực.
+        <a class="deal-link" th:href="@{/sales/reservations/new}">Tạo phiếu đặt cọc</a> trước.</p>
+    </div>
+  </section>
+
+  <form class="contracts-wrap" id="contract-form" method="post" th:if="${contract != null}"
+        th:action="${contract.id != null} ? @{/sales/contracts/{id}(id=${contract.id})} : @{/sales/contracts}"
+        th:with="created=${#temporals.createDateTime(contract.created)}">
+    <input type="hidden" name="reservationId" th:value="${contract.reservationId}">
+
+    <div class="contracts-layout">
+      <div class="contract-doc">
+        <div class="contract-republic-block">
+          <div class="contract-republic">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
+          <div class="contract-freedom">Độc lập – Tự do – Hạnh phúc</div>
+          <hr class="contract-underline-row">
+        </div>
+
+        <div class="contract-title-block">
+          <div class="contract-doc-title">Hợp đồng mua bán xe</div>
+          <div class="contract-doc-num">
+            <span th:text="${'Số: ' + contract.code}">Số</span>
+            &nbsp;&nbsp;
+            <span th:text="${'TP. Hồ Chí Minh, ngày ' + #temporals.format(created, 'dd') + ' tháng ' + #temporals.format(created, 'MM') + ' năm ' + #temporals.format(created, 'yyyy')}">Ngày</span>
+          </div>
+        </div>
+
+        <div class="contract-preamble">
+          <p>Căn cứ <strong>Bộ luật Dân sự năm 2015</strong> và các văn bản pháp luật liên quan;</p>
+          <p>Căn cứ <strong>Luật Thương mại năm 2005</strong>;</p>
+          <p>Căn cứ hợp đồng ký gửi của hồ sơ <strong th:text="${contract.file}">KG</strong> và phiếu đặt cọc
+            <strong th:text="${contract.reservationCode}">DC</strong>, hai bên thống nhất ký kết
+            <strong>Hợp đồng mua bán xe</strong> với các điều khoản như sau:</p>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('user')}"></svg>Điều 1. Các bên tham gia hợp đồng</div>
+          <div class="article-body">
+            <div class="parties-grid">
+              <div class="party-block">
+                <div class="party-label">Bên bán (Bên A)</div>
+                <div class="contract-row deal-row"><span class="cl">Công ty:</span>
+                  <span class="cv deal-strong">Công ty CP AutoTrade</span></div>
+                <div class="contract-row deal-row"><span class="cl">MST:</span><span class="cv">0312345678</span></div>
+                <div class="contract-row deal-row"><span class="cl">Địa chỉ:</span>
+                  <span class="cv">Khu Công nghệ cao, TP. Thủ Đức, TP. HCM</span></div>
+                <div class="contract-row deal-row"><span class="cl">Đại diện:</span>
+                  <span class="cv">Nguyễn Việt Hải – Trưởng phòng Kinh doanh</span></div>
+                <div class="contract-row deal-row"><span class="cl">Chủ xe:</span>
+                  <span class="cv" th:text="${contract.owner + ' (ký gửi)'}">Chủ xe</span></div>
+              </div>
+              <div class="party-block">
+                <div class="party-label">Bên mua (Bên B)</div>
+                <div class="contract-row deal-row"><span class="cl">Họ và tên:</span>
+                  <span class="cv deal-strong" th:text="${contract.buyer}">Người mua</span></div>
+                <div class="contract-row deal-row"><span class="cl">SĐT:</span>
+                  <span class="cv" th:text="${contract.phone}">SĐT</span></div>
+                <div class="contract-row deal-row"><span class="cl">Số CCCD:</span>
+                  <span class="cv"><input class="inline-field" name="buyerIdNumber" maxlength="12" inputmode="numeric"
+                    aria-label="Số CCCD người mua" th:value="${contract.buyerIdNumber}" th:readonly="${!editable}"
+                    placeholder="12 số"></span></div>
+                <div class="contract-row deal-row"><span class="cl">Địa chỉ:</span>
+                  <span class="cv"><input class="inline-field" name="buyerAddress" maxlength="500"
+                    aria-label="Địa chỉ người mua" th:value="${contract.buyerAddress}" th:readonly="${!editable}"
+                    placeholder="Địa chỉ thường trú"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('car')}"></svg>Điều 2. Thông tin xe mua bán</div>
+          <div class="article-body">
+            <div class="vehicle-contract-grid">
+              <div class="vehicle-contract-img"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
+              <div class="vehicle-contract-fields">
+                <div class="contract-row deal-row--car"><span class="cl">Hãng xe:</span><span class="cv" th:text="${contract.make}">Hãng</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Dòng xe:</span><span class="cv" th:text="${contract.model}">Dòng</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Năm SX:</span><span class="cv" th:text="${contract.year}">Năm</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Màu sắc:</span><span class="cv" th:text="${contract.color}">Màu</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Biển số:</span><span class="cv" th:text="${contract.plate}">Biển số</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Số km:</span>
+                  <span class="cv" th:text="${#numbers.formatInteger(contract.km, 1, 'POINT') + ' km'}">0 km</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Nhiên liệu:</span><span class="cv" th:text="${contract.fuel}">Xăng</span></div>
+                <div class="contract-row deal-row--car"><span class="cl">Mã hồ sơ:</span><span class="cv" th:text="${contract.file}">KG</span></div>
+                <div class="contract-row deal-row--car deal-row--wide"><span class="cl">VIN:</span>
+                  <span class="cv deal-strong" th:text="${contract.vin}">VIN</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('coins')}"></svg>Điều 3. Giá bán và tiền cọc</div>
+          <div class="article-body">
+            <div class="terms-inline-row" th:attr="data-deposit=${contract.deposit}">
+              <div class="terms-inline-field">
+                <label for="deal-sale-price">Giá bán <span class="req">*</span></label>
+                <div class="field-row">
+                  <input id="deal-sale-price" name="salePrice" inputmode="numeric" maxlength="17" data-money required
+                         th:value="${#numbers.formatInteger(contract.salePrice, 1, 'POINT')}" th:readonly="${!editable}">
+                  <span>VNĐ</span>
+                </div>
+              </div>
+              <div class="terms-inline-field">
+                <label for="deal-deposit-value">Tiền cọc đã đặt</label>
+                <div class="field-row">
+                  <input id="deal-deposit-value" readonly th:value="${#numbers.formatInteger(contract.deposit, 1, 'POINT')}">
+                  <span>VNĐ</span>
+                </div>
+              </div>
+              <div class="terms-inline-field">
+                <label for="deal-remaining">Còn phải thanh toán</label>
+                <div class="field-row">
+                  <input id="deal-remaining" readonly data-contract-remaining
+                         th:value="${#numbers.formatInteger(contract.remaining, 1, 'POINT')}">
+                  <span>VNĐ</span>
+                </div>
+              </div>
+              <div class="terms-inline-field">
+                <label for="deal-listed">Giá niêm yết</label>
+                <div class="field-row">
+                  <input id="deal-listed" readonly th:value="${#numbers.formatInteger(contract.listedPrice, 1, 'POINT')}">
+                  <span>VNĐ</span>
+                </div>
+              </div>
+              <div class="terms-inline-field">
+                <label for="deal-ref">Phiếu đặt cọc</label>
+                <div class="field-row"><input id="deal-ref" readonly th:value="${contract.reservationCode}"><span></span></div>
+              </div>
+              <div class="terms-inline-field">
+                <label for="deal-method">Hình thức thanh toán</label>
+                <div class="field-row"><input id="deal-method" readonly value="Chuyển khoản"><span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('coins')}"></svg>Điều 4. Điều khoản thanh toán</div>
+          <div class="article-body">
+            <textarea class="terms-textarea" name="paymentTerms" rows="4" maxlength="2000" aria-label="Điều khoản thanh toán"
+                      th:readonly="${!editable}" th:text="${contract.paymentTerms}"></textarea>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('car')}"></svg>Điều 5. Bàn giao xe và sang tên</div>
+          <div class="article-body">
+            <textarea class="terms-textarea" name="handoverTerms" rows="4" maxlength="2000" aria-label="Điều khoản bàn giao và sang tên"
+                      th:readonly="${!editable}" th:text="${contract.handoverTerms}"></textarea>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('close')}"></svg>Điều 6. Chấm dứt hợp đồng</div>
+          <div class="article-body">
+            <textarea class="terms-textarea" name="terminationTerms" rows="4" maxlength="2000" aria-label="Điều khoản chấm dứt hợp đồng"
+                      th:readonly="${!editable}" th:text="${contract.terminationTerms}"></textarea>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="article">
+          <div class="article-heading"><svg th:replace="~{shell/icons :: icon('info')}"></svg>Điều 7. Điều khoản chung</div>
+          <div class="article-body">
+            <p>Hợp đồng này gồm <strong>07 Điều</strong>, được lập thành <strong>02 bản</strong> có giá trị pháp lý như nhau,
+              mỗi bên giữ <strong>01 bản</strong>. Mọi sửa đổi, bổ sung chỉ có hiệu lực khi lập thành văn bản và có chữ ký
+              của cả hai bên. Tranh chấp phát sinh được giải quyết bằng thương lượng; nếu không thành, đưa ra Tòa án nhân dân
+              TP. Hồ Chí Minh giải quyết theo quy định pháp luật.</p>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <div class="contract-signatures">
+          <div class="sig-block">
+            <div class="sig-role">Bên bán (Bên A)</div>
+            <div class="sig-note">(Ký, ghi rõ họ tên &amp; đóng dấu)</div>
+            <th:block th:if="${editable}">
+              <input type="hidden" name="sellerSignature" data-sig-input="party-a">
+              <div class="sig-pad" data-sig="party-a">
+                <canvas class="sig-canvas" aria-label="Ký tên bên bán"></canvas>
+                <span class="sig-placeholder">Chạm để ký tên</span>
+              </div>
+              <button type="button" class="sig-clear" hidden>Ký lại</button>
+            </th:block>
+            <div class="sig-pad deal-sig" th:unless="${editable}">
+              <img th:if="${contract.sellerSignature != ''}" th:src="${contract.sellerSignature}" alt="Chữ ký bên bán">
+              <span th:if="${contract.sellerSignature == ''}" th:text="${isSigned ? 'Đã ký' : 'Chưa ký'}">Đã ký</span>
+            </div>
+            <div class="sig-name">Nguyễn Việt Hải</div>
+            <div class="sig-title-role">Đại diện công ty</div>
+          </div>
+          <div class="sig-block">
+            <div class="sig-role">Bên mua (Bên B)</div>
+            <div class="sig-note">(Ký và ghi rõ họ tên)</div>
+            <th:block th:if="${editable}">
+              <input type="hidden" name="buyerSignature" data-sig-input="party-b">
+              <div class="sig-pad" data-sig="party-b">
+                <canvas class="sig-canvas" aria-label="Ký tên bên mua"></canvas>
+                <span class="sig-placeholder">Chạm để ký tên</span>
+              </div>
+              <button type="button" class="sig-clear" hidden>Ký lại</button>
+            </th:block>
+            <div class="sig-pad deal-sig" th:unless="${editable}">
+              <img th:if="${contract.buyerSignature != ''}" th:src="${contract.buyerSignature}" alt="Chữ ký bên mua">
+              <span th:if="${contract.buyerSignature == ''}" th:text="${isSigned ? 'Đã ký' : 'Chưa ký'}">Đã ký</span>
+            </div>
+            <div class="sig-name" th:text="${contract.buyer}">Người mua</div>
+            <div class="sig-title-role">Người mua xe</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="contracts-sidebar">
+        <div class="csb-card">
+          <div class="csb-head">
+            <svg th:replace="~{shell/icons :: icon('clipboard')}"></svg>
+            <h4>Thông tin hợp đồng</h4>
+          </div>
+          <div class="csb-body">
+            <div class="meta-row"><span class="mk">Số hợp đồng</span><span class="mv code" th:text="${contract.code}">HĐ</span></div>
+            <div class="meta-row"><span class="mk">Phiếu đặt cọc</span>
+              <a class="mv code" th:href="@{/sales/reservations/{id}(id=${contract.reservationId})}" th:text="${contract.reservationCode}">DC</a></div>
+            <div class="meta-row"><span class="mk">Mã hồ sơ</span><span class="mv code" th:text="${contract.file}">KG</span></div>
+            <hr class="meta-sep">
+            <div class="meta-row"><span class="mk">Người mua</span><span class="mv" th:text="${contract.buyer}">Người mua</span></div>
+            <div class="meta-row"><span class="mk">Nhân viên</span><span class="mv" th:text="${contract.staff}">Nhân viên</span></div>
+            <hr class="meta-sep">
+            <div class="meta-row"><span class="mk">Ngày tạo</span>
+              <span class="mv" th:text="${#temporals.format(created, 'dd/MM/yyyy HH:mm')}">01/01/2026</span></div>
+            <div class="meta-row" th:if="${isSigned}"><span class="mk">Ngày ký</span>
+              <span class="mv" th:text="${#temporals.format(#temporals.createDate(contract.signedOn), 'dd/MM/yyyy')}">01/01/2026</span></div>
+          </div>
+        </div>
+
+        <div class="csb-card">
+          <div class="csb-head">
+            <svg th:replace="~{shell/icons :: icon('flow')}"></svg>
+            <h4>Tiến độ xử lý</h4>
+          </div>
+          <div class="csb-body">
+            <div class="timeline">
+              <div class="tl-item" th:each="s, st : ${steps}" th:classappend="${s.state == 'current'} ? 'is-current'">
+                <div class="tl-line-wrap">
+                  <div class="tl-dot" th:classappend="${s.state}">
+                    <svg th:replace="~{shell/icons :: icon(${s.state == 'done' ? 'check' : 'clock'})}"></svg>
+                  </div>
+                  <div class="tl-connector" th:unless="${st.last}" th:classappend="${s.state == 'done'} ? 'done'"></div>
+                </div>
+                <div class="tl-text">
+                  <strong th:text="${s.label}">Bước</strong>
+                  <small th:text="${s.note}">Ghi chú</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="csb-card" th:if="${editable}">
+          <div class="csb-head">
+            <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+            <h4>Chữ ký hợp đồng</h4>
+          </div>
+          <div class="csb-body sig-preview-grid">
+            <div class="sig-preview">
+              <div class="sig-preview-label">Bên bán</div>
+              <div class="sig-preview-box" data-sig-preview="party-a"><span>Chưa ký</span></div>
+              <div class="sig-preview-name">Nguyễn Việt Hải</div>
+            </div>
+            <div class="sig-preview">
+              <div class="sig-preview-label">Bên mua</div>
+              <div class="sig-preview-box" data-sig-preview="party-b"><span>Chưa ký</span></div>
+              <div class="sig-preview-name" th:text="${contract.buyer}">Người mua</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="contracts-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/sales/contracts}">
+        <svg th:replace="~{shell/icons :: icon('undo')}"></svg>Quay lại danh sách
+      </a>
+      <div class="contracts-actions-right">
+        <!--/* Vũ Mạnh Cường nối nút này sang luồng Thanh toán. */-->
+        <button type="button" class="btn-c btn-c--outline" disabled title="Thuộc luồng Thanh toán, sẽ nối sau">
+          <svg th:replace="~{shell/icons :: icon('coins')}"></svg>Thanh toán
+        </button>
+        <button type="submit" class="btn-c btn-c--secondary" name="intent" value="draft" th:if="${editable}">Lưu nháp</button>
+        <button type="submit" class="btn-c btn-c--primary" name="intent" value="sign" th:if="${editable}">
+          <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>Ký hợp đồng
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+</body>
+</html>

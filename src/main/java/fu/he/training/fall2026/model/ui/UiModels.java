@@ -2,7 +2,7 @@ package fu.he.training.fall2026.model.ui;
 
 import java.util.List;
 
-/** Read models for the UI preview. They are not persistence entities. */
+/** Read models for Thymeleaf screens. They are not persistence entities. */
 public final class UiModels {
     private UiModels() { }
     public record Role(String key, String label, String userName, String initials) { }

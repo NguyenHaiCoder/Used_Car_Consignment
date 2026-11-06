@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--/* UI-only: danh sách hãng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Quản lý hãng xe', 'Hệ thống Quản lý Ký gửi xe', 'brands',
+                    null, ~{::link}, ~{::#brand-list})}">
+<head>
+  <title>Quản lý hãng xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="brand-list" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('tag')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/consignments}">Consignment</a>
+          <span>/</span>
+          <span>Quản lý danh mục</span>
+          <span>/</span>
+          <span>Hãng xe</span>
+        </nav>
+        <h2>Quản lý hãng xe</h2>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/consignment/brands/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Thêm hãng xe
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <section class="kpis" aria-label="Thống kê hãng xe">
+    <article th:replace="~{shell/ui :: kpi('tag', 'Tổng hãng', ${total})}"></article>
+    <article th:replace="~{shell/ui :: kpi('check', 'Đang dùng', ${activeCount})}"></article>
+    <article th:replace="~{shell/ui :: kpi('box', 'Ngưng hoạt động', ${total - activeCount})}"></article>
+  </section>
+
+  <form class="card toolbar toolbar--catalog" method="get" th:action="@{/consignment/brands}">
+    <input type="hidden" name="status" th:if="${status != null and !#strings.isEmpty(status)}" th:value="${status}">
+    <input type="hidden" name="size" th:value="${size}">
+    <label class="search">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <input type="search" name="q" th:value="${q}" placeholder="Tìm theo tên hãng...">
+    </label>
+    <details class="filter-dropdown">
+      <summary class="filter-dropdown-trigger" aria-label="Lọc theo trạng thái">
+        <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
+        <span th:text="${status == 'ACTIVE'} ? 'Đang dùng' : (${status == 'INACTIVE'} ? 'Ngưng hoạt động' : 'Tất cả trạng thái')">Tất cả trạng thái</span>
+        <span class="filter-dropdown-caret" aria-hidden="true">
+          <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+        </span>
+      </summary>
+      <div class="filter-dropdown-menu" role="listbox" aria-label="Trạng thái">
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == null or status == ''} ? 'is-active'"
+           th:href="@{/consignment/brands(q=${q},size=${size})}"
+           th:attr="aria-selected=${status == null or status == ''}">Tất cả trạng thái</a>
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == 'ACTIVE'} ? 'is-active'"
+           th:href="@{/consignment/brands(q=${q},status='ACTIVE',size=${size})}"
+           th:attr="aria-selected=${status == 'ACTIVE'}">Đang dùng</a>
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == 'INACTIVE'} ? 'is-active'"
+           th:href="@{/consignment/brands(q=${q},status='INACTIVE',size=${size})}"
+           th:attr="aria-selected=${status == 'INACTIVE'}">Ngưng hoạt động</a>
+      </div>
+    </details>
+    <button class="btn btn--primary" type="submit">Tìm kiếm</button>
+  </form>
+
+  <section class="card records">
+    <header class="card-head">
+      <svg th:replace="~{shell/icons :: icon('list')}"></svg>
+      <h3 th:text="${'Danh sách hãng xe (' + page.totalElements + ')'}">Danh sách hãng xe</h3>
+    </header>
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mã</th>
+            <th>Tên hãng</th>
+            <th>Số dòng xe</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="b : ${page.content}">
+            <td th:text="${'HX-' + b.id}">HX-1</td>
+            <td>
+              <a class="code" th:href="@{/consignment/brands/{id}(id=${b.id})}" th:text="${b.name}">Hyundai</a>
+            </td>
+            <td th:text="${b.modelCount}">0</td>
+            <td>
+              <span class="pill" th:classappend="${b.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+                    th:text="${b.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+            </td>
+            <td>
+              <div class="row-actions">
+                <a class="row-action" th:href="@{/consignment/brands/{id}(id=${b.id})}" title="Xem">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+                <a class="row-action" th:href="@{/consignment/brands/{id}/edit(id=${b.id})}" title="Sửa">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </a>
+                <form method="post" th:action="@{/consignment/brands/{id}/deactivate(id=${b.id})}"
+                      th:if="${b.status == 'ACTIVE'}"
+                      onsubmit="return confirm('Ngưng hoạt động hãng xe này?');">
+                  <button class="row-action is-danger" type="submit" title="Ngưng hoạt động">
+                    <svg th:replace="~{shell/icons :: icon('trash')}"></svg>
+                  </button>
+                </form>
+                <form method="post" th:action="@{/consignment/brands/{id}/activate(id=${b.id})}"
+                      th:if="${b.status != 'ACTIVE'}"
+                      onsubmit="return confirm('Kích hoạt lại hãng xe này?');">
+                  <button class="row-action is-success" type="submit" title="Kích hoạt lại">
+                    <svg th:replace="~{shell/icons :: icon('check')}"></svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="catalog-empty" th:if="${page.empty}">Không có hãng xe phù hợp.</p>
+    <div th:replace="~{consignment/catalog-pager :: pager('/consignment/brands', 'hãng xe')}"></div>
+  </section>
+</div>
+</body>
+</html>

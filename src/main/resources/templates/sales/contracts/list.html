@@ -1,11 +1,125 @@
 <!DOCTYPE html>
+<!--/* Đỗ Lan Anh: màn Quản lý hợp đồng bán xe, thiết kế theo màn Quản lý tin đăng.
+       Dùng id news-list để ăn chung inspector-news.css và inspector-news.js, phần khác biệt nằm ở sales-deals.css. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Quản lý hợp đồng bán xe', 'Kinh doanh', 'sales-contracts',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Quản lý hợp đồng bán xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Hợp đồng bán xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/contracts/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--contracts">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('handshake')}"></svg></div>
+      <div>
+        <h2>Quản lý hợp đồng bán xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <span>Hợp đồng bán xe</span>
+        </nav>
+        <p class="news-lead">Lập và ký hợp đồng từ phiếu đặt cọc còn hiệu lực, mỗi phiếu tương ứng một hợp đồng.</p>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/sales/contracts/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tạo mới
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('HĐ')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm hợp đồng', 'Tìm theo số hợp đồng, mã cọc, xe, người mua...', 'Khoảng ngày tạo', 'Giá bán')}"></form>
+
+  <section class="card records">
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table" aria-label="Danh sách hợp đồng bán xe">
+        <thead>
+          <tr>
+            <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả hợp đồng trên trang"></th>
+            <th scope="col">Số hợp đồng</th>
+            <th scope="col">Mã đặt cọc</th>
+            <th scope="col">Xe</th>
+            <th scope="col">Người mua</th>
+            <th scope="col" class="num">Giá bán</th>
+            <th scope="col">Ngày tạo</th>
+            <th scope="col">Người phụ trách</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="c : ${page.content}" th:with="s=${statuses.get(c.status)}">
+            <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn hợp đồng ' + c.code}"></td>
+            <td><a class="code" th:href="@{/sales/contracts/{id}(id=${c.id})}" th:text="${c.code}">HĐ</a></td>
+            <td th:text="${c.reservationCode}">DC-1</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${c.car}" th:title="${c.car}">Xe</strong>
+                  <small th:text="${c.plate + ' · ' + #numbers.formatInteger(c.km, 1, 'POINT') + ' km'}">Biển số · km</small>
+                </span>
+              </div>
+            </td>
+            <td class="deal-person">
+              <strong th:text="${c.buyer}" th:title="${c.buyer}">Người mua</strong>
+              <small th:text="${c.phone}">SĐT</small>
+            </td>
+            <td class="num news-price" th:text="${#numbers.formatInteger(c.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</td>
+            <td class="news-date">
+              <span th:text="${#temporals.format(#temporals.createDateTime(c.created), 'dd/MM/yyyy')}">01/01/2026</span>
+              <small th:text="${#temporals.format(#temporals.createDateTime(c.created), 'HH:mm')}">00:00</small>
+            </td>
+            <td th:text="${c.staff}" th:title="${c.staff}">Nhân viên</td>
+            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td>
+              <div class="row-actions news-actions">
+                <a class="row-action" th:href="@{/sales/contracts/{id}(id=${c.id})}"
+                   th:attr="aria-label=${'Xem hợp đồng ' + c.code}" title="Xem hợp đồng">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+                <a class="row-action" th:if="${c.status == 'DRAFT'}" th:href="@{/sales/contracts/{id}(id=${c.id})}"
+                   th:attr="aria-label=${'Sửa hợp đồng ' + c.code}" title="Sửa hợp đồng">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </a>
+                <span class="row-action is-off" th:unless="${c.status == 'DRAFT'}" aria-hidden="true">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </span>
+                <details class="user-menu row-menu">
+                  <summary class="row-action" th:attr="aria-label=${'Thao tác khác cho ' + c.code}">
+                    <svg th:replace="~{shell/icons :: icon('dots')}"></svg>
+                  </summary>
+                  <div class="menu-pop">
+                    <a th:href="@{/sales/reservations/{id}(id=${c.reservationId})}">Xem phiếu đặt cọc</a>
+                    <a th:href="@{/sales/inquiries/{id}(id=${c.inquiryId})}">Xem tư vấn</a>
+                  </div>
+                </details>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có hợp đồng phù hợp</h4>
+      <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+    </div>
+    <nav th:replace="~{sales/deal-parts :: pager('hợp đồng')}"></nav>
+  </section>
+</div>
 </body>
 </html>

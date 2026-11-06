@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Tìm xe ký gửi theo hãng và mức giá. Xem thông tin xe và liên hệ tư vấn cùng GaragePro Consign.">
+  <title>Tin bán xe | GaragePro Consign</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/app/palette.css}">
+  <link rel="stylesheet" th:href="@{/css/app/public-header.css}">
+  <link rel="stylesheet" th:href="@{/css/app/public-sale-news.css}">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script th:src="@{/js/app/public-theme.js}" defer></script>
+  <script type="module" th:src="@{/js/app/public-sale-news.js}"></script>
+</head>
+<body data-theme="light">
+  <a class="skip-link" href="#main">Đến danh sách xe</a>
+  <header th:replace="~{public/header :: header('listings')}"></header>
+
+  <main id="main" class="sale-page" tabindex="-1">
+    <section class="sale-intro" aria-labelledby="page-title">
+      <div class="sale-container">
+        <nav class="sale-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Trang chủ</a><span aria-hidden="true">/</span><span aria-current="page">Tin bán xe</span>
+        </nav>
+        <div class="intro-content">
+          <div>
+            <p class="eyebrow">XE KÝ GỬI · THÔNG TIN MINH BẠCH</p>
+            <h1 id="page-title">Tin bán xe</h1>
+            <p class="intro-description">Chiếc xe phù hợp, trong tầm giá của bạn.<br>Khám phá xe ký gửi và liên hệ để được tư vấn.</p>
+          </div>
+          <div class="intro-note"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg><span>Xe đã kiểm định<br><strong>Yên tâm tìm hiểu</strong></span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sale-container listing-section" id="sale-news-page" aria-label="Danh sách tin bán xe">
+      <form id="listing-filters" class="listing-filters" role="search">
+        <div class="filter-search">
+          <label for="listing-search">Tìm chiếc xe của bạn</label>
+          <div class="search-input"><svg th:replace="~{shell/icons :: icon('search')}"></svg>
+            <input id="listing-search" name="q" type="search" maxlength="100" placeholder="Tên xe, hãng xe, năm sản xuất..." autocomplete="off">
+          </div>
+        </div>
+        <div class="filter-field"><label for="listing-brand">Hãng xe</label>
+          <select id="listing-brand" name="brand"><option value="">Tất cả hãng xe</option></select>
+        </div>
+        <div class="filter-field"><label for="listing-budget">Khoảng giá</label>
+          <select id="listing-budget" name="budget">
+            <option value="">Tất cả mức giá</option><option value="under-500">Dưới 500 triệu</option>
+            <option value="500-800">500 – dưới 800 triệu</option><option value="800-1000">800 triệu – dưới 1 tỷ</option>
+            <option value="over-1000">Từ 1 tỷ trở lên</option>
+          </select>
+        </div>
+        <button class="sale-button primary filter-submit" type="submit"><svg th:replace="~{shell/icons :: icon('search')}"></svg>Tìm xe</button>
+      </form>
+
+      <div class="results-toolbar">
+        <div><p id="listing-count" class="result-count" role="status" aria-live="polite" aria-atomic="true"></p>
+          <span class="demo-label">Danh sách minh họa · Demo UI</span></div>
+        <div class="results-controls">
+          <button id="clear-filters" type="button" class="clear-filters" hidden>Xóa bộ lọc</button>
+          <div class="sort-label"><label for="listing-sort">Sắp xếp</label>
+            <select id="listing-sort"><option value="newest">Mới nhất</option><option value="price-asc">Giá thấp đến cao</option>
+              <option value="price-desc">Giá cao đến thấp</option><option value="km-asc">Số km ít nhất</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div id="listing-grid" class="listing-grid"></div>
+      <div id="no-listings" class="no-listings" hidden>
+        <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+        <h2>Chưa tìm thấy xe phù hợp</h2><p>Thử tên xe khác hoặc mở rộng hãng xe, khoảng giá.</p>
+        <button type="button" class="sale-button primary" id="empty-reset">Xem tất cả xe</button>
+      </div>
+      <nav id="listing-pagination" class="listing-pagination" aria-label="Phân trang tin bán xe"></nav>
+      <noscript><p class="no-listings">Vui lòng bật JavaScript để xem danh sách và sử dụng bộ lọc trong bản demo.</p></noscript>
+    </section>
+  </main>
+
+  <footer class="sale-footer"><div class="sale-container">
+    <div><a class="footer-brand" th:href="@{/home}">GaragePro <span>Consign</span></a><p>Kết nối chủ xe và người mua qua từng hồ sơ ký gửi.</p></div>
+    <p>© 2026 GaragePro Consign</p>
+  </div></footer>
+
+  <template id="listing-card-template">
+    <article class="listing-card">
+      <div class="listing-photo">
+        <img loading="lazy" width="640" height="400" alt="">
+        <div class="photo-fallback" hidden><svg th:replace="~{shell/icons :: icon('car')}"></svg><span>Hình ảnh đang cập nhật</span></div>
+        <span class="inspection-badge"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>Đã kiểm định</span>
+        <span class="illustration-label">Ảnh minh họa</span>
+      </div>
+      <div class="listing-content"><p class="listing-reference"></p><h2 class="listing-title"></h2>
+        <p class="listing-price"></p><p class="listing-specs"></p>
+        <div class="listing-bottom"><span class="listing-location"></span>
+          <button class="sale-button primary listing-contact" type="button"><svg th:replace="~{shell/icons :: icon('user')}"></svg>Liên hệ</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <dialog id="contact-dialog" class="contact-dialog" aria-labelledby="contact-title" aria-describedby="contact-description">
+    <div class="contact-heading"><div><p class="eyebrow">GARAGEPRO CONSIGN</p><h2 id="contact-title">Liên hệ tư vấn xe</h2></div>
+      <button class="dialog-close" type="button" data-close-contact aria-label="Đóng liên hệ">×</button></div>
+    <div class="contact-car"><div><strong id="contact-car-title"></strong><small id="contact-car-specs"></small></div><b id="contact-car-price"></b></div>
+    <!--/* Modal này là đầu vào của luồng bán xe: tìm Buyer theo SĐT, chưa có thì tạo, rồi tạo Inquiry (status OPEN, chưa có người phụ trách).
+           Buyer: fullName, phone, email, consentStored. Inquiry: xe theo listingId, channel, notes (ghi kèm nhu cầu).
+           CCCD và địa chỉ không hỏi ở đây, Sales bổ sung khi khách giữ xe.
+           Chờ BE: tạo route POST /tin-ban-xe/lien-he, cho phép khách chưa đăng nhập, rồi bỏ event.preventDefault() trong public-sale-news.js. */-->
+    <form id="listing-contact-form" method="post" th:action="@{/tin-ban-xe/lien-he}">
+      <input type="hidden" name="listingId" id="contact-listing">
+      <input type="hidden" name="channel" value="WEBSITE">
+      <p id="contact-description">Để lại thông tin để được tư vấn về chiếc xe bạn quan tâm.</p>
+      <div class="contact-fields">
+        <label for="contact-name"><span>Họ và tên <span aria-hidden="true">*</span></span>
+          <input id="contact-name" name="fullName" autocomplete="name" required minlength="2" maxlength="160" placeholder="Nhập họ và tên"></label>
+        <div class="contact-row">
+          <label for="contact-phone"><span>Số điện thoại <span aria-hidden="true">*</span></span>
+            <input id="contact-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" placeholder="Ví dụ: 0912 345 678" aria-describedby="phone-hint">
+            <small id="phone-hint">10 số hoặc bắt đầu bằng +84.</small></label>
+          <label for="contact-email">Email
+            <input id="contact-email" name="email" type="email" autocomplete="email" maxlength="180" placeholder="Không bắt buộc"></label>
+        </div>
+        <fieldset class="contact-need">
+          <legend>Bạn cần tư vấn gì? <span aria-hidden="true">*</span></legend>
+          <label><input type="radio" name="need" value="PRICE" checked><span>Hỏi giá</span></label>
+          <label><input type="radio" name="need" value="VIEWING"><span>Xem xe</span></label>
+          <label><input type="radio" name="need" value="TEST_DRIVE"><span>Lái thử</span></label>
+        </fieldset>
+        <label for="contact-message">Lời nhắn
+          <textarea id="contact-message" name="message" rows="2" maxlength="1000" placeholder="Ví dụ: thời gian bạn tiện nghe máy hoặc đến xem xe"></textarea></label>
+        <label class="contact-consent" for="contact-consent">
+          <input id="contact-consent" type="checkbox" name="consent" required>
+          <span>Tôi đồng ý cho GaragePro lưu thông tin trên để liên hệ tư vấn về xe này. <span aria-hidden="true">*</span></span></label>
+      </div>
+      <p class="contact-demo-note">Bản demo UI: thông tin chỉ được xử lý trên trang, chưa gửi đến nhân viên.</p>
+      <button class="sale-button primary contact-send" type="submit">Gửi yêu cầu liên hệ<svg th:replace="~{shell/icons :: icon('chevron')}"></svg></button>
+    </form>
+    <section id="contact-success" class="contact-success" role="status" hidden>
+      <span class="success-icon"><svg th:replace="~{shell/icons :: icon('check')}"></svg></span>
+      <h3>Đã ghi nhận yêu cầu trong bản demo</h3><p id="contact-success-message"></p><small>Yêu cầu chưa được gửi đến nhân viên.</small>
+      <button type="button" class="sale-button primary" data-close-contact>Hoàn tất</button>
+    </section>
+  </dialog>
+</body>
+</html>

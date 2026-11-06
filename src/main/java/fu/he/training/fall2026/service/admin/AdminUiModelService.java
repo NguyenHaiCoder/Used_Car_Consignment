@@ -9,7 +9,6 @@ import static fu.he.training.fall2026.model.ui.UiModels.Metric;
 import static fu.he.training.fall2026.model.ui.UiModels.Row;
 import static fu.he.training.fall2026.model.ui.UiModels.Screen;
 
-import fu.he.training.fall2026.controller.preview.UiPageRenderer;
 import fu.he.training.fall2026.entity.auth.AuditEvent;
 import fu.he.training.fall2026.entity.auth.Permission;
 import fu.he.training.fall2026.entity.auth.Role;
@@ -18,7 +17,7 @@ import fu.he.training.fall2026.entity.auth.UserToken;
 import fu.he.training.fall2026.entity.enums.ApprovalStatus;
 import fu.he.training.fall2026.entity.enums.RoleCode;
 import fu.he.training.fall2026.model.ui.UiModels;
-import fu.he.training.fall2026.model.ui.UiPreviewCatalog;
+import fu.he.training.fall2026.model.ui.AppRoles;
 import fu.he.training.fall2026.repository.ApprovalRepository;
 import fu.he.training.fall2026.repository.AuditEventRepository;
 import fu.he.training.fall2026.repository.RoleRepository;
@@ -138,13 +137,13 @@ public class AdminUiModelService {
             UiModels.Role sessionRole,
             String template,
             String serverFormAction) {
-        String route = UiPageRenderer.appRoute(roleKey, pageKey.startsWith("dashboard") ? "dashboard-" + roleKey : pageKey);
+        String route = appRoute(roleKey, pageKey.startsWith("dashboard") ? "dashboard-" + roleKey : pageKey);
         List<Link> navigation = appNavigation(roleKey);
         model.addAttribute("screen", screen);
-        model.addAttribute("role", sessionRole != null ? sessionRole : UiPreviewCatalog.role(roleKey));
+        model.addAttribute("role", sessionRole != null ? sessionRole : AppRoles.of(roleKey));
         model.addAttribute("navigation", navigation);
         model.addAttribute("activeNav", resolveActiveNav(route, navigation));
-        model.addAttribute("roles", UiPreviewCatalog.roles());
+        model.addAttribute("roles", AppRoles.all());
         model.addAttribute("route", route);
         model.addAttribute("appShell", true);
         model.addAttribute("roleHome", "admin".equals(roleKey) ? "/admin/employees" : "/" + roleKey + "/dashboard");
@@ -421,6 +420,16 @@ public class AdminUiModelService {
                 new Link("Hàng đợi phê duyệt", "/manager/approvals", "Điều hành"),
                 new Link("Nhật ký hoạt động", "/manager/audit", "Quản trị"),
                 new Link("Báo cáo vận hành", "/manager/reports", "Điều hành"));
+    }
+
+    private static String appRoute(String roleKey, String pageKey) {
+        if (("dashboard-" + roleKey).equals(pageKey) || "dashboard".equals(pageKey)) {
+            return "/" + roleKey + "/dashboard";
+        }
+        if ("sign-in".equals(pageKey)) {
+            return "/";
+        }
+        return "/" + roleKey + "/" + pageKey;
     }
 
     private String resolveActiveNav(String currentRoute, List<Link> navigation) {

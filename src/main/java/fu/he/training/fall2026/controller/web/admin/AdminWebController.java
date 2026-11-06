@@ -6,7 +6,7 @@ import fu.he.training.fall2026.dto.admin.UpdateEmployeeRequest;
 import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.model.ui.UiModels.Role;
-import fu.he.training.fall2026.model.ui.UiPreviewCatalog;
+import fu.he.training.fall2026.model.ui.AppRoles;
 import fu.he.training.fall2026.repository.UserRepository;
 import fu.he.training.fall2026.service.AdminEmployeeService;
 import fu.he.training.fall2026.service.AdminPermissionService;
@@ -211,7 +211,7 @@ public class AdminWebController {
     }
 
     private static Role sessionRole(HttpSession session) {
-        Role catalog = UiPreviewCatalog.role("admin");
+        Role catalog = AppRoles.of("admin");
         String fullName = SessionAuthUtils.getFullName(session);
         if (fullName == null || fullName.isBlank()) {
             return catalog;

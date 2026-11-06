@@ -1,0 +1,90 @@
+/* Đỗ Lan Anh: màn Đặt cọc giữ xe và Hợp đồng bán xe. Khung list lấy từ inspector-news.css, văn bản hợp đồng lấy từ consignment-contracts.css. */
+
+/* Danh sách */
+#news-list.deal-list--holds .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#news-list.deal-list--contracts .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+#news-list.deal-list .records .table { min-width: 1172px; }
+#news-list.deal-list .records th:nth-child(2) { width: 108px; }  /* Mã */
+#news-list.deal-list .records th:nth-child(3) { width: 84px; }   /* Mã hồ sơ, mã cọc */
+#news-list.deal-list .records th:nth-child(4) { width: auto; }   /* Xe */
+#news-list.deal-list .records th:nth-child(5) { width: 136px; }  /* Khách */
+#news-list.deal-list .records th:nth-child(6) { width: 124px; }  /* Tiền */
+#news-list.deal-list .records th:nth-child(7) { width: 96px; }   /* Ngày */
+#news-list.deal-list .records th:nth-child(8) { width: 104px; }  /* Người phụ trách */
+#news-list.deal-list .records th:nth-child(9) { width: 136px; }  /* Trạng thái */
+#news-list.deal-list .records th:nth-child(10) { width: 96px; }  /* Thao tác */
+#news-list.deal-list .news-actions { flex-wrap: nowrap; }
+.deal-person { text-align: left !important; }
+.deal-person strong, .deal-person small { display: block; overflow: hidden; line-height: 1.3; text-overflow: ellipsis; }
+.deal-person strong { font-weight: 600; }
+.deal-person small { font-size: 11px; color: var(--ink-soft); }
+.pill--signed { background: var(--blue-100); color: var(--navy-700); }
+
+/* Form và chi tiết phiếu */
+.deal-hint { font-size: 11.5px; color: var(--ink-soft); }
+.deal-link { color: var(--blue-600); font-weight: 600; }
+.deal-link:hover { text-decoration: underline; }
+#deal-form .create-sidebar { display: flex; flex-direction: column; gap: 12px; }
+#deal-form .sidebar-card-body { display: grid; gap: 10px; }
+#deal-form > .section-card { margin: 0; }
+.deal-money { display: grid; gap: 6px; margin: 0; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; }
+.deal-money > div { display: flex; justify-content: space-between; gap: 8px; }
+.deal-money dt { color: var(--ink-soft); }
+.deal-money dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+.deal-amount { font-size: 15px; font-weight: 800 !important; color: var(--blue-600); }
+.deal-terms { font-weight: 500 !important; white-space: pre-line; }
+.inq-close-dialog textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 13px; resize: vertical; outline: none; }
+.inq-close-dialog textarea:focus { border-color: var(--blue-600); }
+.inq-close-dialog .inq-need label { font-weight: 400; }
+
+/* Văn bản hợp đồng */
+.deal-pick { max-width: 720px; }
+.deal-pick label { font-size: 12.5px; font-weight: 600; }
+.deal-pick .req, .terms-inline-field .req { color: var(--red); }
+.deal-pick .select { width: 100%; }
+.deal-row { grid-template-columns: 84px minmax(0, 1fr); }
+.deal-row--car { grid-template-columns: 90px minmax(0, 1fr); }
+.deal-row--wide { grid-column: 1 / -1; }
+.deal-strong { font-weight: 700; }
+.article-heading .ic { flex: none; }
+.vehicle-contract-img .ic { width: 56px; height: 56px; stroke-width: 1.3; }
+.terms-textarea[readonly], .inline-field[readonly] { background: transparent; cursor: default; }
+.inline-field[readonly] { border-bottom-color: transparent; }
+.terms-inline-field .field-row input[readonly] { color: var(--ink-soft); cursor: default; }
+#deal-sale-price[readonly] { color: #111; }
+.deal-sig { display: grid; place-items: center; border-style: solid; color: #555; font-size: 12.5px; pointer-events: none; }
+.deal-sig img { display: block; width: 100%; height: 100%; object-fit: contain; }
+#contract-create .contracts-header-left .pill { flex: none; }
+#contract-create .btn-c:disabled { opacity: .55; cursor: not-allowed; }
+#contract-create .btn-c:disabled:hover { border-color: var(--line); background: #fff; color: var(--ink); }
+#contract-create .contracts-actions a.btn-c { text-decoration: none; }
+
+/* Màn laptop: thu cột để bảng vừa khung, không để cột Thao tác dính đè lên Trạng thái */
+@media (max-width: 1500px) {
+  #news-list.deal-list .records .table { min-width: 1060px; }
+  #news-list.deal-list .records th:nth-child(2) { width: 104px; }
+  #news-list.deal-list .records th:nth-child(3) { width: 92px; }
+  #news-list.deal-list .records th:nth-child(5) { width: 122px; }
+  #news-list.deal-list .records th:nth-child(6) { width: 118px; }
+  #news-list.deal-list .records th:nth-child(7) { width: 84px; }
+  #news-list.deal-list .records th:nth-child(8) { width: 100px; }
+  #news-list.deal-list .records th:nth-child(9) { width: 128px; }
+  #news-list.deal-list .records th:nth-child(10) { width: 92px; }
+}
+@media (max-width: 1180px) {
+  #news-list.deal-list--holds .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #news-list.deal-list--contracts .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  #news-list.deal-list--holds .kpis,
+  #news-list.deal-list--contracts .kpis { grid-template-columns: 1fr; }
+  .contracts-actions { flex-wrap: wrap; }
+  .contracts-actions-right { flex-wrap: wrap; }
+}
+@media print {
+  .sidebar, .topbar, .contracts-header, .contracts-sidebar, .contracts-actions, .flash, .skip-link { display: none !important; }
+  body.app, .app-body, .app-main { display: block; height: auto; margin: 0; padding: 0; overflow: visible; background: #fff; }
+  .contracts-layout { display: block; }
+  .contract-doc { padding: 0; border: 0; }
+  .contracts-wrap { display: block; }
+}

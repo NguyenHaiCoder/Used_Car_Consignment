@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: danh sách loại kiểm định theo loại xe — UI mock. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Loại kiểm định', 'Kiểm định và tiếp nhận xe', 'checklists',
+                    null, ~{::link}, ~{::#checklist-list})}">
+<head>
+  <title>Loại kiểm định</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="checklist-list" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('clipboard')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <span>Kiểm định</span>
+          <span>/</span>
+          <span>Loại kiểm định</span>
+        </nav>
+        <h2>Loại kiểm định</h2>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/inspector/checklists/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Thêm loại kiểm định
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <section class="kpis" aria-label="Thống kê loại kiểm định">
+    <article th:replace="~{shell/ui :: kpi('clipboard', 'Tổng loại', ${total})}"></article>
+    <article th:replace="~{shell/ui :: kpi('check', 'Đang dùng', ${activeCount})}"></article>
+    <article th:replace="~{shell/ui :: kpi('box', 'Ngưng hoạt động', ${total - activeCount})}"></article>
+  </section>
+
+  <form class="card toolbar toolbar--catalog" method="get" th:action="@{/inspector/checklists}">
+    <input type="hidden" name="status" th:if="${status != null and !#strings.isEmpty(status)}" th:value="${status}">
+    <input type="hidden" name="size" th:value="${size}">
+    <label class="search">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <input type="search" name="q" th:value="${q}" placeholder="Tìm theo tên loại, loại xe...">
+    </label>
+    <details class="filter-dropdown">
+      <summary class="filter-dropdown-trigger" aria-label="Lọc theo trạng thái">
+        <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
+        <span th:text="${status == 'ACTIVE'} ? 'Đang dùng' : (${status == 'INACTIVE'} ? 'Ngưng hoạt động' : 'Tất cả trạng thái')">Tất cả trạng thái</span>
+        <span class="filter-dropdown-caret" aria-hidden="true">
+          <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+        </span>
+      </summary>
+      <div class="filter-dropdown-menu" role="listbox" aria-label="Trạng thái">
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == null or status == ''} ? 'is-active'"
+           th:href="@{/inspector/checklists(q=${q},size=${size})}"
+           th:attr="aria-selected=${status == null or status == ''}">Tất cả trạng thái</a>
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == 'ACTIVE'} ? 'is-active'"
+           th:href="@{/inspector/checklists(q=${q},status='ACTIVE',size=${size})}"
+           th:attr="aria-selected=${status == 'ACTIVE'}">Đang dùng</a>
+        <a class="filter-dropdown-item" role="option"
+           th:classappend="${status == 'INACTIVE'} ? 'is-active'"
+           th:href="@{/inspector/checklists(q=${q},status='INACTIVE',size=${size})}"
+           th:attr="aria-selected=${status == 'INACTIVE'}">Ngưng hoạt động</a>
+      </div>
+    </details>
+    <button class="btn btn--primary" type="submit">Tìm kiếm</button>
+  </form>
+
+  <section class="card records">
+    <header class="card-head">
+      <svg th:replace="~{shell/icons :: icon('list')}"></svg>
+      <h3 th:text="${'Danh sách loại kiểm định (' + page.totalElements + ')'}">Danh sách loại kiểm định</h3>
+    </header>
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Mã</th>
+            <th>Tên loại</th>
+            <th>Loại xe</th>
+            <th>Số bước</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="c : ${page.content}">
+            <td th:text="${'LKD-' + c.id}">LKD-1</td>
+            <td>
+              <a class="code" th:href="@{/inspector/checklists/{id}(id=${c.id})}" th:text="${c.name}">Loại</a>
+            </td>
+            <td th:text="${c.vehicleTypeLabel}">SUV</td>
+            <td th:text="${c.stepCount}">0</td>
+            <td>
+              <span class="pill" th:classappend="${c.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+                    th:text="${c.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+            </td>
+            <td>
+              <div class="row-actions">
+                <a class="row-action" th:href="@{/inspector/checklists/{id}(id=${c.id})}" title="Xem">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+                <a class="row-action" th:href="@{/inspector/checklists/{id}/edit(id=${c.id})}" title="Sửa">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </a>
+                <form method="post" th:action="@{/inspector/checklists/{id}/deactivate(id=${c.id})}"
+                      th:if="${c.status == 'ACTIVE'}"
+                      onsubmit="return confirm('Ngưng loại kiểm định này?');">
+                  <button class="row-action is-danger" type="submit" title="Ngưng hoạt động">
+                    <svg th:replace="~{shell/icons :: icon('trash')}"></svg>
+                  </button>
+                </form>
+                <form method="post" th:action="@{/inspector/checklists/{id}/activate(id=${c.id})}"
+                      th:if="${c.status != 'ACTIVE'}"
+                      onsubmit="return confirm('Kích hoạt lại loại kiểm định này?');">
+                  <button class="row-action is-success" type="submit" title="Kích hoạt">
+                    <svg th:replace="~{shell/icons :: icon('check')}"></svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <h4>Không có loại kiểm định</h4>
+    </div>
+    <div th:replace="~{consignment/catalog-pager :: pager('/inspector/checklists', 'loại kiểm định')}"></div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--/* UI-only: xem dòng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(${'Dòng xe ' + item.name}, 'Hệ thống Quản lý Ký gửi xe', 'models',
+                    null, ~{::link}, ~{::#model-view})}">
+<head>
+  <title>Chi tiết dòng xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <style>
+      #model-view .csb-head .pill { margin-left: auto; }
+      #model-view .meta-row { grid-template-columns: 140px 1fr; }
+      #model-view .detail-actions { display: flex; gap: 8px; padding: 0 14px 14px; }
+    </style>
+  </th:block>
+</head>
+<body>
+<div id="model-view" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/consignment/models}">Dòng xe</a>
+          <span>/</span>
+          <span th:text="${item.name}">Tucson</span>
+        </nav>
+        <h2 th:text="${item.brandName + ' · ' + item.name}">Hyundai · Tucson</h2>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--outline" th:href="@{/consignment/models/{id}/edit(id=${item.id})}">Sửa</a>
+      <a class="btn-c btn-c--ghost" th:href="@{/consignment/models}">Danh sách</a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <section class="csb-card">
+    <header class="csb-head">
+      <svg th:replace="~{shell/icons :: icon('info')}"></svg>
+      <h4>Thông tin dòng xe</h4>
+      <span class="pill" th:classappend="${item.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+            th:text="${item.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+    </header>
+    <div class="csb-body">
+      <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${'DX-' + item.id}">DX-1</span></div>
+      <div class="meta-row"><span class="mk">Hãng xe</span><span class="mv" th:text="${item.brandName}">Hyundai</span></div>
+      <div class="meta-row"><span class="mk">Dòng xe</span><span class="mv" th:text="${item.name}">Tucson</span></div>
+      <div class="meta-row"><span class="mk">Ghi chú</span><span class="mv" th:text="${item.note ?: '—'}">—</span></div>
+    </div>
+    <div class="detail-actions">
+      <a class="btn-c btn-c--outline" th:href="@{/consignment/brands}">Quản lý hãng xe</a>
+    </div>
+  </section>
+</div>
+</body>
+</html>

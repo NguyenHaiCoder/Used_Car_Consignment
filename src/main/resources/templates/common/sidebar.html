@@ -1,35 +1,95 @@
-<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
-<!-- Ưu tiên người dùng trong session; không có session (bản preview /ui) thì dùng role trong Model.
-     Menu theo role: role CONSIGNMENT đăng nhập thật viết trực tiếp bên dưới (mục đang mở truyền qua tham số
-     active, ví dụ sidebar (active='consignors')); các trường hợp khác dùng danh sách navigation trong Model. -->
-<aside th:fragment="sidebar" class="sidebar" id="app-sidebar" aria-label="Điều hướng theo vai trò">
-  <div th:replace="~{common/sidebar-header :: sidebarHeader}"></div>
-  <div class="user-profile">
-    <span class="avatar" th:text="${role != null ? role.initials : 'NV'}">A</span>
-    <div class="user-info">
-      <strong th:text="${session.AUTH_FULL_NAME != null ? session.AUTH_FULL_NAME : (role != null ? role.userName : 'Nhân viên')}">Nhân viên</strong>
-    </div>
+<!DOCTYPE html>
+<!--/* Hà Lệ Quyên: sidebar layout mới. Mục role đang vào được dùng fragment "link";
+       mục thuộc role khác dùng "locked" (RoleAuthInterceptor sẽ chặn nếu để link thật).
+       Quản lý danh mục: mọi role đều xem được (hãng / dòng / checklist kiểm định). */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+
+<aside th:fragment="sidebar(active)" class="sidebar common-sidebar" id="app-sidebar" aria-label="Điều hướng chính">
+  <div class="brand">
+    <a class="brand-link" th:href="@{/home}">
+      <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+      <span><strong>ConsignCar</strong><small>Quản lý ký gửi &amp; bán xe</small></span>
+    </a>
+    <button class="sidebar-close" aria-label="Đóng điều hướng">×</button>
   </div>
-  <nav class="nav-menu" aria-label="Nghiệp vụ">
-    <details class="nav-group" open th:if="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
-      <summary>Ký gửi</summary>
-      <a class="nav-link" th:href="@{/consignment/dashboard}">Tổng quan</a>
-      <a class="nav-link" th:classappend="${active == 'consignors' ? 'active' : ''}"
-         th:attr="aria-current=${active == 'consignors' ? 'page' : null}"
-         th:href="@{/consignment/consignors}">Chủ xe ký gửi</a>
-      <a class="nav-link" th:classappend="${active == 'consignments' ? 'active' : ''}"
-         th:attr="aria-current=${active == 'consignments' ? 'page' : null}"
-         th:href="@{/consignment/consignments}">Hồ sơ ký gửi</a>
-    </details>
-    <th:block th:unless="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
-      <th:block th:each="module : ${ {'Quản trị','Điều hành','Ký gửi','Xe &amp; kiểm định','Kinh doanh','Tài chính','Bàn giao','Hồ sơ &amp; sang tên'} }">
-        <details class="nav-group" open th:if="${navigation != null and !#lists.isEmpty(navigation.?[module == #vars.module])}">
-          <summary th:text="${module}"></summary>
-          <a th:each="item : ${navigation}" th:if="${item.module == module}" class="nav-link" th:classappend="${activeNav == item.url ? 'active' : ''}" th:href="@{${item.url}}" th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:text="${item.label}"></a>
-        </details>
-      </th:block>
+  <nav class="nav" aria-label="Nghiệp vụ">
+    <!--/* Nguyễn Vũ Trường An: menu Kiểm định viên. */-->
+    <th:block th:if="${session.AUTH_ROLE_CODE == 'INSPECTOR'}">
+    <a th:replace="~{common/sidebar :: link('car', 'Kiểm định xe', '/inspector/vehicles', ${active == 'inspector-vehicles'})}"></a>
+    <a th:replace="~{common/sidebar :: link('tag', 'Đăng tin', '/inspector/listings', ${active == 'inspector-listings'})}"></a>
+    <a th:replace="~{common/sidebar :: link('car', 'Quản lý loại xe', '/inspector/vehicle-types', ${active == 'vehicle-types'})}"></a>
+    <a th:replace="~{common/sidebar :: link('clipboard', 'Loại kiểm định', '/inspector/checklists', ${active == 'checklists'})}"></a>
     </th:block>
+
+    <!--/* Menu Nhân viên kinh doanh, không có khối này sẽ rơi về menu Ký gửi. */-->
+    <th:block th:if="${session.AUTH_ROLE_CODE == 'SALES'}">
+    <a th:replace="~{common/sidebar :: link('chat', 'Tư vấn & lịch xem', '/sales/inquiries', ${active == 'sales-inquiries'})}"></a>
+    <a th:replace="~{common/sidebar :: link('coins', 'Đặt cọc giữ xe', '/sales/reservations', ${active == 'sales-reservations'})}"></a>
+    <a th:replace="~{common/sidebar :: link('handshake', 'Hợp đồng bán xe', '/sales/contracts', ${active == 'sales-contracts'})}"></a>
+    </th:block>
+
+    <th:block th:if="${session.AUTH_ROLE_CODE != 'INSPECTOR' and session.AUTH_ROLE_CODE != 'SALES' and (session.AUTH_ROLE_CODE == 'CONSIGNMENT' or navigation == null or #lists.isEmpty(navigation))}">
+    <a th:replace="~{common/sidebar :: link('car', 'Quản lý ký gửi', '/consignments', ${active == 'consignments'})}"></a>
+    <a th:replace="~{common/sidebar :: link('handshake', 'Hợp đồng ký gửi', '/consignment/contracts', ${active == 'contracts'})}"></a>
+    <span th:replace="~{common/sidebar :: locked('shield-check', 'Phê duyệt')}"></span>
+    <span th:replace="~{common/sidebar :: locked('calendar-check', 'Kiểm định &amp; tiếp nhận')}"></span>
+    <span th:replace="~{common/sidebar :: locked('tag', 'Đăng bán')}"></span>
+    <span th:replace="~{common/sidebar :: locked('coins', 'Tài chính')}"></span>
+    <span th:replace="~{common/sidebar :: locked('file', 'Hồ sơ giấy tờ')}"></span>
+    <span th:replace="~{common/sidebar :: locked('chart', 'Báo cáo')}"></span>
+    <span th:replace="~{common/sidebar :: locked('gear', 'Hệ thống')}"></span>
+    </th:block>
+
+    <th:block th:unless="${session.AUTH_ROLE_CODE == 'INSPECTOR' or session.AUTH_ROLE_CODE == 'SALES' or session.AUTH_ROLE_CODE == 'CONSIGNMENT' or navigation == null or #lists.isEmpty(navigation)}">
+      <a th:each="item : ${navigation}" class="nav-item"
+         th:classappend="${activeNav == item.url ? 'is-active' : ''}"
+         th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:href="@{${item.url}}">
+        <svg th:replace="~{shell/icons :: icon('grid')}"></svg>
+        <span th:text="${item.label}">Mục</span>
+      </a>
+    </th:block>
+
+    <!--/* Danh mục dùng chung mọi role (hãng/dòng); loại xe & loại kiểm định nằm ở phân hệ kiểm định */-->
+    <details class="nav-group"
+             th:open="${active == 'brands' or active == 'models' or active == 'vehicle-types' or active == 'checklists' or active == 'catalog'}"
+             th:unless="${session.AUTH_ROLE_CODE == 'INSPECTOR'}">
+      <summary class="nav-item nav-group-toggle"
+               th:classappend="${active == 'brands' or active == 'models' or active == 'vehicle-types' or active == 'checklists' or active == 'catalog'} ? 'is-open'">
+        <svg th:replace="~{shell/icons :: icon('box')}"></svg>
+        <span>Quản lý danh mục</span>
+      </summary>
+      <div class="nav-sub">
+        <a th:replace="~{common/sidebar :: sublink('tag', 'Quản lý hãng xe', '/consignment/brands', ${active == 'brands'})}"></a>
+        <a th:replace="~{common/sidebar :: sublink('car', 'Quản lý dòng xe', '/consignment/models', ${active == 'models'})}"></a>
+        <a th:replace="~{common/sidebar :: sublink('car', 'Quản lý loại xe', '/inspector/vehicle-types', ${active == 'vehicle-types'})}"></a>
+        <a th:replace="~{common/sidebar :: sublink('clipboard', 'Loại kiểm định', '/inspector/checklists', ${active == 'checklists'})}"></a>
+      </div>
+    </details>
   </nav>
-  <a class="sidebar-bottom" th:href="@{/home}">← Trang chủ</a>
+  <svg class="sidebar-car" viewBox="0 0 240 90" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="sidebar-car-fill" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#2f8bff"/><stop offset="1" stop-color="#0a3f94"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#sidebar-car-fill)" d="M6 62c0-10 8-15 22-17l26-3 24-15c7-4 14-6 24-6h44c11 0 19 3 27 10l13 11c17 2 30 7 34 14 3 5 2 12-1 16-2 2-5 3-9 3h-12a19 19 0 0 0-37 0H78a19 19 0 0 0-37 0H22C10 75 6 71 6 62z"/>
+    <path fill="#bfe0ff" opacity=".55" d="M66 43l18-12c5-3 11-5 18-5h20l3 17zm63 0-3-17h20c9 0 14 2 20 7l12 10z"/>
+    <circle cx="59" cy="75" r="14" fill="#06224f"/><circle cx="59" cy="75" r="6" fill="#7fb6f5"/>
+    <circle cx="170" cy="75" r="14" fill="#06224f"/><circle cx="170" cy="75" r="6" fill="#7fb6f5"/>
+  </svg>
 </aside>
+
+<a th:fragment="link(icon, label, url, current)" class="nav-item" th:classappend="${current} ? 'is-active'"
+   th:attr="aria-current=${current ? 'page' : null}" th:href="@{${url}}">
+  <svg th:replace="~{shell/icons :: icon(${icon})}"></svg><span th:text="${label}">Mục</span>
+</a>
+
+<a th:fragment="sublink(icon, label, url, current)" class="nav-item nav-subitem" th:classappend="${current} ? 'is-active'"
+   th:attr="aria-current=${current ? 'page' : null}" th:href="@{${url}}">
+  <svg th:replace="~{shell/icons :: icon(${icon})}"></svg><span th:text="${label}">Mục con</span>
+</a>
+
+<span th:fragment="locked(icon, label)" class="nav-item is-locked" aria-disabled="true" title="Thuộc phân hệ của vai trò khác">
+  <svg th:replace="~{shell/icons :: icon(${icon})}"></svg><span th:utext="${label}">Mục</span>
+</span>
 </body></html>

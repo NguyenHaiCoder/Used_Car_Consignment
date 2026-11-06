@@ -20,6 +20,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns(
                         "/admin/**",
                         "/manager/**",
+                        "/consignments/**",
                         "/consignment/**",
                         "/inspector/**",
                         "/sales/**",
@@ -27,7 +28,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/handover/**",
                         "/documents/**")
                 .excludePathPatterns(
-                        "/ui/**",
                         "/css/**",
                         "/js/**",
                         "/images/**",

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--/* UI-only: tạo hãng xe. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Thêm hãng xe', 'Hệ thống Quản lý Ký gửi xe', 'brands',
+                    null, ~{::link}, ~{::#brand-create})}">
+<head>
+  <title>Thêm hãng xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="brand-create" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('plus')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/consignment/brands}">Hãng xe</a>
+          <span>/</span>
+          <span>Thêm mới</span>
+        </nav>
+        <h2>Thêm hãng xe</h2>
+      </div>
+    </div>
+  </div>
+
+  <form class="catalog-form" method="post" th:action="@{/consignment/brands}">
+    <div class="form-row">
+      <div class="field">
+        <label>Tên hãng <span class="req">*</span></label>
+        <input type="text" name="name" required placeholder="Hyundai" th:value="${form.name}">
+      </div>
+      <div class="field">
+        <label>Trạng thái</label>
+        <select name="status">
+          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
+          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Ghi chú</label>
+        <input type="text" name="note" placeholder="Tuỳ chọn" th:value="${form.note}">
+      </div>
+    </div>
+    <div class="catalog-actions">
+      <button class="btn-c btn-c--primary" type="submit">Lưu hãng xe</button>
+      <a class="btn-c btn-c--ghost" th:href="@{/consignment/brands}">Huỷ</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

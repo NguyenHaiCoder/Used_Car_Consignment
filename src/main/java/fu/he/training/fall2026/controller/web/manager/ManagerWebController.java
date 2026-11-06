@@ -4,7 +4,7 @@ import fu.he.training.fall2026.dto.manager.DecideApprovalRequest;
 import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.model.ui.UiModels.Role;
-import fu.he.training.fall2026.model.ui.UiPreviewCatalog;
+import fu.he.training.fall2026.model.ui.AppRoles;
 import fu.he.training.fall2026.repository.UserRepository;
 import fu.he.training.fall2026.service.ManagerApprovalService;
 import fu.he.training.fall2026.service.admin.AdminUiModelService;
@@ -109,7 +109,7 @@ public class ManagerWebController {
     }
 
     private static Role sessionRole(HttpSession session) {
-        Role catalog = UiPreviewCatalog.role("manager");
+        Role catalog = AppRoles.of("manager");
         String fullName = SessionAuthUtils.getFullName(session);
         if (fullName == null || fullName.isBlank()) {
             return catalog;

@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.entity.consignment;
 
+import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.common.BaseEntity;
 import fu.he.training.fall2026.entity.enums.ListingStatus;
 import jakarta.persistence.Column;
@@ -49,4 +50,9 @@ public class VehicleSaleNews extends BaseEntity {
     private Instant publishedAt;
 
     private Instant stoppedAt;
+
+    /** Nguyễn Vũ Trường An: nhân viên phụ trách tin. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_user_id")
+    private User assignedTo;
 }

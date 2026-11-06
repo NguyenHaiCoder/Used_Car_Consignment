@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!--/* Đỗ Lan Anh: Phần nhập dùng chung của create.html và edit.html.
+       Chờ BE: ngân sách, ưu tiên, thời gian mua, khu vực, ghi chú khách chưa có cột trong Inquiry và Buyer. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+
+<section th:fragment="buyerExtra(email, area, buyerNote)" class="form-row form-row--2">
+  <div class="field">
+    <label for="inq-email">Email</label>
+    <div class="field-input">
+      <input id="inq-email" type="email" name="email" maxlength="180" th:value="${email}" placeholder="Không bắt buộc">
+    </div>
+  </div>
+  <div class="field">
+    <label for="inq-area">Khu vực</label>
+    <div class="field-input">
+      <input id="inq-area" name="area" maxlength="120" th:value="${area}" placeholder="Ví dụ: Hà Nội – Cầu Giấy">
+    </div>
+  </div>
+  <div class="field col-span-2">
+    <label for="inq-buyer-note">Ghi chú về khách</label>
+    <textarea class="field-textarea" id="inq-buyer-note" name="buyerNote" rows="2" maxlength="500"
+              th:text="${buyerNote}" placeholder="Ví dụ: Gia đình 4 người, tiện nghe máy sau 18h"></textarea>
+  </div>
+</section>
+
+<section th:fragment="demand(budgetMin, budgetMax, priorities, buyTime)" class="section-card">
+  <div class="section-head">
+    <svg th:replace="~{shell/icons :: icon('coins')}"></svg>
+    <h3>Nhu cầu mua xe</h3>
+  </div>
+  <div class="section-body">
+    <div class="form-row form-row--2">
+      <div class="field">
+        <label for="inq-budget-min">Ngân sách từ (triệu đồng)</label>
+        <div class="field-input">
+          <input id="inq-budget-min" type="number" name="budgetMin" min="0" max="99999" th:value="${budgetMin}" placeholder="Ví dụ: 750">
+        </div>
+      </div>
+      <div class="field">
+        <label for="inq-budget-max">Đến (triệu đồng)</label>
+        <div class="field-input">
+          <input id="inq-budget-max" type="number" name="budgetMax" min="0" max="99999" th:value="${budgetMax}" placeholder="Ví dụ: 780">
+        </div>
+      </div>
+      <div class="field">
+        <label for="inq-priorities">Ưu tiên</label>
+        <div class="field-input">
+          <input id="inq-priorities" name="priorities" maxlength="200" th:value="${priorities}" placeholder="Cách nhau bằng dấu phẩy: Màu xanh, Xe gia đình">
+        </div>
+      </div>
+      <div class="field">
+        <label for="inq-buy-time">Thời gian mua</label>
+        <div class="field-input">
+          <input id="inq-buy-time" name="buyTime" maxlength="80" th:value="${buyTime}" placeholder="Ví dụ: Trong tháng 11/2026">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<fieldset th:fragment="needChoice(current)" class="inq-need">
+  <legend>Khách cần gì? <span class="req">*</span></legend>
+  <label th:each="n : ${needs}">
+    <input type="radio" name="need" th:value="${n.key}" th:checked="${n.key == current}" required>
+    <span th:text="${n.value}">Nhu cầu</span>
+  </label>
+</fieldset>
+
+</body></html>

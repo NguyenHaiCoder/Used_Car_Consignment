@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--/*
+  pager(basePath, entityLabel)
+  Model cần: page, q, status, size
+*/-->
+<nav th:fragment="pager(basePath, entityLabel)" class="pager" aria-label="Phân trang"
+     th:with="last=${page.totalPages > 0 ? page.totalPages - 1 : 0},
+              from=${page.number > 2 ? page.number - 2 : 0},
+              to=${page.number + 2 < last ? page.number + 2 : last},
+              first=${page.number * page.size + 1}">
+  <span th:text="${page.empty ? 'Không có bản ghi' : 'Hiển thị ' + first + '–' + (first + page.numberOfElements - 1) + ' / ' + page.totalElements + ' ' + entityLabel}">Hiển thị</span>
+  <div class="pager-side">
+    <div class="pager-meta">
+      <span class="pager-size-label">Hiển thị</span>
+      <details class="filter-dropdown pager-size-dropdown">
+        <summary class="filter-dropdown-trigger" aria-label="Số dòng mỗi trang">
+          <span th:text="${size}">10</span>
+          <span class="filter-dropdown-caret" aria-hidden="true">
+            <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+          </span>
+        </summary>
+        <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
+          <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
+             th:classappend="${n == size} ? 'is-active'"
+             th:href="@{${basePath}(q=${q},status=${status},page=0,size=${n})}"
+             th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
+        </div>
+      </details>
+    </div>
+    <div class="pager-links">
+      <a class="page-link" th:if="${page.hasPrevious()}" aria-label="Trang trước"
+         th:href="@{${basePath}(q=${q},status=${status},page=${page.number - 1},size=${size})}">‹</a>
+      <span class="page-link is-off" th:unless="${page.hasPrevious()}" aria-hidden="true">‹</span>
+      <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
+         th:classappend="${n == page.number} ? 'is-active'"
+         th:attr="aria-current=${n == page.number ? 'page' : null}"
+         th:href="@{${basePath}(q=${q},status=${status},page=${n},size=${size})}"
+         th:text="${n + 1}">1</a>
+      <a class="page-link" th:if="${page.hasNext()}" aria-label="Trang sau"
+         th:href="@{${basePath}(q=${q},status=${status},page=${page.number + 1},size=${size})}">›</a>
+      <span class="page-link is-off" th:unless="${page.hasNext()}" aria-hidden="true">›</span>
+    </div>
+  </div>
+</nav>
+</body>
+</html>

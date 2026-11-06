@@ -13,6 +13,21 @@ public class HomeController {
 
     @GetMapping({"/", "/home"})
     public String home(HttpSession session, Model model) {
+        populateSessionModel(session, model);
+        if (!model.containsAttribute("loginOtpRequest")) {
+            model.addAttribute("loginOtpRequest", new LoginOtpRequest());
+        }
+        return "public/home";
+    }
+
+    /** Public UI demo: listing search and contact interactions run in the browser. */
+    @GetMapping("/tin-ban-xe")
+    public String saleNews(HttpSession session, Model model) {
+        populateSessionModel(session, model);
+        return "public/sale-news";
+    }
+
+    private void populateSessionModel(HttpSession session, Model model) {
         boolean loggedIn = SessionAuthUtils.isLoggedIn(session);
         model.addAttribute("loggedIn", loggedIn);
         if (loggedIn) {
@@ -22,10 +37,6 @@ public class HomeController {
             model.addAttribute("homePath",
                     SessionAuthUtils.homePathForRole(SessionAuthUtils.getRoleCode(session)));
         }
-        if (!model.containsAttribute("loginOtpRequest")) {
-            model.addAttribute("loginOtpRequest", new LoginOtpRequest());
-        }
-        return "public/home";
     }
 
     /** Legacy login routes → home (login lives in home modal). */

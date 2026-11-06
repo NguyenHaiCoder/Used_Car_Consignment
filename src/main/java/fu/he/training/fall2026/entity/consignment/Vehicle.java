@@ -47,6 +47,22 @@ public class Vehicle extends BaseEntity {
     @Column(precision = 18, scale = 2)
     private BigDecimal askingPrice;
 
+    /**
+     * Nguyễn Vũ Trường An: biển số, loại xe, hộp số, nhiên liệu hiện trên tin đăng.
+     * Biển số không đặt unique: SQL Server chỉ cho một dòng NULL, mà xe cũ chưa có biển số.
+     */
+    @Column(length = 20)
+    private String licensePlate;
+
+    @Column(length = 40)
+    private String vehicleType;
+
+    @Column(length = 40)
+    private String transmission;
+
+    @Column(length = 40)
+    private String fuelType;
+
     public String getDisplayLabel() {
         StringBuilder sb = new StringBuilder();
         if (make != null) {

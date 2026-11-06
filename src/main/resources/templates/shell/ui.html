@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!--/* Hà Lệ Quyên: các mảnh giao diện dùng lại giữa các màn của layout mới. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+
+<article th:fragment="kpi(icon, label, value)" class="card kpi">
+  <svg th:replace="~{shell/icons :: icon(${icon})}"></svg>
+  <div>
+    <p th:text="${label}">Nhãn</p>
+    <strong th:text="${value}">0</strong>
+  </div>
+</article>
+
+<a th:fragment="quick(icon, label, count, url, current)" class="quick-item" th:classappend="${current} ? 'is-active'"
+   th:attr="aria-current=${current ? 'true' : null}" th:href="${url}">
+  <svg th:replace="~{shell/icons :: icon(${icon})}"></svg>
+  <span th:text="${label}">Nhãn</span>
+  <b th:text="${count}">0</b>
+</a>
+
+<span th:fragment="quickStatic(icon, label, count)" class="quick-item">
+  <svg th:replace="~{shell/icons :: icon(${icon})}"></svg>
+  <span th:text="${label}">Nhãn</span>
+  <b th:text="${count}">0</b>
+</span>
+
+</body></html>

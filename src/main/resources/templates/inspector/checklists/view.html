@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: xem loại kiểm định + các bước theo loại xe — UI mock. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(${item.name}, 'Kiểm định và tiếp nhận xe', 'checklists',
+                    null, ~{::link}, ~{::#checklist-view})}">
+<head>
+  <title>Xem loại kiểm định</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="checklist-view" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('clipboard')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/inspector/checklists}">Loại kiểm định</a>
+          <span>/</span>
+          <span th:text="${item.name}">Loại</span>
+        </nav>
+        <h2 th:text="${item.name}">Loại kiểm định</h2>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--outline" th:href="@{/inspector/checklists/{id}/edit(id=${item.id})}">Sửa</a>
+      <a class="btn-c btn-c--ghost" th:href="@{/inspector/checklists}">Danh sách</a>
+    </div>
+  </div>
+
+  <section class="csb-card">
+    <header class="csb-head">
+      <svg th:replace="~{shell/icons :: icon('info')}"></svg>
+      <h4>Thông tin loại kiểm định</h4>
+      <span class="pill" th:classappend="${item.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+            th:text="${item.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+    </header>
+    <div class="csb-body">
+      <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${'LKD-' + item.id}">LKD-1</span></div>
+      <div class="meta-row"><span class="mk">Loại xe</span><span class="mv" th:text="${item.vehicleTypeLabel}">SUV</span></div>
+      <div class="meta-row"><span class="mk">Số bước</span><span class="mv" th:text="${item.stepCount}">0</span></div>
+    </div>
+  </section>
+
+  <section class="csb-card" style="margin-top:14px;">
+    <header class="csb-head">
+      <svg th:replace="~{shell/icons :: icon('list')}"></svg>
+      <h4>Quy trình kiểm định</h4>
+    </header>
+    <div class="csb-body" style="gap:10px;">
+      <div th:each="s : ${steps}" class="meta-row" style="align-items:flex-start;">
+        <span class="mk" th:text="${'Bước ' + s.order}">Bước 1</span>
+        <span class="mv">
+          <strong th:text="${s.title}">Tiêu đề</strong>
+          <br><small style="color:var(--ink-soft)" th:text="${s.hint}">Gợi ý</small>
+        </span>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

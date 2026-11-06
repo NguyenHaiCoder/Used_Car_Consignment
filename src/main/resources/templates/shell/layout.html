@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--/* Hà Lệ Quyên: layout mới của toàn bộ UI, chỉ dùng fragment Thymeleaf chuẩn.
+       Cách dùng: <html th:replace="~{shell/layout :: page('Tab', 'Tiêu đề', 'menu đang mở', sốThôngBáo, ~{::link}, ~{::#id-noi-dung})}">
+       alerts = null thì chuông không hiện số. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, heading, active, alerts, styles, content)">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title + ' | ConsignCar'}">ConsignCar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" th:href="@{/css/app/shell.css}">
+  <th:block th:replace="${styles}"></th:block>
+</head>
+<body class="app">
+  <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+  <aside th:replace="~{common/sidebar :: sidebar(active=${active})}"></aside>
+  <button class="nav-overlay" aria-label="Đóng điều hướng" hidden></button>
+  <div class="app-body">
+    <header th:replace="~{common/header :: header(heading=${heading}, alerts=${alerts})}"></header>
+    <main id="main" class="app-main" tabindex="-1">
+      <th:block th:replace="${content}"></th:block>
+    </main>
+  </div>
+  <script th:src="@{/js/ui/shell.js}" defer></script>
+</body>
+</html>

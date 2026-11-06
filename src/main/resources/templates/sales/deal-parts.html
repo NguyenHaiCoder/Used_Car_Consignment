@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--/* Đỗ Lan Anh: phần dùng chung của màn Đặt cọc giữ xe và Hợp đồng bán xe, giao diện theo màn Quản lý tin đăng.
+       Model cần: base, statuses, counts, page, staffs, q, status, staff, dateFrom, dateTo, amountMin, amountMax, size
+       (SalesDealUiData.bindList đưa vào). */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/* Số trên thẻ tính trên toàn bộ dữ liệu, nên bấm thẻ sẽ bỏ các bộ lọc khác để danh sách khớp đúng con số đó. */-->
+<nav th:fragment="kpis(unit)" class="kpis" aria-label="Lọc nhanh theo trạng thái">
+  <a class="card kpi" th:each="s : ${statuses}"
+     th:classappend="${'kpi--' + s.value.tone + (status == s.key ? ' is-active' : '')}"
+     th:attr="aria-current=${status == s.key ? 'true' : null}"
+     th:href="@{${base}(status=${s.key},size=${size})}">
+    <span class="kpi-icon"><svg th:replace="~{shell/icons :: icon(${s.value.icon})}"></svg></span>
+    <div>
+      <p th:text="${s.value.label}">Trạng thái</p>
+      <strong><span th:text="${counts.get(s.key)}">0</span> <small th:text="${unit}">phiếu</small></strong>
+    </div>
+  </a>
+</nav>
+
+<form th:fragment="toolbar(searchLabel, searchHint, dateLabel, amountLabel)"
+      class="card toolbar news-toolbar" id="news-filter" method="get" th:action="@{${base}}">
+  <label class="search">
+    <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+    <input type="search" name="q" th:value="${q}" th:placeholder="${searchHint}" th:attr="aria-label=${searchLabel}">
+  </label>
+
+  <input type="hidden" name="status" th:value="${status}">
+
+  <details class="filter-dropdown news-staff-select">
+    <summary class="filter-dropdown-trigger" aria-label="Nhân viên phụ trách">
+      <span th:text="${staff == '' ? 'Tất cả nhân viên' : staff}">Tất cả nhân viên</span>
+      <span class="filter-dropdown-caret" aria-hidden="true">
+        <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+      </span>
+    </summary>
+    <div class="filter-dropdown-menu" role="listbox" aria-label="Nhân viên phụ trách">
+      <a class="filter-dropdown-item" role="option" th:classappend="${staff == ''} ? 'is-active'"
+         th:href="@{${base}(q=${q},status=${status},from=${dateFrom},to=${dateTo},amountMin=${amountMin},amountMax=${amountMax},size=${size})}"
+         th:attr="aria-selected=${staff == ''}">Tất cả nhân viên</a>
+      <a class="filter-dropdown-item" role="option" th:each="p : ${staffs}"
+         th:classappend="${p == staff} ? 'is-active'"
+         th:href="@{${base}(q=${q},status=${status},staff=${p},from=${dateFrom},to=${dateTo},amountMin=${amountMin},amountMax=${amountMax},size=${size})}"
+         th:text="${p}" th:attr="aria-selected=${p == staff}">Nhân viên</a>
+    </div>
+  </details>
+
+  <input type="hidden" name="staff" th:value="${staff}">
+
+  <!--/* shell.js tự hiện dd/mm/yyyy và gửi form khi chọn ngày */-->
+  <div class="date-range news-date-range" role="group" th:attr="aria-label=${dateLabel}" data-date-range lang="vi-VN">
+    <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+    <label class="date-range-field">
+      <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+             placeholder="Từ ngày" autocomplete="off" aria-label="Từ ngày">
+      <input class="date-range-native" type="date" name="from" lang="vi-VN"
+             th:value="${dateFrom}" tabindex="-1" aria-hidden="true">
+    </label>
+    <span class="date-range-sep" aria-hidden="true">–</span>
+    <label class="date-range-field">
+      <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+             placeholder="Đến ngày" autocomplete="off" aria-label="Đến ngày">
+      <input class="date-range-native" type="date" name="to" lang="vi-VN"
+             th:value="${dateTo}" tabindex="-1" aria-hidden="true">
+    </label>
+  </div>
+
+  <div class="news-toolbar-actions">
+    <details class="filter-dropdown news-more">
+      <summary class="filter-dropdown-trigger" th:classappend="${amountMin != '' or amountMax != ''} ? 'is-on'">
+        <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
+        <span>Lọc nâng cao</span>
+      </summary>
+      <div class="filter-dropdown-menu">
+        <p th:text="${amountLabel + ' (triệu đồng)'}">Số tiền</p>
+        <div class="news-more-row">
+          <input type="number" name="amountMin" min="0" max="99999" th:value="${amountMin}"
+                 placeholder="Từ" aria-label="Số tiền từ, đơn vị triệu đồng">
+          <input type="number" name="amountMax" min="0" max="99999" th:value="${amountMax}"
+                 placeholder="Đến" aria-label="Số tiền đến, đơn vị triệu đồng">
+        </div>
+        <button class="btn btn--primary" type="submit">Áp dụng</button>
+      </div>
+    </details>
+    <a class="btn" th:href="@{${base}}">
+      <svg th:replace="~{shell/icons :: icon('refresh')}"></svg>Làm mới
+    </a>
+  </div>
+</form>
+
+<nav th:fragment="pager(unit)" class="pager" aria-label="Phân trang"
+     th:with="last=${page.totalPages > 0 ? page.totalPages - 1 : 0},
+              from=${page.number > 2 ? page.number - 2 : 0},
+              to=${page.number + 2 < last ? page.number + 2 : last},
+              first=${page.number * page.size + 1}">
+  <span th:text="${page.empty ? 'Không có ' + unit + ' nào' : 'Hiển thị ' + first + ' – ' + (first + page.numberOfElements - 1) + ' trên ' + page.totalElements + ' ' + unit}">Hiển thị</span>
+  <div class="pager-side">
+    <div class="pager-meta">
+      <span class="pager-size-label">Hiển thị</span>
+      <details class="filter-dropdown pager-size-dropdown">
+        <summary class="filter-dropdown-trigger" aria-label="Số dòng mỗi trang">
+          <span th:text="${size}">10</span>
+          <span class="filter-dropdown-caret" aria-hidden="true">
+            <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+          </span>
+        </summary>
+        <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
+          <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
+             th:classappend="${n == size} ? 'is-active'"
+             th:href="@{${base}(q=${q},status=${status},staff=${staff},from=${dateFrom},to=${dateTo},amountMin=${amountMin},amountMax=${amountMax},page=0,size=${n})}"
+             th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
+        </div>
+      </details>
+    </div>
+    <div class="pager-links">
+      <a class="page-link" th:if="${page.hasPrevious()}" aria-label="Trang trước"
+         th:href="@{${base}(q=${q},status=${status},staff=${staff},from=${dateFrom},to=${dateTo},amountMin=${amountMin},amountMax=${amountMax},page=${page.number - 1},size=${size})}">‹</a>
+      <span class="page-link is-off" th:unless="${page.hasPrevious()}" aria-hidden="true">‹</span>
+      <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
+         th:classappend="${n == page.number} ? 'is-active'"
+         th:attr="aria-current=${n == page.number ? 'page' : null}"
+         th:href="@{${base}(q=${q},status=${status},staff=${staff},from=${dateFrom},to=${dateTo},amountMin=${amountMin},amountMax=${amountMax},page=${n},size=${size})}"
+         th:text="${n + 1}">1</a>
+      <a class="page-link" th:if="${page.hasNext()}" aria-label="Trang sau"
+         th:href="@{${base}(q=${q},status=${status},staff=${staff},from=${dateFrom},to=${dateTo},amountMin=${amountMin},amountMax=${amountMax},page=${page.number + 1},size=${size})}">›</a>
+      <span class="page-link is-off" th:unless="${page.hasNext()}" aria-hidden="true">›</span>
+    </div>
+  </div>
+</nav>
+</body>
+</html>

@@ -6,16 +6,15 @@
   <aside class="auth-brand">
     <a class="logo" th:href="@{/home}"><span class="orange">Garage</span>Pro <small>CONSIGN</small></a>
     <div><p class="eyebrow">UCCMS</p><h1>Quản lý hành trình ký gửi.</h1><p>Từ tiếp nhận xe đến hoàn tất sang tên và bàn giao.</p></div>
-    <a class="button" th:href="@{/ui}">URL theo từng role →</a>
+    <a class="button" th:href="@{/home}">Về trang chủ →</a>
   </aside>
   <section class="auth-form">
     <h2 th:text="${screen.title}"></h2>
     <p th:text="${screen.description}"></p>
-    <p class="preview-note">Bản xem trước UI. Không đăng nhập thật hoặc gửi email.</p>
     <section th:replace="${content}"></section>
   </section>
 </main>
 <div th:replace="~{common/notifications :: notifications}"></div>
-<script th:src="@{/js/ui/app.js}" defer></script>
+<script th:src="@{/js/ui/shell.js}" defer></script>
 </body>
 </html>

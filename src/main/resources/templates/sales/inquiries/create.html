@@ -1,16 +1,120 @@
 <!DOCTYPE html>
+<!--/* Đỗ Lan Anh: Màn Tạo tư vấn: dùng khi khách gọi điện hoặc đến showroom. Yêu cầu từ website đi vào danh sách qua "Yêu cầu mới".
+       Bấm Tìm khách để tra theo SĐT, tránh tạo trùng Buyer; khách mới mới cần tích đồng ý lưu thông tin. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Tạo tư vấn', 'Kinh doanh', 'sales-inquiries',
+                    null, ~{::link}, ~{::#inquiry-create})}">
+<head>
+  <title>Tạo tư vấn</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+  </th:block>
+</head>
 <body>
-<!-- Ghi nhận tư vấn mua xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/inquiries/create">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="inquiry-create" class="create-wrap inq-form-page">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('chat')}"></svg></div>
+      <div>
+        <h2>Tạo tư vấn</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/sales/inquiries}">Tư vấn &amp; lịch xem xe</a>
+          <span>/</span>
+          <span>Tạo tư vấn</span>
+        </nav>
+      </div>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: steps}"></section>
-</section>
+
+  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
+
+  <form class="inq-form" method="post" th:action="@{/sales/inquiries}">
+    <section class="section-card">
+      <div class="section-head">
+        <svg th:replace="~{shell/icons :: icon('user')}"></svg>
+        <h3>Khách hàng</h3>
+        <span class="pill pill--approved" th:if="${knownBuyer}">Khách đã có hồ sơ</span>
+        <span class="pill pill--new" th:if="${searched and !knownBuyer}">Khách mới</span>
+      </div>
+      <div class="section-body">
+        <div class="form-row form-row--2">
+          <div class="field">
+            <label for="inq-phone">Số điện thoại <span class="req">*</span></label>
+            <div class="inq-lookup">
+              <div class="field-input">
+                <input id="inq-phone" type="tel" name="phone" maxlength="20" required autofocus
+                       th:value="${form['phone']}" placeholder="Ví dụ: 0912 345 678">
+              </div>
+              <button class="btn-c btn-c--secondary" type="submit" formnovalidate formmethod="get"
+                      th:formaction="@{/sales/inquiries/new}">
+                <svg th:replace="~{shell/icons :: icon('search')}"></svg>Tìm khách
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="inq-name">Họ và tên <span class="req">*</span></label>
+            <div class="field-input">
+              <input id="inq-name" name="fullName" minlength="2" maxlength="160" required
+                     th:value="${form['fullName']}" placeholder="Nhập họ và tên">
+            </div>
+          </div>
+        </div>
+        <section th:replace="~{sales/inquiries/fields :: buyerExtra(${form['email']}, ${form['area']}, ${form['buyerNote']})}"></section>
+        <label class="check-item" th:unless="${knownBuyer}">
+          <input type="checkbox" name="consent" required th:checked="${form['consent'] != null}">
+          Khách đã đồng ý cho lưu thông tin để liên hệ tư vấn <span class="req">*</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+        <h3>Xe và nhu cầu</h3>
+      </div>
+      <div class="section-body">
+        <div class="form-row form-row--2">
+          <div class="field">
+            <label for="inq-car">Xe quan tâm <span class="req">*</span></label>
+            <span class="select">
+              <select id="inq-car" name="car" required>
+                <option value="">Chọn xe đang bán</option>
+                <option th:each="c : ${cars}" th:value="${c.key}" th:selected="${c.key == form['car']}"
+                        th:text="${c.key + ' · ' + #numbers.formatInteger(c.value['price'], 1, 'POINT') + ' ₫'}">Xe</option>
+              </select>
+            </span>
+          </div>
+          <div class="field">
+            <label for="inq-channel">Nguồn yêu cầu</label>
+            <span class="select">
+              <select id="inq-channel" name="channel">
+                <option th:each="c : ${channels}" th:value="${c.key}" th:text="${c.value}"
+                        th:selected="${c.key == form['channel']}">Nguồn</option>
+              </select>
+            </span>
+          </div>
+        </div>
+        <fieldset th:replace="~{sales/inquiries/fields :: needChoice(${form['need']})}"></fieldset>
+        <div class="field">
+          <label for="inq-note">Ghi chú tư vấn</label>
+          <textarea class="field-textarea" id="inq-note" name="note" rows="3" maxlength="2000"
+                    th:text="${form['note']}" placeholder="Nội dung khách trao đổi"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section th:replace="~{sales/inquiries/fields :: demand(${form['budgetMin']}, ${form['budgetMax']}, ${form['priorities']}, ${form['buyTime']})}"></section>
+
+    <div class="create-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/sales/inquiries}">Hủy</a>
+      <button class="btn-c btn-c--primary" type="submit">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tạo tư vấn
+      </button>
+    </div>
+  </form>
+</div>
 </body>
 </html>

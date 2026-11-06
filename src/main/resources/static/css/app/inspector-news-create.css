@@ -1,0 +1,59 @@
+/* Nguyễn Vũ Trường An: màn Đăng tin bán xe. Khung form dùng lại consignment-create.css. */
+.news-form { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.news-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* Khóa cả cụm nhập nhưng vẫn giữ khoảng cách giữa các thẻ */
+.news-fields { display: contents; }
+.news-fields:disabled .section-card { opacity: .6; }
+.news-fields:disabled .photo-add { cursor: not-allowed; }
+.news-fields:disabled .field-input,
+.news-fields:disabled .field-textarea,
+.news-fields:disabled .select,
+.news-fields:disabled .select select { background: #f4f7fb; cursor: not-allowed; }
+
+.news-change { color: var(--blue-600); font-size: 12.5px; font-weight: 600; }
+.news-change:hover { text-decoration: underline; }
+.news-hint { font-size: 11.5px; color: var(--ink-soft); }
+.news-unit { flex: none; font-weight: 700; color: var(--ink-soft); }
+.news-error { font-size: 12px; font-weight: 600; color: var(--red); }
+#news-create .field > .field-hint { text-align: right; }
+
+/* Thông tin xe, chỉ đọc */
+.news-vehicle { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.news-vehicle > div { flex: 1; min-width: 0; }
+.news-vehicle strong { display: block; font-size: 14px; font-weight: 700; }
+.news-vehicle small { display: block; font-size: 12px; color: var(--ink-soft); }
+.news-vehicle .vehicle-thumb { width: 44px; height: 36px; }
+.news-vehicle .pill { flex: none; font-size: 12px; }
+.news-specs {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 14px; margin: 0;
+  padding: 10px 12px; border-radius: 10px; background: #f7faff;
+}
+.news-specs dt { font-size: 11.5px; color: var(--ink-soft); }
+.news-specs dd { margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.news-spec-wide { grid-column: span 2; }
+
+/* Ảnh: input phải nằm trong ô Thêm ảnh để .sr-only không kéo giãn trang */
+#news-create .photo-add { position: relative; }
+#news-create .photo-add:focus-within { outline: 2px solid var(--blue-500); outline-offset: 2px; }
+
+/* Xem trước */
+.news-preview { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; min-width: 0; }
+.news-preview-cover {
+  display: grid; place-items: center; height: 150px; margin-bottom: 6px; overflow: hidden;
+  border-radius: 10px; background: var(--blue-50); color: var(--navy-700);
+}
+.news-preview-cover .ic { width: 40px; height: 40px; stroke-width: 1.4; }
+.news-preview-cover img { width: 100%; height: 100%; object-fit: cover; }
+.news-preview strong { font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.news-preview strong.is-empty, .news-preview b.is-empty { color: var(--mute); font-weight: 500; }
+.news-preview b { font-size: 16px; font-weight: 800; color: var(--blue-600); }
+.news-preview b.is-empty { font-size: 13px; }
+.news-preview small { font-size: 12px; color: var(--ink-soft); }
+
+#news-create .btn-c:disabled { opacity: .5; cursor: not-allowed; }
+
+@media (max-width: 680px) {
+  .news-specs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .news-vehicle { flex-wrap: wrap; }
+}

@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 /**
  * Landing stubs for roles without a dedicated app controller yet.
  * Admin → {@code AdminWebController}, Manager → {@code ManagerWebController},
- * Consignment → {@code ConsignmentDashboardController}.
+ * Consignment → {@code ConsignmentDashboardController},
+ * Inspector → {@code InspectorVehiclesWebController},
+ * Sales → {@code SalesInquiryWebController}.
  */
 @Controller
 @RequiredArgsConstructor
@@ -20,14 +22,9 @@ public class RoleDashboardController {
 
     private final AuthService authService;
 
-    @GetMapping("/inspector/dashboard")
-    public String inspectorDashboard(HttpSession session, Model model) {
-        return render(session, model, "inspector");
-    }
-
     @GetMapping("/sales/dashboard")
-    public String salesDashboard(HttpSession session, Model model) {
-        return render(session, model, "sales");
+    public String salesDashboard() {
+        return "redirect:/sales/inquiries";
     }
 
     @GetMapping("/finance/dashboard")

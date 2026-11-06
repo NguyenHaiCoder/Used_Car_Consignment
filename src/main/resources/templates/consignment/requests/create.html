@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<!--/* Hà Lệ Quyên: Màn hình tạo hồ sơ ký gửi — UI only, chưa có BE binding thật. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(
+          'Tạo hồ sơ ký gửi',
+          'Hệ thống Quản lý Ký gửi xe',
+          'consignments',
+          null,
+          ~{::link},
+          ~{::#create-consignment})}">
+<head>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <script th:src="@{/js/app/consignment-create.js}" defer></script>
+  </th:block>
+</head>
+<body>
+
+<div id="create-consignment" class="create-wrap">
+
+  <!--/* ── HEADER: tiêu đề ── */-->
+  <div class="create-header">
+    <div class="create-title-row">
+      <div class="create-title-icon">
+        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>
+        </svg>
+      </div>
+      <div>
+        <nav class="create-breadcrumb">
+          <a th:href="@{/consignments}">Consignment</a>
+          <span>/</span><span>Create</span>
+        </nav>
+        <h2>Tạo hồ sơ ký gửi</h2>
+      </div>
+      <span class="badge-draft">Lưu nháp</span>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <!--/* ── MAIN LAYOUT: form + sidebar ── */-->
+  <div class="create-layout">
+
+    <!--/* ── LEFT: các section form ── */-->
+    <div class="create-form-col" style="display:flex;flex-direction:column;gap:14px;">
+
+      <!--/* ── Section A: Thông tin chủ xe (tạo kèm hồ sơ ký gửi) ── */-->
+      <div class="section-card" data-check-section="owner">
+        <div class="section-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          <h3>A. Thông tin chủ xe</h3>
+          <span class="section-hint-pill">Tạo kèm hồ sơ</span>
+        </div>
+        <div class="section-body">
+          <div class="form-row form-row--3">
+            <div class="field">
+              <label>Họ tên <span class="req">*</span></label>
+              <div class="field-input">
+                <input type="text" placeholder="Nguyễn Minh Đức" value="Nguyễn Minh Đức">
+              </div>
+            </div>
+            <div class="field">
+              <label>Số điện thoại <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/>
+                </svg>
+                <input type="tel" placeholder="0912 345 678" value="0912 345 678">
+              </div>
+            </div>
+            <div class="field">
+              <label>CCCD <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+                </svg>
+                <input type="text" placeholder="079082001234" value="079082001234">
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label>Email</label>
+              <div class="field-input">
+                <input type="email" placeholder="email@example.com" value="">
+              </div>
+            </div>
+            <div class="field">
+              <label>Địa chỉ <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <input type="text" placeholder="Địa chỉ" value="Số 28, đường Nguyễn Văn Linh, P. Tân Phú, Quận 7, TP. Hồ Chí Minh">
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--3">
+            <div class="field">
+              <label>Ngân hàng <span class="req">*</span></label>
+              <div class="field-input">
+                <input type="text" placeholder="Vietcombank" value="Vietcombank">
+              </div>
+            </div>
+            <div class="field">
+              <label>Số tài khoản <span class="req">*</span></label>
+              <div class="field-input">
+                <input type="text" placeholder="000111103" value="000111103">
+              </div>
+            </div>
+            <div class="field">
+              <label>Tên chủ tài khoản <span class="req">*</span></label>
+              <div class="field-input">
+                <input type="text" placeholder="NGUYEN MINH DUC" value="NGUYEN MINH DUC">
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--1">
+            <div class="field">
+              <label>Ghi chú</label>
+              <textarea class="field-textarea" rows="2" placeholder="Ghi chú về chủ xe...">Chủ xe mong muốn bán nhanh trong 30 ngày.</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--/* ── Section B: Thông tin xe ── */-->
+      <div class="section-card" data-check-section="vehicle">
+        <div class="section-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3"/>
+            <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
+          </svg>
+          <h3>B. Thông tin xe</h3>
+        </div>
+        <div class="section-body">
+          <div class="form-row form-row--3">
+            <div class="field">
+              <label>Biển số <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M18 10h.01M18 14h.01M9 10h6M9 14h6"/>
+                </svg>
+                <input type="text" placeholder="51H-678.90" value="51H-678.90">
+              </div>
+            </div>
+            <div class="field">
+              <label>Dòng xe <span class="req">*</span></label>
+              <select id="vehicle-model" class="field-select" name="vehicleModelId" required
+                      data-brand-target="#vehicle-brand">
+                <option value="">Chọn dòng xe</option>
+                <option th:each="m : ${vehicleModels}"
+                        th:value="${m.id}"
+                        th:attr="data-brand=${m.brandName}"
+                        th:text="${m.name}"
+                        th:selected="${m.name == 'Tucson'}">Tucson</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Hãng xe <span class="req">*</span></label>
+              <div class="field-input">
+                <input id="vehicle-brand" type="text" name="vehicleBrand" readonly
+                       placeholder="Chọn dòng xe trước" value="Hyundai"
+                       title="Tự điền theo dòng xe đã chọn">
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--3">
+            <div class="field">
+              <label>Năm sản xuất <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                </svg>
+                <input type="number" placeholder="2022" value="2022" min="1990" max="2030">
+              </div>
+            </div>
+            <div class="field">
+              <label>Màu sắc <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/>
+                  <circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/>
+                  <path d="M12 22a8 8 0 0 0 8-8c0-4-3-6-6-9-3 3-6 5-6 9a8 8 0 0 0 8 8z"/>
+                </svg>
+                <input type="text" placeholder="Màu sắc" value="Xanh dương">
+              </div>
+            </div>
+            <div class="field">
+              <label>Số km <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="m12 6 1 6-4 3"/>
+                </svg>
+                <input type="text" placeholder="38.650" value="38.650" style="flex:1">
+                <span style="font-size:11px;color:var(--mute);flex:none">km</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label>Số khung (VIN) <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 5h18M3 10h18M3 15h18M3 20h18"/>
+                </svg>
+                <input type="text" placeholder="KMHJ3815NNU123456" value="KMHJ3815NNU123456">
+              </div>
+            </div>
+            <div class="field">
+              <label>Số máy <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                </svg>
+                <input type="text" placeholder="G4NLMN123456" value="G4NLMN123456">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--/* ── Section C: Tiếp nhận xe ── */-->
+      <div class="section-card" data-check-section="intake">
+        <div class="section-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <path d="M22 4 12 14.01l-3-3"/>
+          </svg>
+          <h3>C. Tiếp nhận xe</h3>
+        </div>
+        <div class="section-body">
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label>Ngày tiếp nhận <span class="req">*</span></label>
+              <div class="date-range" role="group" aria-label="Ngày tiếp nhận" data-date-range lang="vi-VN">
+                <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+                <label class="date-range-field">
+                  <span class="sr-only">Ngày tiếp nhận</span>
+                  <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+                         placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Ngày tiếp nhận"
+                         th:value="${form.intakeDate != null ? #temporals.format(form.intakeDate, 'dd/MM/yyyy') : ''}"
+                         value="">
+                  <input class="date-range-native" type="date" name="intakeDate" lang="vi-VN"
+                         th:value="${form.intakeDate}" value="" tabindex="-1" aria-hidden="true" required>
+                </label>
+              </div>
+            </div>
+            <div class="field">
+              <label>Nhân viên tiếp nhận <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                </svg>
+                <input type="text" placeholder="Hà Lệ Quyên" value="Hà Lệ Quyên">
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label>Tình trạng ngoại thất <span class="req">*</span></label>
+              <select class="field-select">
+                <option>Tốt (≈ 90–95%)</option>
+                <option>Khá tốt (≈ 75–89%)</option>
+                <option>Trung bình (≈ 60–74%)</option>
+                <option>Kém</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tình trạng nội thất <span class="req">*</span></label>
+              <select class="field-select">
+                <option>Tốt (≈ 90–95%)</option>
+                <option>Khá tốt (≈ 75–89%)</option>
+                <option>Trung bình (≈ 60–74%)</option>
+                <option>Kém</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label>Nhiên liệu <span class="req">*</span></label>
+              <select class="field-select">
+                <option>Xăng</option>
+                <option>Diesel</option>
+                <option>Điện</option>
+                <option>Hybrid</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Số km lúc nhận (Odometer) <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="m12 6 1 6-4 3"/>
+                </svg>
+                <input type="text" value="38.650" style="flex:1">
+                <span style="font-size:11px;color:var(--mute);flex:none">km</span>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Phụ kiện bàn giao <span class="req">*</span></label>
+            <div class="accessories-row" style="margin-top:4px;">
+              <label class="check-item"><input type="checkbox" checked> Chìa khóa (2)</label>
+              <label class="check-item"><input type="checkbox" checked> Đăng kiểm</label>
+              <label class="check-item"><input type="checkbox" checked> Bảo hiểm</label>
+              <label class="check-item"><input type="checkbox" checked> Camera hành trình</label>
+              <label class="check-item"><input type="checkbox"> Lốp dự phòng</label>
+              <span class="info-btn" title="Phụ kiện đi kèm xe khi bàn giao">ⓘ</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Ảnh xe khi nhận <span class="req">*</span></label>
+            <div class="photo-grid" style="margin-top:4px;">
+              <div class="photo-slot">
+                <img src="https://placehold.co/120x86/dbeafe/1668e3?text=Trước" alt="Trước xe">
+                <button class="photo-remove" type="button">×</button>
+                <span class="photo-label">Trước xe.jpg</span>
+              </div>
+              <div class="photo-slot">
+                <img src="https://placehold.co/120x86/dbeafe/1668e3?text=Sau" alt="Sau xe">
+                <button class="photo-remove" type="button">×</button>
+                <span class="photo-label">Sau xe.jpg</span>
+              </div>
+              <div class="photo-slot">
+                <img src="https://placehold.co/120x86/dbeafe/1668e3?text=Trái" alt="Bên trái">
+                <button class="photo-remove" type="button">×</button>
+                <span class="photo-label">Bên trái.jpg</span>
+              </div>
+              <div class="photo-slot">
+                <img src="https://placehold.co/120x86/dbeafe/1668e3?text=Phải" alt="Bên phải">
+                <button class="photo-remove" type="button">×</button>
+                <span class="photo-label">Bên phải.jpg</span>
+              </div>
+              <div class="photo-slot">
+                <img src="https://placehold.co/120x86/dbeafe/1668e3?text=Nội+thất" alt="Nội thất">
+                <button class="photo-remove" type="button">×</button>
+                <span class="photo-label">Nội thất.jpg</span>
+              </div>
+              <div class="photo-add" role="button" tabindex="0" aria-label="Tải thêm ảnh">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Tải thêm ảnh
+                <small>Tối đa 10 ảnh, JPG/PNG</small>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Ghi chú tiếp nhận</label>
+            <textarea class="field-textarea" rows="3"
+                      placeholder="Ghi chú về tình trạng xe, vết xước, hư hỏng...">Xe nguyên bản, không đâm đụng, trầy xước nhẹ cản trước.</textarea>
+            <span class="field-hint">48 / 500</span>
+          </div>
+        </div>
+      </div>
+
+      <!--/* ── Section D: Thỏa thuận ký gửi ── */-->
+      <div class="section-card" data-check-section="terms">
+        <div class="section-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <h3>D. Thỏa thuận ký gửi</h3>
+        </div>
+        <div class="section-body">
+          <div class="form-row form-row--332">
+            <div class="field">
+              <label>Giá mong muốn của chủ xe <span class="req">*</span></label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M9.5 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+                </svg>
+                <input type="text" value="780.000.000" style="flex:1">
+                <span style="font-size:11px;color:var(--mute);flex:none">VNĐ</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Giá chào bán</label>
+              <div class="field-input">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <input type="text" value="" placeholder="Để trống — điền sau khi có định giá" style="flex:1" readonly
+                       title="Điền sau khi có thông tin định giá">
+                <span style="font-size:11px;color:var(--mute);flex:none">VNĐ</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Hoa hồng <span class="req">*</span></label>
+              <div class="field-input">
+                <input type="number" value="1.5" step="0.1" min="0" max="10" style="flex:1">
+                <span style="font-size:11px;color:var(--mute);flex:none">%</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--2">
+            <div class="term-days" data-term-days>
+              <div class="field">
+                <label>Thời hạn ký gửi <span class="req">*</span></label>
+                <div class="date-range" role="group" aria-label="Thời hạn ký gửi" data-date-range lang="vi-VN">
+                  <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+                  <label class="date-range-field">
+                    <span class="sr-only">Từ ngày</span>
+                    <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+                           placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Từ ngày"
+                           value="15/01/2025">
+                    <input class="date-range-native" type="date" name="termFrom" lang="vi-VN"
+                           value="2025-01-15" tabindex="-1" aria-hidden="true" required
+                           data-term-from>
+                  </label>
+                  <span class="date-range-sep" aria-hidden="true">→</span>
+                  <label class="date-range-field">
+                    <span class="sr-only">Đến ngày</span>
+                    <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
+                           placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Đến ngày"
+                           value="15/03/2025">
+                    <input class="date-range-native" type="date" name="termTo" lang="vi-VN"
+                           value="2025-03-15" tabindex="-1" aria-hidden="true" required
+                           data-term-to>
+                  </label>
+                </div>
+              </div>
+              <div class="field">
+                <label>Số ngày muốn ký gửi <span class="req">*</span></label>
+                <div class="field-input">
+                  <input type="number" name="termDays" min="1" step="1" value="60" required
+                         data-term-days-input placeholder="60" style="flex:1">
+                  <span style="font-size:11px;color:var(--mute);flex:none">ngày</span>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Điều khoản chính</label>
+              <textarea class="field-textarea" rows="4">• Thời hạn ký gửi: 60 ngày kể từ ngày tiếp nhận xe.
+• Hoa hồng: 1,5% trên giá bán thực tế.
+• Chủ xe ủy quyền cho đơn vị quản lý, trưng bày và chào bán xe.</textarea>
+              <span class="field-hint">138 / 1.000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!--/* end create-form-col */-->
+
+    <!--/* ── RIGHT: sidebar tóm tắt ── */-->
+    <aside class="create-sidebar">
+
+      <!--/* Tóm tắt hồ sơ */-->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="2" width="8" height="4" rx="1"/>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>
+          </svg>
+          <h4>Tóm tắt hồ sơ</h4>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-row">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
+            <div class="summary-row-content">
+              <strong>Nguyễn Minh Đức</strong>
+              <small>0912 345 678</small>
+            </div>
+          </div>
+          <div class="summary-row">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3"/>
+              <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
+            </svg>
+            <div class="summary-row-content">
+              <strong>Hyundai Tucson (2022)</strong>
+              <small>51H-678.90 &nbsp;|&nbsp; 38.650 km</small>
+            </div>
+          </div>
+          <div class="summary-status">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+            </svg>
+            <span class="summary-status-text">Trạng thái: nháp</span>
+          </div>
+        </div>
+      </div>
+
+      <!--/* Checklist bắt buộc */-->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <path d="M22 4 12 14.01l-3-3"/>
+          </svg>
+          <h4>Mục bắt buộc</h4>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="checklist" data-create-checklist>
+            <div class="checklist-item is-fail" data-check="owner">
+              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
+              Đã nhập thông tin chủ xe
+            </div>
+            <div class="checklist-item is-fail" data-check="vehicle">
+              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
+              Đã nhập thông tin xe
+            </div>
+            <div class="checklist-item is-fail" data-check="intake">
+              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
+              Đã có thông tin tiếp nhận xe
+            </div>
+            <div class="checklist-item is-fail" data-check="terms">
+              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+              </svg>
+              Đã nhập thỏa thuận ký gửi
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--/* Luồng tiếp theo */-->
+      <div class="sidebar-card">
+        <div class="sidebar-card-head">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/>
+            <path d="M6 15V9a6 6 0 0 1 6-6h1"/><path d="m15 3 3 3-3 3"/>
+          </svg>
+          <h4>Luồng tiếp theo</h4>
+        </div>
+        <div class="sidebar-card-body" style="padding:10px 12px;">
+          <div class="flow-steps">
+            <div class="flow-step is-current">
+              <div class="step-ic">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </div>
+              <div class="flow-step-text">
+                <strong>Lưu nháp</strong>
+                <small>Lưu hồ sơ nhập (nháp)</small>
+              </div>
+            </div>
+            <div class="flow-connector"></div>
+            <div class="flow-step">
+              <div class="step-ic">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
+                </svg>
+              </div>
+              <div class="flow-step-text">
+                <strong>Gửi duyệt</strong>
+                <small>Trình phê duyệt nội bộ</small>
+              </div>
+            </div>
+            <div class="flow-connector"></div>
+            <div class="flow-step">
+              <div class="step-ic">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </div>
+              <div class="flow-step-text">
+                <strong>Hợp đồng ký gửi</strong>
+                <small>Tạo và ký hợp đồng ký gửi</small>
+              </div>
+            </div>
+            <div class="flow-connector"></div>
+            <div class="flow-step">
+              <div class="step-ic">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+              <div class="flow-step-text">
+                <strong>Kiểm định / tiếp nhận xe</strong>
+                <small>Kiểm tra, xác nhận tình trạng</small>
+              </div>
+            </div>
+            <div class="flow-connector"></div>
+            <div class="flow-step">
+              <div class="step-ic">
+                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+              </div>
+              <div class="flow-step-text">
+                <strong>Đăng bán</strong>
+                <small>Đưa xe lên kênh bán hàng</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside><!--/* end create-sidebar */-->
+
+  </div><!--/* end create-layout */-->
+
+  <!--/* ── ACTION BAR ── */-->
+  <div class="create-actions">
+    <a class="btn btn--ghost" th:href="@{/consignments}">
+      <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+      Hủy
+    </a>
+    <div class="create-actions-right">
+      <!--/* Chờ BE: form action và binding thật */-->
+      <button type="button" class="btn btn--outline">
+        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Lưu nháp
+      </button>
+      <button type="button" class="btn btn--primary">
+        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
+        </svg>
+        Gửi duyệt
+      </button>
+    </div>
+  </div>
+
+</div><!--/* end create-wrap */-->
+
+</body>
+</html>

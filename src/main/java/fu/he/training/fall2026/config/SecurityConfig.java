@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/home",
+                                "/tin-ban-xe",
                                 "/login",
                                 "/auth/sign-in",
                                 "/verify-otp",
@@ -46,7 +47,14 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/manager/**").hasRole("MANAGER")
-                        .requestMatchers("/consignment/**").hasRole("CONSIGNMENT")
+                        /* Danh mục dùng chung mọi role đã đăng nhập */
+                        .requestMatchers(
+                                "/consignment/brands/**",
+                                "/consignment/models/**",
+                                "/inspector/vehicle-types/**",
+                                "/inspector/checklists/**")
+                        .authenticated()
+                        .requestMatchers("/consignments/**", "/consignment/**").hasRole("CONSIGNMENT")
                         .requestMatchers("/inspector/**").hasRole("INSPECTOR")
                         .requestMatchers("/sales/**").hasRole("SALES")
                         .requestMatchers("/finance/**").hasRole("FINANCE")

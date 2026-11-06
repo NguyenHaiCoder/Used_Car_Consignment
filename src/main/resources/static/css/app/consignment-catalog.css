@@ -1,0 +1,183 @@
+/* UI danh mục hãng / dòng / loại xe / loại kiểm định — đồng bộ cột. */
+.catalog-wrap { display: flex; flex-direction: column; gap: 14px; }
+.catalog-wrap.workflow {
+  height: 100%; min-height: 0;
+}
+.catalog-wrap.workflow > .records {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+}
+.catalog-wrap.workflow > .records > .table-wrap {
+  flex: 1 1 auto; min-height: 0;
+}
+.catalog-wrap .toolbar.toolbar--catalog {
+  grid-template-columns: minmax(200px, 1fr) minmax(200px, 240px) auto;
+  align-items: center;
+}
+.catalog-wrap .toolbar.toolbar--catalog .filter-dropdown-trigger {
+  box-sizing: border-box;
+  height: var(--toolbar-h, 36px); min-height: var(--toolbar-h, 36px);
+  border: 1px solid var(--line, #b9cfea);
+  border-radius: var(--toolbar-radius, 10px);
+}
+.catalog-wrap .toolbar.toolbar--catalog .filter-dropdown-menu {
+  min-width: 100%;
+}
+.catalog-wrap .pager-side { display: flex; align-items: center; gap: 14px; min-width: 0; }
+@media (max-width: 720px) {
+  .catalog-wrap .toolbar.toolbar--catalog { grid-template-columns: 1fr; }
+}
+
+#brand-list .records .table,
+#model-list .records .table,
+#checklist-list .records .table,
+#vehicle-type-list .records .table {
+  min-width: 0 !important; table-layout: fixed; width: 100%;
+}
+#brand-list .table th,
+#brand-list .table td,
+#model-list .table th,
+#model-list .table td,
+#checklist-list .table th,
+#checklist-list .table td,
+#vehicle-type-list .table th,
+#vehicle-type-list .table td {
+  text-align: left; vertical-align: middle;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#brand-list .table th,
+#model-list .table th,
+#checklist-list .table th,
+#vehicle-type-list .table th { white-space: nowrap; }
+
+/* Hãng xe / dòng xe — 5 cột */
+#brand-list .table th:nth-child(1), #brand-list .table td:nth-child(1),
+#model-list .table th:nth-child(1), #model-list .table td:nth-child(1) { width: 14%; }
+#brand-list .table th:nth-child(2), #brand-list .table td:nth-child(2),
+#model-list .table th:nth-child(2), #model-list .table td:nth-child(2) { width: 24%; }
+#brand-list .table th:nth-child(3), #brand-list .table td:nth-child(3),
+#model-list .table th:nth-child(3), #model-list .table td:nth-child(3) { width: 24%; }
+#brand-list .table th:nth-child(4), #brand-list .table td:nth-child(4),
+#model-list .table th:nth-child(4), #model-list .table td:nth-child(4) { width: 20%; }
+#brand-list .table th:nth-child(5), #brand-list .table td:nth-child(5),
+#model-list .table th:nth-child(5), #model-list .table td:nth-child(5) { width: 18%; text-align: right; }
+
+/* Loại kiểm định — 6 cột */
+#checklist-list .table th:nth-child(1), #checklist-list .table td:nth-child(1) { width: 10%; }
+#checklist-list .table th:nth-child(2), #checklist-list .table td:nth-child(2) { width: 28%; }
+#checklist-list .table th:nth-child(3), #checklist-list .table td:nth-child(3) { width: 16%; }
+#checklist-list .table th:nth-child(4), #checklist-list .table td:nth-child(4) { width: 10%; }
+#checklist-list .table th:nth-child(5), #checklist-list .table td:nth-child(5) { width: 18%; }
+#checklist-list .table th:nth-child(6), #checklist-list .table td:nth-child(6) { width: 18%; text-align: right; }
+
+/* Quản lý loại xe — 4 cột */
+#vehicle-type-list .table th:nth-child(1), #vehicle-type-list .table td:nth-child(1) { width: 18%; }
+#vehicle-type-list .table th:nth-child(2), #vehicle-type-list .table td:nth-child(2) { width: 40%; }
+#vehicle-type-list .table th:nth-child(3), #vehicle-type-list .table td:nth-child(3) { width: 22%; }
+#vehicle-type-list .table th:nth-child(4), #vehicle-type-list .table td:nth-child(4) { width: 20%; text-align: right; }
+
+#brand-list .table td:nth-child(5),
+#model-list .table td:nth-child(5),
+#checklist-list .table td:nth-child(5),
+#checklist-list .table td:nth-child(6),
+#vehicle-type-list .table td:nth-child(3),
+#vehicle-type-list .table td:nth-child(4) { overflow: visible; }
+
+#brand-list .row-actions,
+#model-list .row-actions,
+#checklist-list .row-actions,
+#vehicle-type-list .row-actions { justify-content: flex-end; }
+#brand-list .row-actions form,
+#model-list .row-actions form,
+#checklist-list .row-actions form,
+#vehicle-type-list .row-actions form { margin: 0; }
+#brand-list button.row-action,
+#model-list button.row-action,
+#checklist-list button.row-action,
+#vehicle-type-list button.row-action {
+  border: 0; background: transparent; padding: 0;
+}
+#brand-list .row-action.is-danger,
+#model-list .row-action.is-danger,
+#checklist-list .row-action.is-danger,
+#vehicle-type-list .row-action.is-danger { color: var(--red); }
+#brand-list .row-action.is-danger:hover,
+#model-list .row-action.is-danger:hover,
+#checklist-list .row-action.is-danger:hover,
+#vehicle-type-list .row-action.is-danger:hover { background: #fff0f0; }
+#brand-list .row-action.is-success,
+#model-list .row-action.is-success,
+#checklist-list .row-action.is-success,
+#vehicle-type-list .row-action.is-success { color: var(--green); }
+#brand-list .row-action.is-success:hover,
+#model-list .row-action.is-success:hover,
+#checklist-list .row-action.is-success:hover,
+#vehicle-type-list .row-action.is-success:hover { background: var(--green-soft); }
+.catalog-form {
+  display: grid; gap: 14px; padding: 16px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+}
+.catalog-form .form-row {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.catalog-form .form-row--3 {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .9fr);
+}
+.catalog-form .field { display: grid; gap: 6px; }
+.catalog-form label { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.catalog-form .req { color: var(--red); }
+.catalog-form input,
+.catalog-form select,
+.catalog-form textarea {
+  width: 100%; min-height: 38px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  font: 500 13px/1.4 "Be Vietnam Pro", sans-serif; color: var(--ink);
+}
+.catalog-form textarea { min-height: 90px; resize: vertical; }
+.catalog-form input:focus,
+.catalog-form select:focus,
+.catalog-form textarea:focus {
+  outline: 0; border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 117, 232, .15);
+}
+.catalog-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.catalog-empty {
+  padding: 28px 16px; text-align: center; color: var(--ink-soft); font-weight: 600;
+}
+
+/* Editor bước loại kiểm định */
+.steps-editor {
+  display: grid; gap: 12px; padding: 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: #f7faff;
+}
+.steps-editor-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+}
+.steps-editor-head h3 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
+.steps-editor-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+.steps-list { display: grid; gap: 10px; }
+.step-row {
+  display: grid; gap: 10px; padding: 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+}
+.step-row-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.step-order {
+  display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px;
+  border-radius: 999px; background: var(--blue-100, #dbeafe); color: var(--navy-800, #0b1b33);
+  font-size: 12px; font-weight: 700;
+}
+.step-row-fields {
+  display: grid; gap: 10px; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+.step-remove { min-height: 32px; padding: 0 10px; font-size: 12.5px; }
+
+@media (max-width: 900px) {
+  .catalog-form .form-row--3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .catalog-form .form-row { grid-template-columns: 1fr; }
+  .step-row-fields { grid-template-columns: 1fr; }
+}

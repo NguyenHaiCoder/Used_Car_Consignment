@@ -144,6 +144,8 @@ public class ConsignmentServiceImpl implements ConsignmentService {
         Long vehicleId = consignment.getVehicle().getId();
         ConsignmentStatus status = consignment.getStatus();
         boolean open = status != ConsignmentStatus.SOLD
+                && status != ConsignmentStatus.COMPLETED
+                && status != ConsignmentStatus.WITHDRAW_REQUESTED
                 && status != ConsignmentStatus.WITHDRAWN
                 && status != ConsignmentStatus.CLOSED;
 
@@ -233,7 +235,13 @@ public class ConsignmentServiceImpl implements ConsignmentService {
                 .id(v.getId())
                 .vin(v.getVin())
                 .displayLabel(v.getDisplayLabel())
+                .make(v.getMake())
+                .model(v.getModel())
                 .year(v.getYear())
+                .color(v.getColor())
+                .odometerKm(v.getOdometerKm())
+                .chassisNumber(v.getChassisNumber())
+                .engineNumber(v.getEngineNumber())
                 .build();
     }
 

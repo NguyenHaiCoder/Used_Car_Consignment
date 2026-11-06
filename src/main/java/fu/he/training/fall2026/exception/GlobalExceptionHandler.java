@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -38,6 +39,13 @@ public class GlobalExceptionHandler {
         HttpStatus status = ex.getStatus() != null ? ex.getStatus() : HttpStatus.BAD_REQUEST;
         response.setStatus(status.value());
         return render(model, request, status, ex.getMessage());
+    }
+
+    /** Nguyễn Phúc Khang: tệp vượt spring.servlet.multipart.* thì báo rõ lý do, không rơi vào lỗi 500 chung. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.CONTENT_TOO_LARGE)
+    public String handleUploadTooLarge(Model model, HttpServletRequest request) {
+        return render(model, request, HttpStatus.CONTENT_TOO_LARGE, "Tệp tải lên quá lớn. Mỗi tệp tối đa 10MB.");
     }
 
     @ExceptionHandler(ResponseStatusException.class)

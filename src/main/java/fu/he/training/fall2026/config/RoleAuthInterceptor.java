@@ -28,6 +28,7 @@ public class RoleAuthInterceptor implements HandlerInterceptor {
     static {
         PREFIX_ROLES.put("/admin", RoleCode.ADMIN);
         PREFIX_ROLES.put("/manager", RoleCode.MANAGER);
+        PREFIX_ROLES.put("/consignments", RoleCode.CONSIGNMENT);
         PREFIX_ROLES.put("/consignment", RoleCode.CONSIGNMENT);
         PREFIX_ROLES.put("/inspector", RoleCode.INSPECTOR);
         PREFIX_ROLES.put("/sales", RoleCode.SALES);
@@ -76,6 +77,13 @@ public class RoleAuthInterceptor implements HandlerInterceptor {
 
     static RoleCode requiredRoleFor(String path) {
         if (path == null || path.isBlank()) {
+            return null;
+        }
+        /* Quản lý danh mục (hãng/dòng/loại xe/loại kiểm định) mở cho mọi role đã login. */
+        if (path.startsWith("/consignment/brands")
+                || path.startsWith("/consignment/models")
+                || path.startsWith("/inspector/vehicle-types")
+                || path.startsWith("/inspector/checklists")) {
             return null;
         }
         for (Map.Entry<String, RoleCode> entry : PREFIX_ROLES.entrySet()) {

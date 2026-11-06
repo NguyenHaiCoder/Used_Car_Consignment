@@ -4,9 +4,15 @@ spring:
     name: project-group-1
   profiles:
     default: dev
-    group:
-      dev:
-        - ui-preview
+  # Nguyễn Phúc Khang: đọc thêm file .env ở thư mục gốc dự án (đã gitignore) để lấy key Cloudinary.
+  # Không có file .env thì vẫn chạy bình thường, chỉ là chưa upload được.
+  config:
+    import: optional:file:.env[.properties]
+  # Nguyễn Phúc Khang: mỗi tệp tối đa 10MB, một lần gửi form tối đa 120MB (đủ 10 ảnh và vài tệp giấy tờ).
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 120MB
   main:
     banner-mode: console
     register-shutdown-hook: true
@@ -25,6 +31,10 @@ spring:
     servlet:
       content-type: text/html
     check-template-location: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
   jpa:
     open-in-view: false
     hibernate:
@@ -64,7 +74,17 @@ server:
       max: 200
       min-spare: 10
     max-http-form-post-size: 2MB
-    max-swallow-size: 2MB
+    # Nguyễn Phúc Khang: phải lớn hơn max-request-size. Nếu nhỏ hơn, tệp quá dung lượng làm Tomcat
+    # cắt kết nối (trình duyệt báo connection reset) thay vì hiện trang lỗi 413.
+    max-swallow-size: 130MB
+
+# Nguyễn Phúc Khang: key Cloudinary lấy từ biến môi trường hoặc file .env, tuyệt đối không ghi thẳng vào đây.
+# Mẫu các biến cần khai báo nằm trong .env.example.
+app:
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+    api-key: ${CLOUDINARY_API_KEY:}
+    api-secret: ${CLOUDINARY_API_SECRET:}
 
 logging:
   pattern:

@@ -1,11 +1,132 @@
 <!DOCTYPE html>
+<!--/* Đỗ Lan Anh: màn Quản lý đặt cọc giữ xe, thiết kế theo màn Quản lý tin đăng.
+       Dùng id news-list để ăn chung inspector-news.css và inspector-news.js, phần khác biệt nằm ở sales-deals.css. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Quản lý đặt cọc', 'Kinh doanh', 'sales-reservations',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Quản lý đặt cọc</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Đặt cọc &amp; giữ xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/reservations/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--holds">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('coins')}"></svg></div>
+      <div>
+        <h2>Quản lý đặt cọc giữ xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <span>Quản lý đặt cọc</span>
+        </nav>
+        <p class="news-lead">Giữ xe cho khách bằng phiếu đặt cọc, xe chọn từ hồ sơ ký gửi; đặt cọc xong mới lập được hợp đồng bán xe.</p>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/sales/reservations/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tạo mới
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('phiếu')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm phiếu đặt cọc', 'Tìm theo mã phiếu, mã hồ sơ, xe, khách...', 'Khoảng hạn giữ xe', 'Tiền cọc')}"></form>
+
+  <section class="card records">
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table" aria-label="Danh sách phiếu đặt cọc giữ xe">
+        <thead>
+          <tr>
+            <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả phiếu trên trang"></th>
+            <th scope="col">Mã đặt cọc</th>
+            <th scope="col">Mã hồ sơ</th>
+            <th scope="col">Xe</th>
+            <th scope="col">Khách hàng</th>
+            <th scope="col" class="num">Tiền cọc</th>
+            <th scope="col">Hạn giữ</th>
+            <th scope="col">Người phụ trách</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="r : ${page.content}"
+              th:with="s=${statuses.get(r.status)}, active=${r.status == 'ACTIVE'}, contractId=${contractIds.get(r.id)},
+                       undecided=${r.status == 'EXPIRED' and r.depositDecision == ''}">
+            <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn phiếu ' + r.code}"></td>
+            <td><a class="code" th:href="@{/sales/reservations/{id}(id=${r.id})}" th:text="${r.code}">DC-1</a></td>
+            <td th:text="${r.file}">KG-1</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${r.car}" th:title="${r.car}">Xe</strong>
+                  <small th:text="${r.plate + ' · ' + #numbers.formatInteger(r.km, 1, 'POINT') + ' km'}">Biển số · km</small>
+                </span>
+              </div>
+            </td>
+            <td class="deal-person">
+              <strong th:text="${r.buyer}" th:title="${r.buyer}">Khách</strong>
+              <small th:text="${r.phone}">SĐT</small>
+            </td>
+            <td class="num news-price" th:text="${#numbers.formatInteger(r.deposit, 1, 'POINT') + ' ₫'}">0 ₫</td>
+            <td class="news-date">
+              <span th:text="${#temporals.format(#temporals.createDate(r.holdUntil), 'dd/MM/yyyy')}">01/01/2026</span>
+              <small th:if="${active}" th:text="${r.daysLeft == 0 ? 'Hết hôm nay' : 'Còn ' + r.daysLeft + ' ngày'}">Còn</small>
+            </td>
+            <td th:text="${r.staff}" th:title="${r.staff}">Nhân viên</td>
+            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td>
+              <div class="row-actions news-actions">
+                <a class="row-action" th:href="@{/sales/reservations/{id}(id=${r.id})}"
+                   th:attr="aria-label=${'Xem phiếu ' + r.code}" title="Xem phiếu">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+                <a class="row-action" th:if="${active}" th:href="@{/sales/reservations/{id}/edit(id=${r.id})}"
+                   th:attr="aria-label=${'Sửa phiếu ' + r.code}" title="Sửa phiếu">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </a>
+                <span class="row-action is-off" th:unless="${active}" aria-hidden="true">
+                  <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
+                </span>
+                <details class="user-menu row-menu" th:if="${active or undecided or contractId != null}">
+                  <summary class="row-action" th:attr="aria-label=${'Thao tác khác cho ' + r.code}">
+                    <svg th:replace="~{shell/icons :: icon('dots')}"></svg>
+                  </summary>
+                  <div class="menu-pop">
+                    <a th:if="${active}" th:href="@{/sales/contracts/new(reservationId=${r.id})}">Lập hợp đồng bán xe</a>
+                    <a th:if="${active}" th:href="@{/sales/reservations/{id}(id=${r.id},cancel=1)}">Hủy đặt cọc</a>
+                    <a th:if="${undecided}" th:href="@{/sales/reservations/{id}(id=${r.id},cancel=1)}">Xử lý tiền cọc</a>
+                    <a th:if="${contractId != null}" th:href="@{/sales/contracts/{id}(id=${contractId})}">Xem hợp đồng</a>
+                  </div>
+                </details>
+                <span class="row-action is-off" th:unless="${active or undecided or contractId != null}" aria-hidden="true">
+                  <svg th:replace="~{shell/icons :: icon('dots')}"></svg>
+                </span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có phiếu đặt cọc phù hợp</h4>
+      <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+    </div>
+    <nav th:replace="~{sales/deal-parts :: pager('phiếu')}"></nav>
+  </section>
+</div>
 </body>
 </html>

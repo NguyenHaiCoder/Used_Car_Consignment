@@ -5,8 +5,7 @@ Tất cả trang HTML của ứng dụng nằm trong thư mục này.
 ```text
 templates/
   public/        # Home công khai
-  auth/          # Đăng nhập, xác minh mẫu và OTP hiện có
-  preview/       # Mục lục trang và file URL bấm kiểm tra theo role
+  auth/          # Đăng nhập, xác minh và OTP
   common/        # Layout, header, sidebar, footer và fragments tái sử dụng
   admin/         # Nhân sự, phân quyền, phiên truy cập, audit, báo cáo
   manager/       # Phê duyệt, điều hành, ký gửi, tin đăng, quyết toán
@@ -16,22 +15,27 @@ templates/
   finance/       # Khoản thu, hoàn tiền, quyết toán, chi trả
   handover/      # Checklist bàn giao, biên nhận, đóng sale
   documents/     # Checklist giấy tờ, upload/review, sang tên
+  app/           # Dashboard theo role khi đăng nhập thật
 ```
 
 Mỗi role có `dashboard.html`; bên trong từng module dùng `list.html`, `detail.html`, `create.html`, `edit.html` hoặc tên thao tác như `withdraw.html`, `cancel.html`, `receipt.html`, `close.html`. Không tạo file riêng theo mã bản ghi 101/102/103: dữ liệu khác nhau được truyền bằng Spring `Model`.
 
 Ví dụ:
 
-- `consignment/consignments/list.html`: danh sách hồ sơ ký gửi.
-- `consignment/consignments/create.html`: tạo draft ký gửi.
-- `consignment/consignments/detail.html`: chi tiết bất kỳ hồ sơ mẫu.
+- `consignment/requests/list.html`: danh sách / workflow hồ sơ ký gửi (shell layout).
 - `sales/reservations/cancel.html`: hủy/hết hạn và xử lý cọc.
-- `finance/settlements/detail.html`: xem/tính quyết toán mẫu của Finance.
+- `finance/settlements/detail.html`: xem/tính quyết toán của Finance.
 - `manager/settlements/detail.html`: Manager review quyết toán.
-- `documents/documents/upload.html`: upload/thay thế giấy tờ mẫu.
+- `documents/documents/upload.html`: upload/thay thế giấy tờ.
 
-Các file trang sử dụng fragment Thymeleaf để tái sử dụng layout và thành phần. Có thể chỉnh trực tiếp bố cục từng trang; không còn renderer trả chung `ui/page.html` cho tất cả màn hình.
+Các file trang sử dụng fragment Thymeleaf để tái sử dụng layout và thành phần.
 
-CSS và JavaScript được phục vụ từ `src/main/resources/static/css/ui` và `static/js/ui`. Controllers chỉ GET để render UI, dùng profile `ui-preview` được bật tự động cùng profile `dev` mặc định. Chạy ứng dụng bình thường trong IntelliJ hoặc chạy `preview-ui.cmd`, rồi mở `http://localhost:6868/ui`. Các màn hình UI truy cập trực tiếp, không yêu cầu đăng nhập.
+CSS và JavaScript được phục vụ từ `src/main/resources/static/css/ui` và `static/js/ui` (`shell.js` cho sidebar/toast). Màn hình nghiệp vụ chạy qua route đã xác thực (`/admin/**`, `/manager/**`, `/consignment/**`, …), không còn workspace `/ui` preview.
 
-Bảng đối chiếu URL → template đầy đủ: `docs/frontend/TEMPLATE_STRUCTURE.md` tại workspace gốc.
+## Header và sidebar dùng chung
+
+`common/sidebar.html :: sidebar` và `common/header.html :: header` là nguồn chính cho giao diện ConsignCar. `shell/layout.html` cũng gọi hai fragment này. Không tạo bản sao trong `shell/`.
+
+Truyền `active` bằng tên, ví dụ `~{common/sidebar :: sidebar(active='consignments')}`; truyền tiêu đề và số thông báo qua `~{common/header :: header(heading='Hồ sơ ký gửi', alerts=1)}`. Các trang dùng `Screen` có thể gọi `header` trực tiếp để lấy `screen.title`.
+
+`common/header :: head(title)` giữ CSS nội dung hiện có và nạp `css/app/chrome.css` cho các thành phần dùng chung. Layout workflow vẫn dùng `css/app/shell.css`.

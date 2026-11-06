@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!--/* Đỗ Lan Anh: Màn Sửa tư vấn. Không đổi được SĐT và xe: một Inquiry luôn là một khách với một xe; xe khác thì tạo tư vấn mới.
+       Không đổi được người phụ trách: chỉ Manager được gán lại. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page(${'Sửa ' + item.code}, 'Kinh doanh', 'sales-inquiries',
+                    null, ~{::link}, ~{::#inquiry-edit})}">
+<head>
+  <title>Sửa tư vấn</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+  </th:block>
+</head>
+<body>
+<div id="inquiry-edit" class="create-wrap inq-form-page">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('pencil')}"></svg></div>
+      <div>
+        <h2 th:text="${'Sửa tư vấn ' + item.code}">Sửa tư vấn</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/sales/inquiries}">Tư vấn &amp; lịch xem xe</a>
+          <span>/</span>
+          <a th:href="@{/sales/inquiries/{id}(id=${item.id})}" th:text="${item.code}">TV</a>
+          <span>/</span>
+          <span>Sửa</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <form class="inq-form" method="post" th:action="@{/sales/inquiries/{id}(id=${item.id})}">
+    <section class="section-card">
+      <div class="section-head">
+        <svg th:replace="~{shell/icons :: icon('user')}"></svg>
+        <h3>Khách hàng</h3>
+      </div>
+      <div class="section-body">
+        <div class="form-row form-row--2">
+          <div class="field">
+            <label for="inq-name">Họ và tên <span class="req">*</span></label>
+            <div class="field-input">
+              <input id="inq-name" name="fullName" minlength="2" maxlength="160" required th:value="${item.buyer}">
+            </div>
+          </div>
+          <div class="field">
+            <label for="inq-phone">Số điện thoại</label>
+            <div class="field-input">
+              <input id="inq-phone" readonly th:value="${item.phone}">
+            </div>
+          </div>
+        </div>
+        <section th:replace="~{sales/inquiries/fields :: buyerExtra(${item.email}, ${item.area}, ${item.buyerNote})}"></section>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <svg th:replace="~{shell/icons :: icon('car')}"></svg>
+        <h3>Xe và nhu cầu</h3>
+      </div>
+      <div class="section-body">
+        <div class="form-row form-row--2">
+          <div class="field">
+            <label for="inq-car">Xe quan tâm</label>
+            <div class="field-input">
+              <input id="inq-car" readonly th:value="${item.car}">
+            </div>
+          </div>
+          <div class="field">
+            <label for="inq-staff">Nhân viên phụ trách</label>
+            <div class="field-input">
+              <input id="inq-staff" readonly th:value="${item.staff == '' ? 'Chưa có' : item.staff}">
+            </div>
+          </div>
+        </div>
+        <fieldset th:replace="~{sales/inquiries/fields :: needChoice(${item.need})}"></fieldset>
+      </div>
+    </section>
+
+    <section th:replace="~{sales/inquiries/fields :: demand(${item.budgetMin}, ${item.budgetMax}, ${#strings.listJoin(item.priorities, ', ')}, ${item.buyTime})}"></section>
+
+    <div class="create-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/sales/inquiries/{id}(id=${item.id})}">Hủy</a>
+      <button class="btn-c btn-c--primary" type="submit">Lưu thay đổi</button>
+    </div>
+  </form>
+</div>
+</body>
+</html>

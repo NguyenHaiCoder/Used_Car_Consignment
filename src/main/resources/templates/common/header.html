@@ -1,4 +1,7 @@
-<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<!DOCTYPE html>
+<!--/* Hà Lệ Quyên: thanh trên cùng của layout mới (tiêu đề, tìm kiếm, chuông, tài khoản). */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+
 <head th:fragment="head(title)">
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title th:text="${title + ' | GaragePro Consign'}">GaragePro Consign</title>
@@ -11,37 +14,43 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link th:href="@{/css/ui/app-shell.css}" rel="stylesheet">
   </th:block>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+  <link th:href="@{/css/app/chrome.css}" rel="stylesheet">
 </head>
-<!-- Ưu tiên người dùng trong session (AUTH_*); không có session (bản preview /ui) thì dùng role trong Model. -->
-<header th:fragment="header" class="main-header">
-  <button class="icon-button menu-toggle" aria-label="Mở điều hướng" aria-controls="app-sidebar" aria-expanded="false">☰</button>
-  <div class="header-context">
-    <th:block th:if="${appShell}">
-      <nav th:replace="~{common/breadcrumbs :: breadcrumbs}"></nav>
-    </th:block>
-    <th:block th:unless="${appShell}">
-      <strong>UCCMS</strong>
-      <span>Ký gửi ô tô đã qua sử dụng</span>
-    </th:block>
-  </div>
-  <div class="header-actions">
-    <a class="button button-quiet" th:unless="${session.AUTH_USER_ID != null}" th:href="@{/ui/urls}">URL theo role</a>
-    <details class="user-menu"><summary><span class="avatar small" th:text="${session.AUTH_FULL_NAME != null ? #strings.substring(session.AUTH_FULL_NAME, 0, 1) : role.initials}">VK</span><span th:text="${session.AUTH_FULL_NAME ?: role.userName}">Nhân viên</span></summary>
-      <div class="dropdown" th:if="${session.AUTH_USER_ID != null}">
-        <strong th:text="${session.AUTH_ROLE_NAME}"></strong>
-        <p th:text="${session.AUTH_FULL_NAME}">Nhân viên</p>
-        <a th:href="@{/home}">Trang chủ GaragePro</a>
-        <form th:action="@{/auth/logout}" method="post" style="margin:0">
-          <button type="submit" class="button button-quiet" style="width:100%;margin-top:.5rem">Đăng xuất</button>
-        </form>
-      </div>
-      <div class="dropdown" th:unless="${session.AUTH_USER_ID != null}">
-        <strong th:text="${role.label}"></strong>
-        <p>Tài khoản mẫu của vai trò đang xem.</p>
-        <a th:href="@{/ui}">Đổi vai trò xem trước</a>
-        <a th:href="@{/home}">Trang chủ GaragePro</a>
-      </div>
-    </details>
-  </div>
+
+<header th:fragment="header" class="topbar common-header"
+        th:with="headerHeading=${heading ?: (screen != null ? screen.title : 'ConsignCar')}">
+  <button class="icon-btn menu-toggle" aria-label="Mở điều hướng" aria-controls="app-sidebar" aria-expanded="false">
+    <svg th:replace="~{shell/icons :: icon('list')}"></svg>
+  </button>
+  <svg class="topbar-mark" th:replace="~{shell/icons :: icon('grid')}"></svg>
+  <h1 class="topbar-title" th:text="${headerHeading}">Tiêu đề</h1>
+  <form class="search search--top" role="search" method="get" th:action="@{/consignments}"
+        th:if="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
+    <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+    <input type="search" name="q" aria-label="Tìm kiếm hồ sơ" placeholder="Tìm kiếm hồ sơ, chủ xe, VIN, mẫu xe...">
+  </form>
+  <a class="icon-btn bell" th:href="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'} ? @{/consignments(status='SUBMITTED')} : @{/home}"
+     th:attr="aria-label=${alerts != null ? alerts + ' hồ sơ chờ phê duyệt' : 'Thông báo'}">
+    <svg th:replace="~{shell/icons :: icon('bell')}"></svg>
+    <span class="bell-count" th:if="${alerts != null and alerts > 0}" th:text="${alerts}">0</span>
+  </a>
+  <details class="user-menu">
+    <summary>
+      <span class="avatar"><svg th:replace="~{shell/icons :: icon('user')}"></svg></span>
+      <span class="user-text">
+        <strong th:text="${session.AUTH_FULL_NAME ?: (role != null ? role.userName : 'Nhân viên')}">Nhân viên</strong>
+        <small th:text="${session.AUTH_ROLE_NAME ?: (role != null ? role.label : '')}">Vai trò</small>
+      </span>
+      <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
+    </summary>
+    <div class="menu-pop">
+      <a th:href="@{/home}">Trang chủ</a>
+      <form th:action="@{/auth/logout}" method="post"><button type="submit">Đăng xuất</button></form>
+    </div>
+  </details>
 </header>
+
 </body></html>

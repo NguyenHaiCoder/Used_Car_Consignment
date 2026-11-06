@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Vũ Trường An: thêm loại xe — UI mock. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Thêm loại xe', 'Kiểm định và tiếp nhận xe', 'vehicle-types',
+                    null, ~{::link}, ~{::#vehicle-type-create})}">
+<head>
+  <title>Thêm loại xe</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+  </th:block>
+</head>
+<body>
+<div id="vehicle-type-create" class="catalog-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('plus')}"></svg></div>
+      <div>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/inspector/vehicle-types}">Quản lý loại xe</a>
+          <span>/</span>
+          <span>Thêm mới</span>
+        </nav>
+        <h2>Thêm loại xe</h2>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+
+  <form class="catalog-form" method="post" th:action="@{/inspector/vehicle-types}">
+    <div class="form-row form-row--3">
+      <div class="field">
+        <label>Mã loại xe <span class="req">*</span></label>
+        <input type="text" name="code" required placeholder="SUV, SEDAN, EV..." th:value="${form.code}">
+      </div>
+      <div class="field">
+        <label>Tên hiển thị <span class="req">*</span></label>
+        <input type="text" name="label" required placeholder="SUV / Crossover" th:value="${form.label}">
+      </div>
+      <div class="field">
+        <label>Trạng thái</label>
+        <select name="status">
+          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
+          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        </select>
+      </div>
+    </div>
+    <div class="catalog-actions">
+      <button class="btn-c btn-c--primary" type="submit">Lưu loại xe</button>
+      <a class="btn-c btn-c--ghost" th:href="@{/inspector/vehicle-types}">Huỷ</a>
+    </div>
+  </form>
+</div>
+</body>
+</html>

@@ -1,16 +1,186 @@
 <!DOCTYPE html>
+<!--/* Đỗ Lan Anh: màn Chi tiết tư vấn: xem khách, nhu cầu, xe, các lịch xem và ghi chú; mọi thao tác của luồng nằm ở đây.
+       Tư vấn đã đóng hoặc đã đặt cọc thì chỉ xem, không sửa được. Nút Đặt cọc giữ xe dẫn sang màn tạo phiếu đặt cọc. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Kinh doanh', 'sales-inquiries',
+                    null, ~{::link}, ~{::#inquiry-detail})}">
+<head>
+  <title>Chi tiết tư vấn</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiries.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <script th:src="@{/js/app/sales-inquiries.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Tư vấn TV-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/inquiries/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="inquiry-detail" class="inq-detail" th:with="s=${statuses.get(item.status)}" th:attr="data-open-close=${openClose}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('chat')}"></svg></div>
+      <div>
+        <h2 th:text="${'Tư vấn ' + item.code}">Tư vấn</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/sales/inquiries}">Tư vấn &amp; lịch xem xe</a>
+          <span>/</span>
+          <span th:text="${item.code}">TV</span>
+        </nav>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/sales/inquiries}">Hủy</a>
+      <form th:if="${item.status == 'NEW'}" method="post" th:action="@{/sales/inquiries/{id}/claim(id=${item.id})}">
+        <button class="btn-c btn-c--primary" type="submit">Nhận tư vấn</button>
+      </form>
+      <a class="btn-c btn-c--outline" th:unless="${locked}" th:href="@{/sales/inquiries/{id}/edit(id=${item.id})}">
+        <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>Sửa
+      </a>
+      <button class="btn-c btn-c--danger" type="button" th:unless="${locked}" data-open-close-dialog>Đóng tư vấn</button>
+      <a class="btn-c btn-c--primary" th:if="${canHold}" th:href="@{/sales/reservations/new(inquiryId=${item.id})}">
+        <svg th:replace="~{shell/icons :: icon('coins')}"></svg>Đặt cọc giữ xe
+      </a>
+      <a class="btn-c btn-c--outline" th:if="${reservation != null}" th:href="@{/sales/reservations/{id}(id=${reservation.id})}">
+        <svg th:replace="~{shell/icons :: icon('coins')}"></svg>Xem phiếu đặt cọc
+      </a>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <section class="inq-facts" aria-label="Thông tin chung"
+           th:classappend="${item.status == 'CLOSED'} ? 'inq-facts--closed'">
+    <div class="card"><svg th:replace="~{shell/icons :: icon('file')}"></svg>
+      <div><small>Mã tư vấn</small><strong th:text="${item.code}">TV</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('user')}"></svg>
+      <div><small>Nhân viên phụ trách</small><strong th:text="${item.staff == '' ? 'Chưa có' : item.staff}">NV</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+      <div><small>Ngày tạo</small>
+        <strong th:text="${#temporals.format(#temporals.createDateTime(item.created), 'dd/MM/yyyy HH:mm')}">01/01/2026</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('chat')}"></svg>
+      <div><small>Trạng thái</small><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></div></div>
+    <div class="card" th:if="${item.status == 'CLOSED'}">
+      <svg th:replace="~{shell/icons :: icon('info')}"></svg>
+      <div><small>Lý do</small>
+        <strong th:text="${item.closeReason == null or item.closeReason == '' ? '—' : item.closeReason}">Lý do</strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="inq-detail-grid">
+    <div class="inq-col">
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('user')}"></svg>Thông tin khách hàng</h3>
+        <div class="inq-buyer">
+          <span class="inq-avatar" th:text="${item.ini}">KH</span>
+          <dl class="inq-rows">
+            <div><dt>Họ tên</dt><dd th:text="${item.buyer}">Khách</dd></div>
+            <div><dt>SĐT</dt><dd th:text="${item.phone}">SĐT</dd></div>
+            <div><dt>Email</dt><dd th:text="${item.email == '' ? 'Chưa có' : item.email}">Email</dd></div>
+            <div><dt>Khu vực</dt><dd th:text="${item.area == '' ? 'Chưa có' : item.area}">Khu vực</dd></div>
+            <div><dt>Ghi chú</dt><dd th:text="${item.buyerNote == '' ? 'Chưa có' : item.buyerNote}">Ghi chú</dd></div>
+            <div><dt>Nguồn</dt><dd th:text="${channels.get(item.channel)}">Nguồn</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('coins')}"></svg>Nhu cầu mua xe</h3>
+        <dl class="inq-rows">
+          <div><dt>Nhu cầu</dt><dd th:text="${needs.get(item.need)}">Nhu cầu</dd></div>
+          <div><dt>Ngân sách</dt>
+            <dd th:text="${item.budgetMin == '' and item.budgetMax == '' ? 'Chưa có' : item.budgetMin + ' – ' + item.budgetMax + ' triệu'}">Ngân sách</dd></div>
+          <div><dt>Xe quan tâm</dt><dd th:text="${item.car}">Xe</dd></div>
+          <div><dt>Ưu tiên</dt>
+            <dd>
+              <span class="inq-chip" th:each="p : ${item.priorities}" th:text="${p}">Ưu tiên</span>
+              <th:block th:if="${#lists.isEmpty(item.priorities)}">Chưa có</th:block>
+            </dd></div>
+          <div><dt>Thời gian mua</dt><dd th:text="${item.buyTime == '' ? 'Chưa có' : item.buyTime}">Thời gian</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <div class="inq-col">
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('car')}"></svg>Xe khách đang quan tâm</h3>
+        <div class="inq-car-box">
+          <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+          <div>
+            <strong th:text="${item.car}">Xe</strong>
+            <b th:text="${#numbers.formatInteger(item.price, 1, 'POINT') + ' ₫'}">Giá</b>
+            <small th:text="${#numbers.formatInteger(item.km, 1, 'POINT') + ' km · ' + item.fuel + ' · ' + item.color}">Thông số</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>Lịch xem xe
+          <a class="btn-c btn-c--secondary inq-h-action" th:unless="${locked or item.status == 'NEW'}"
+             th:href="@{/sales/inquiries/{id}/viewings/new(id=${item.id})}">
+            <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Đặt lịch
+          </a>
+        </h3>
+        <p class="muted" th:if="${#lists.isEmpty(viewingList)}"
+           th:text="${item.status == 'NEW' ? 'Nhận tư vấn trước khi đặt lịch.' : 'Chưa có lịch xem xe.'}">Chưa có lịch.</p>
+        <ul class="inq-viewings">
+          <li th:each="v : ${viewingList}" th:with="start=${#temporals.createDateTime(v.start)}, active=${v.status == 'BOOKED' or v.status == 'CONFIRMED'}">
+            <div class="inq-viewing-head">
+              <strong th:text="${#temporals.format(start, 'dd/MM/yyyy') + ' (' + dayNames[#temporals.dayOfWeek(start) - 1] + ')'}">Ngày</strong>
+              <span class="pill" th:classappend="${'pill--' + viewingPills.get(v.status)}" th:text="${viewingNames.get(v.status)}">Trạng thái</span>
+            </div>
+            <p class="inq-line"><svg th:replace="~{shell/icons :: icon('clock')}"></svg>
+              <span th:text="${#temporals.format(start, 'HH:mm') + ' – ' + v.end + ' · ' + v.type}">Giờ</span></p>
+            <p class="inq-line"><svg th:replace="~{shell/icons :: icon('pin')}"></svg><span th:text="${v.place}">Nơi</span></p>
+            <p class="muted" th:if="${v.note != ''}" th:text="${v.note}">Ghi chú</p>
+            <div class="inq-viewing-actions" th:if="${active and !locked}">
+              <form th:if="${v.status == 'BOOKED'}" method="post"
+                    th:action="@{/sales/inquiries/{id}/viewings/{v}/confirm(id=${item.id},v=${v.id})}">
+                <button class="btn-c btn-c--secondary" type="submit">Xác nhận</button>
+              </form>
+              <a class="btn-c btn-c--outline" th:href="@{/sales/inquiries/{id}/viewings/{v}/edit(id=${item.id},v=${v.id})}">Đổi lịch</a>
+              <form method="post" th:action="@{/sales/inquiries/{id}/viewings/{v}/done(id=${item.id},v=${v.id})}">
+                <button class="btn-c btn-c--outline" type="submit">Đã xem xe</button>
+              </form>
+              <form method="post" th:action="@{/sales/inquiries/{id}/viewings/{v}/cancel(id=${item.id},v=${v.id})}"
+                    onsubmit="return confirm('Hủy lịch xem xe này?');">
+                <button class="btn-c btn-c--danger" type="submit">Hủy lịch</button>
+              </form>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('file')}"></svg>Ghi chú tư vấn</h3>
+        <form class="inq-note-form" method="post" th:action="@{/sales/inquiries/{id}/notes(id=${item.id})}">
+          <label class="sr-only" for="inq-note">Ghi chú tư vấn</label>
+          <textarea class="field-textarea" id="inq-note" name="note" rows="3" maxlength="2000"
+                    th:text="${item.note}" placeholder="Nhập ghi chú tư vấn..."></textarea>
+          <button class="btn-c btn-c--primary" type="submit">Lưu</button>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <dialog class="intake-dialog inq-close-dialog" id="inq-close-dialog" aria-labelledby="inq-close-title" th:unless="${locked}">
+    <form method="post" th:action="@{/sales/inquiries/{id}/close(id=${item.id})}">
+      <h3 id="inq-close-title">Đóng tư vấn</h3>
+      <p th:text="${'Tư vấn ' + item.code + ' sẽ kết thúc và các lịch xem còn hiệu lực bị hủy.'}">Xác nhận</p>
+      <label for="inq-close-reason">Lý do <span class="req">*</span></label>
+      <span class="select">
+        <select id="inq-close-reason" name="closeReason" required>
+          <option value="">Chọn lý do</option>
+          <option th:each="r : ${closeReasons}" th:value="${r}" th:text="${r}">Lý do</option>
+        </select>
+      </span>
+      <div class="inq-dialog-actions">
+        <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Hủy</button>
+        <button class="btn-c btn-c--danger" type="submit">Đóng tư vấn</button>
+      </div>
+    </form>
+  </dialog>
+</div>
 </body>
 </html>

@@ -1,0 +1,14 @@
+/* Brand colors shared by the public home page and management workspace. */
+:root {
+  --navy-900: #05245a;
+  --navy-800: #07317a;
+  --navy-700: #0b479f;
+  --blue-600: #1668e3;
+  --blue-500: #2f86f5;
+  --blue-100: #dce9fa;
+  --blue-50: #eef5fd;
+  --line: #c9dcf3;
+  --ink: #0a2257;
+  --ink-soft: #3b5079;
+  --mute: #6d80a0;
+}

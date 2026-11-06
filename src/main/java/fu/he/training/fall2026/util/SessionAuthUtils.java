@@ -128,9 +128,9 @@ public final class SessionAuthUtils {
         return switch (roleCode) {
             case ADMIN -> "/admin/employees";
             case MANAGER -> "/manager/dashboard";
-            case CONSIGNMENT -> "/consignment/dashboard";
-            case INSPECTOR -> "/inspector/dashboard";
-            case SALES -> "/sales/dashboard";
+            case CONSIGNMENT -> "/consignments";
+            case INSPECTOR -> "/inspector/vehicles";
+            case SALES -> "/sales/inquiries";
             case FINANCE -> "/finance/dashboard";
             case HANDOVER -> "/handover/dashboard";
             case DOCUMENTS -> "/documents/dashboard";

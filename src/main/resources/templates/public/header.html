@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<header th:fragment="header(active)">
+  <nav class="navbar navbar-expand-xl fixed-top" aria-label="Điều hướng chính">
+    <div class="container">
+      <a class="navbar-brand" th:href="@{/home}"><span>GaragePro</span> Consign</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#menu"
+              aria-controls="menu" aria-label="Mở điều hướng">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Chuyển giao diện tối" aria-pressed="false">
+        <i class="fa-solid fa-sun" aria-hidden="true"></i>
+      </button>
+      <div class="offcanvas offcanvas-end" tabindex="-1" id="menu" aria-labelledby="menu-title">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title" id="menu-title">GaragePro Consign</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Đóng điều hướng"></button>
+        </div>
+        <div class="offcanvas-body">
+          <ul class="navbar-nav ms-auto mb-2 mb-xl-0">
+            <li class="nav-item"><a class="nav-link" th:href="@{/home#hero}">Trang chủ</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/home#about}">Giới thiệu</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/home#service}">Quy trình</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/home#cars}">Xe ký gửi</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/tin-ban-xe}"
+                  th:attr="aria-current=${active == 'listings' ? 'page' : null}">Tin bán xe</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/home#reviews}">Đánh giá</a></li>
+            <li class="nav-item"><a class="nav-link" th:href="@{/home#contact}">Liên hệ</a></li>
+            <li class="nav-item dropdown" th:if="${loggedIn}">
+              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" data-bs-toggle="dropdown">Tài khoản</a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li class="dropdown-item-text">Nhân viên: <span th:text="${fullName}">Nhân viên</span></li>
+                <li th:if="${homePath}"><a class="dropdown-item" th:href="${homePath}">Bảng điều khiển</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><form th:action="@{/auth/logout}" method="post" class="m-0">
+                  <button type="submit" class="dropdown-item">Đăng xuất</button>
+                </form></li>
+              </ul>
+            </li>
+          </ul>
+          <div class="d-flex mt-3 mt-xl-0 gap-2" th:if="${!loggedIn}">
+            <a class="btn-login" th:href="${active == 'home'} ? '#' : @{/home(openLogin=1)}"
+               th:attr="data-bs-toggle=${active == 'home' ? 'modal' : null},data-bs-target=${active == 'home' ? '#login-modal' : null}">Đăng nhập</a>
+            <a class="btn-register" th:href="${active == 'home'} ? '#' : @{/home(openRegister=1)}"
+               th:attr="data-bs-toggle=${active == 'home' ? 'modal' : null},data-bs-target=${active == 'home' ? '#register-modal' : null}">Đăng ký</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+</body></html>

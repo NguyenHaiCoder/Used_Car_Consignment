@@ -10,5 +10,11 @@ public class VehicleResponse {
     Long id;
     String vin;
     String displayLabel;
+    String make;
+    String model;
     Integer year;
+    String color;
+    Integer odometerKm;
+    String chassisNumber;
+    String engineNumber;
 }
