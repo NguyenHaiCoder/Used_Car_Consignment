@@ -11,6 +11,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -31,6 +32,7 @@ public class AuditEvent extends BaseEntity {
 
     private Long entityId;
 
+    @Nationalized
     @Column(length = 1000)
     private String detail;
 

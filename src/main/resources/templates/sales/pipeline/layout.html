@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="vi" th:fragment="shell(title, active, content)" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{common/header :: head(${title})}"></head>
+<body class="ui-app" data-app="1" data-role="sales">
+<div th:replace="~{common/sidebar :: sidebar(active=${active})}"></div>
+<button aria-label="Đóng menu" class="nav-overlay" hidden></button>
+<header th:replace="~{common/header :: header}"></header>
+<main class="main-content" id="main">
+    <link rel="stylesheet" th:href="@{/css/ui/buyers.css}">
+    <link rel="stylesheet" th:href="@{/css/ui/sales-pipeline.css}">
+    <link rel="stylesheet" th:href="@{/css/ui/reservations-list.css}" th:if="${active == 'reservations'}">
+    <link rel="stylesheet" th:href="@{/css/ui/contracts-list.css}" th:if="${active == 'contracts'}">
+    <div class="page-header">
+        <div>
+            <p class="eyebrow">Kinh doanh</p>
+            <h1 th:text="${title}"></h1>
+            <p class="page-description" th:if="${active == 'dashboard'}">
+                Tình hình tư vấn, lịch xem và giữ xe của đội kinh doanh.
+            </p>
+            <p class="reservation-page-description" th:if="${active == 'reservations'}">
+                Theo dõi đặt xe, tiền cọc thỏa thuận và thời hạn giữ xe.
+            </p>
+        </div>
+    </div>
+    <nav class="buyer-toolbar reservation-tabs" aria-label="Các bước bán xe">
+        <a class="button" th:href="@{/sales/inquiries}">Tư vấn</a>
+        <a class="button" th:classappend="${active == 'reservations'} ? 'is-active' : ''"
+           th:href="@{/sales/reservations}">Giữ xe &amp; cọc</a>
+        <a class="button" th:classappend="${active == 'contracts'} ? 'is-active' : ''"
+           th:href="@{/sales/contracts}">Hợp đồng mua bán</a>
+    </nav>
+    <p class="alert" role="status" th:if="${success != null}" th:text="${success}"></p>
+    <section th:replace="${content}"></section>
+    <footer th:replace="~{common/footer :: footer}"></footer>
+</main>
+<script defer th:src="@{/js/ui/app.js}"></script>
+</body>
+</html>

@@ -15,6 +15,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ConsignmentRepository extends JpaRepository<Consignment, Long> {
 
+    Optional<Consignment> findFirstByVehicleIdOrderByIdDesc(Long vehicleId);
+
     /** {@code pattern} is a lower-cased LIKE pattern such as {@code %camry%}; use {@code %} to match all. */
     @Query(value = """
             select c from Consignment c join fetch c.consignor o join fetch c.vehicle v

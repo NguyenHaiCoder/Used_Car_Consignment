@@ -6,7 +6,7 @@
   <div th:replace="~{common/sidebar-header :: sidebarHeader}"></div>
   <div class="user-profile">
     <span class="avatar" th:text="${session.AUTH_FULL_NAME != null ? #strings.substring(session.AUTH_FULL_NAME, 0, 1) : role.initials}">A</span>
-    <div class="user-info"><strong th:text="${session.AUTH_FULL_NAME ?: role.userName}"></strong><small th:text="${session.AUTH_ROLE_NAME ?: role.label}"></small></div>
+    <div class="user-info"><strong th:text="${session.AUTH_FULL_NAME ?: role.userName}"></strong><small th:text="${session.AUTH_ROLE_CODE == 'SALES' or (role != null and role.key == 'sales') ? 'Nhân viên bán hàng' : (session.AUTH_ROLE_NAME ?: role.label)}"></small></div>
   </div>
   <nav class="nav-menu" aria-label="Nghiệp vụ">
     <details class="nav-group" open th:if="${session.AUTH_ROLE_CODE == 'CONSIGNMENT'}">
@@ -21,14 +21,27 @@
     </details>
     <details class="nav-group" open th:if="${session.AUTH_ROLE_CODE == 'SALES'}">
       <summary>Kinh doanh</summary>
-      <a class="nav-link" th:href="@{/sales/dashboard}">Dashboard</a>
+      <a class="nav-link" th:classappend="${active == 'dashboard' ? 'active' : ''}"
+         th:attr="aria-current=${active == 'dashboard' ? 'page' : null}"
+         th:href="@{/sales/dashboard}">Tổng quan</a>
       <a class="nav-link" th:classappend="${active == 'buyers' ? 'active' : ''}"
          th:attr="aria-current=${active == 'buyers' ? 'page' : null}"
-         th:href="@{/sales/buyers}">Buyer Management</a>
+         th:href="@{/sales/buyers}">Quản lý khách mua</a>
+      <a class="nav-link" th:classappend="${active == 'scheduling' ? 'active' : ''}"
+         th:attr="aria-current=${active == 'scheduling' ? 'page' : null}"
+         th:href="@{/sales/inquiries}">Tư vấn &amp; lịch xem xe</a>
+      <a class="nav-link" th:classappend="${active == 'reservations' ? 'active' : ''}" th:href="@{/sales/reservations}">Giữ xe &amp; cọc</a>
+      <a class="nav-link" th:classappend="${active == 'contracts' ? 'active' : ''}" th:href="@{/sales/contracts}">Hợp đồng mua bán</a>
+    </details>
+    <details class="nav-group" open th:if="${session.AUTH_ROLE_CODE == 'MANAGER'}">
+      <summary>Kinh doanh</summary>
+      <a class="nav-link" th:classappend="${active == 'scheduling' ? 'active' : ''}"
+         th:attr="aria-current=${active == 'scheduling' ? 'page' : null}"
+         th:href="@{/sales/inquiries}">Tư vấn &amp; lịch xem xe</a>
     </details>
     <th:block th:unless="${session.AUTH_ROLE_CODE == 'CONSIGNMENT' or session.AUTH_ROLE_CODE == 'SALES'}">
       <th:block th:each="module : ${ {'Quản trị','Điều hành','Ký gửi','Xe &amp; kiểm định','Kinh doanh','Tài chính','Bàn giao','Hồ sơ &amp; sang tên'} }">
-        <details class="nav-group" open th:if="${!#lists.isEmpty(navigation.?[module == #vars.module])}">
+        <details class="nav-group" open th:if="${navigation != null and !#lists.isEmpty(navigation.?[module == #vars.module])}">
           <summary th:text="${module}"></summary>
           <a th:each="item : ${navigation}" th:if="${item.module == module}" class="nav-link" th:classappend="${activeNav == item.url ? 'active' : ''}" th:href="@{${item.url}}" th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:text="${item.label}"></a>
         </details>

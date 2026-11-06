@@ -50,7 +50,7 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
     }
     private ConsignmentStatus vehicleStatus(Long id) {
         return consignments.findFirstByVehicleIdOrderByIdDesc(id)
-                .orElseThrow(() -> invalid("vehicleId", "Vehicle has no consignment.")).getStatus();
+                .orElseThrow(() -> invalid("vehicleId", "Xe chưa có hồ sơ ký gửi.")).getStatus();
     }
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -76,23 +76,23 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
         if (!end.isAfter(start)) throw invalid("endTime", "Thời gian kết thúc phải sau thời gian bắt đầu.");
         User salesperson = salesperson(form.getSalespersonId());
         Long vehicleId = inquiries.findVehicleId(form.getInquiryId())
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+                .orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
         Vehicle vehicle = vehicles.lockById(vehicleId)
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry vehicle no longer exists."));
+                .orElseThrow(() -> invalid("inquiryId", "Xe trong tư vấn không còn tồn tại."));
         Inquiry inquiry = inquiries.lockById(form.getInquiryId())
                 .filter(i -> i.getDeletedAt() == null)
-                .orElseThrow(() -> invalid("inquiryId", "Inquiry does not exist."));
+                .orElseThrow(() -> invalid("inquiryId", "Không tìm thấy tư vấn."));
         if (!vehicleId.equals(inquiry.getVehicle().getId()))
-            throw invalid("inquiryId", "Inquiry vehicle has changed. Reload the form.");
+            throw invalid("inquiryId", "Xe trong tư vấn đã thay đổi. Vui lòng tải lại biểu mẫu.");
         if (inquiry.getStatus() != InquiryStatus.OPEN && inquiry.getStatus() != InquiryStatus.SCHEDULED)
-            throw invalid("inquiryId", "Only open or scheduled inquiries can have a viewing.");
+            throw invalid("inquiryId", "Chỉ tư vấn đang mở hoặc đã đặt lịch mới có thể thêm lịch xem xe.");
         if (inquiry.getBuyer().getDeletedAt() != null)
-            throw invalid("inquiryId", "The inquiry buyer has been deleted.");
+            throw invalid("inquiryId", "Khách mua của tư vấn đã bị xóa.");
         // Recheck after waiting for locks, so waiting cannot admit a now-past appointment.
         if (start.isBefore(time.now())) throw invalid("startTime", "Thời gian bắt đầu không được ở quá khứ.");
         ConsignmentStatus status = vehicleStatus(vehicle.getId());
         if (status == ConsignmentStatus.SOLD || status == ConsignmentStatus.WITHDRAWN)
-            throw invalid("inquiryId", "Cannot schedule a SOLD or WITHDRAWN vehicle.");
+            throw invalid("inquiryId", "Không thể đặt lịch cho xe đã bán hoặc đã rút ký gửi.");
         // Locks remain held until commit; concurrent requests for either resource must wait.
         if (viewings.overlapsSalesperson(salesperson.getId(), start, end))
             throw invalid("salespersonId", "Nhân viên bán hàng đã có lịch hẹn trùng thời gian.");
@@ -115,9 +115,9 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
     @Override
     public ViewingFormRequest formForViewing(long id) {
         Viewing viewing = viewings.findById(id)
-                .orElseThrow(() -> invalid("viewingId", "Viewing does not exist."));
+                .orElseThrow(() -> invalid("viewingId", "Không tìm thấy lịch xem xe."));
         if (!"SCHEDULED".equals(viewing.getStatus()))
-            throw invalid("viewingId", "Only scheduled viewings can be edited.");
+            throw invalid("viewingId", "Chỉ có thể sửa lịch xem xe đã đặt.");
         ViewingFormRequest form = new ViewingFormRequest();
         form.setInquiryId(viewing.getInquiry().getId());
         User assigned = viewing.getAssignedTo() == null ? viewing.getInquiry().getAssignedTo() : viewing.getAssignedTo();
@@ -134,28 +134,28 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
     @Override
     public ViewingResponse viewingForDelete(long id) {
         Viewing viewing = viewings.findById(id)
-                .orElseThrow(() -> invalid("viewingId", "Viewing does not exist."));
+                .orElseThrow(() -> invalid("viewingId", "Không tìm thấy lịch xem xe."));
         return viewingRow(viewing);
     }
 
     private Viewing lockViewing(long id) {
         Viewing current = viewings.findById(id)
-                .orElseThrow(() -> invalid("viewingId", "Viewing does not exist."));
+                .orElseThrow(() -> invalid("viewingId", "Không tìm thấy lịch xem xe."));
         Long vehicleId = current.getInquiry().getVehicle().getId();
-        vehicles.lockById(vehicleId).orElseThrow(() -> invalid("viewingId", "Viewing vehicle does not exist."));
+        vehicles.lockById(vehicleId).orElseThrow(() -> invalid("viewingId", "Xe của lịch xem xe không còn tồn tại."));
         Inquiry inquiry = inquiries.lockById(current.getInquiry().getId())
-                .orElseThrow(() -> invalid("viewingId", "Viewing inquiry does not exist."));
+                .orElseThrow(() -> invalid("viewingId", "Tư vấn của lịch xem xe không còn tồn tại."));
         Viewing locked = viewings.lockById(id)
-                .orElseThrow(() -> invalid("viewingId", "Viewing does not exist."));
+                .orElseThrow(() -> invalid("viewingId", "Không tìm thấy lịch xem xe."));
         if (!inquiry.getId().equals(locked.getInquiry().getId())
                 || !vehicleId.equals(inquiry.getVehicle().getId()))
-            throw invalid("viewingId", "Viewing changed. Reload the page.");
+            throw invalid("viewingId", "Lịch xem xe đã thay đổi. Vui lòng tải lại trang.");
         return locked;
     }
 
     private void requireRevision(Viewing viewing, String revision) {
         if (revision == null || !viewing.getUpdatedAt().toString().equals(revision))
-            throw invalid("revision", "Viewing changed. Reload the page before saving.");
+            throw invalid("revision", "Lịch xem xe đã thay đổi. Vui lòng tải lại trang trước khi lưu.");
     }
 
     @Override
@@ -165,17 +165,17 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
         Viewing viewing = lockViewing(id);
         requireRevision(viewing, form.getRevision());
         if (!"SCHEDULED".equals(viewing.getStatus()))
-            throw invalid("revision", "Only scheduled viewings can be edited.");
+            throw invalid("revision", "Chỉ có thể sửa lịch xem xe đã đặt.");
         if (!viewing.getInquiry().getId().equals(form.getInquiryId()))
-            throw invalid("inquiryId", "Viewing inquiry cannot be changed.");
+            throw invalid("inquiryId", "Không thể đổi tư vấn của lịch xem xe.");
         Inquiry inquiry = viewing.getInquiry();
         if (inquiry.getStatus() != InquiryStatus.OPEN && inquiry.getStatus() != InquiryStatus.SCHEDULED)
-            throw invalid("inquiryId", "This inquiry is no longer open for scheduling.");
+            throw invalid("inquiryId", "Tư vấn này không còn cho phép đặt lịch.");
         if (inquiry.getBuyer().getDeletedAt() != null)
-            throw invalid("inquiryId", "The inquiry buyer has been deleted.");
+            throw invalid("inquiryId", "Khách mua của tư vấn đã bị xóa.");
         ConsignmentStatus vehicleStatus = vehicleStatus(inquiry.getVehicle().getId());
         if (vehicleStatus == ConsignmentStatus.SOLD || vehicleStatus == ConsignmentStatus.WITHDRAWN)
-            throw invalid("inquiryId", "Cannot schedule a SOLD or WITHDRAWN vehicle.");
+            throw invalid("inquiryId", "Không thể đặt lịch cho xe đã bán hoặc đã rút ký gửi.");
         Instant start = LocalDateTime.parse(form.getStartTime()).atZone(ZONE).toInstant();
         Instant end = LocalDateTime.parse(form.getEndTime()).atZone(ZONE).toInstant();
         if (!end.isAfter(start)) throw invalid("endTime", "Thời gian kết thúc phải sau thời gian bắt đầu.");
@@ -202,7 +202,7 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
         Viewing viewing = lockViewing(id);
         requireRevision(viewing, revision);
         if (!"SCHEDULED".equals(viewing.getStatus()))
-            throw invalid("revision", "Only scheduled viewings can be deleted.");
+            throw invalid("revision", "Chỉ có thể xóa lịch xem xe đã đặt.");
         Inquiry inquiry = viewing.getInquiry();
         viewing.setDeletedAt(time.now());
         viewings.saveAndFlush(viewing);
@@ -226,6 +226,7 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
                                           String type, int page, int size) {
         Specification<Viewing> spec = (r, q, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isNull(r.get("deletedAt")));
             if (date != null) {
                 predicates.add(cb.greaterThanOrEqualTo(r.get("scheduledAt"), date.atStartOfDay(ZONE).toInstant()));
                 predicates.add(cb.lessThan(r.get("scheduledAt"), date.plusDays(1).atStartOfDay(ZONE).toInstant()));
@@ -266,7 +267,7 @@ public class SalesSchedulingServiceImpl implements SalesSchedulingService {
                 v.getInquiry().getVehicle().getDisplayLabel(), v.getViewingType(),
                 LocalDateTime.ofInstant(v.getScheduledAt(), ZONE),
                 v.getEndAt() == null ? null : LocalDateTime.ofInstant(v.getEndAt(), ZONE),
-                assigned == null ? "Unassigned" : assigned.getFullName(),
+                assigned == null ? "Chưa phân công" : assigned.getFullName(),
                 v.getStatus(), v.getLocation(), v.getNotes());
     }
 

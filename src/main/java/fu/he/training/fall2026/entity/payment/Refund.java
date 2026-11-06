@@ -27,8 +27,8 @@ public class Refund extends BaseEntity {
     @Column(nullable = false, unique = true, length = 40)
     private String code;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
     private Payment payment;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -2,5 +2,8 @@ package fu.he.training.fall2026.repository;
 
 import fu.he.training.fall2026.entity.auth.AuditEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
 
-public interface AuditEventRepository extends JpaRepository<AuditEvent, Long> { }
+public interface AuditEventRepository extends JpaRepository<AuditEvent, Long> {
+    List<AuditEvent> findByEntityTypeAndEntityIdOrderByOccurredAtDescIdDesc(String entityType, Long entityId);
+}

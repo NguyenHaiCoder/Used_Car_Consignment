@@ -1,13 +1,91 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+<html lang="vi"
+      th:replace="${screen != null} ? ~{common/layout :: shell(~{::content})} : ~{sales/pipeline/layout :: shell('Tổng quan kinh doanh', 'dashboard', ~{::content})}"
+      xmlns:th="http://www.thymeleaf.org">
 <body>
-<!-- Tổng quan: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="sales/dashboard">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div th:replace="~{common/fragments/components :: metrics}"></div>
-  <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
-  <section th:replace="~{common/fragments/table :: table}"></section>
+<section class="screen-content" data-template="sales/dashboard" th:fragment="content">
+    <th:block th:if="${screen != null}">
+        <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
+        <div th:replace="~{common/fragments/components :: metrics}"></div>
+        <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
+        <section th:replace="~{common/fragments/table :: table}"></section>
+    </th:block>
+
+    <th:block th:if="${screen == null}">
+        <link rel="stylesheet" th:href="@{/css/ui/sales-dashboard.css}">
+        <div id="sales-dashboard">
+            <div class="stats-grid sales-dashboard-stats">
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">1</span>
+                    <h2>Tư vấn đang mở</h2>
+                    <strong class="value" th:text="${openInquiryCount}">0</strong>
+                    <p>Tư vấn đang mở</p>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">2</span>
+                    <h2>Lịch xem đã đặt</h2>
+                    <strong class="value" th:text="${scheduledViewingCount}">0</strong>
+                    <p>Lịch xem và lái thử đã đặt</p>
+                </article>
+                <article class="stat-card">
+                    <span class="stat-icon" aria-hidden="true">3</span>
+                    <h2>Đang giữ xe</h2>
+                    <strong class="value" th:text="${activeReservationCount}">0</strong>
+                    <p>Đơn giữ xe đang hoạt động</p>
+                </article>
+            </div>
+
+            <section class="content-card">
+                <div class="content-card-header">
+                    <h2>Luồng công việc kinh doanh</h2>
+                    <span class="caption">Truy cập nhanh</span>
+                </div>
+                <div class="workflow-links">
+                    <a th:href="@{/sales/buyers}"><span aria-hidden="true">→</span><strong>Khách mua</strong></a>
+                    <a th:href="@{/sales/inquiries}"><span aria-hidden="true">→</span><strong>Tư vấn &amp; lịch xem</strong></a>
+                    <a th:href="@{/sales/reservations}"><span aria-hidden="true">→</span><strong>Giữ xe &amp; cọc</strong></a>
+                    <a th:href="@{/sales/contracts}"><span aria-hidden="true">→</span><strong>Hợp đồng mua bán</strong></a>
+                </div>
+            </section>
+
+            <section class="content-card table-card">
+                <div class="content-card-header">
+                    <h2>Tư vấn gần đây</h2>
+                    <a class="button" th:href="@{/sales/inquiries}">Xem tất cả</a>
+                </div>
+                <div class="table-scroll" th:if="${!#lists.isEmpty(recentInquiries)}">
+                    <table class="custom-table">
+                        <caption class="sr-only">Năm tư vấn mua xe mới nhất</caption>
+                        <thead>
+                        <tr><th scope="col">Mã tư vấn</th><th scope="col">Người mua</th>
+                            <th scope="col">Xe quan tâm</th><th scope="col">Ngày tư vấn</th>
+                            <th scope="col">Trạng thái</th><th scope="col">Thao tác</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="inquiry : ${recentInquiries}">
+                            <td th:text="${inquiry.code}"></td>
+                            <td th:text="${inquiry.buyer}"></td>
+                            <td th:text="${inquiry.vehicle}"></td>
+                            <td th:text="${inquiry.date == null ? '—' : #temporals.format(inquiry.date, 'dd/MM/yyyy')}"></td>
+                            <td><span class="badge" th:attr="data-status=${inquiry.status}" th:text="${inquiry.status}"></span></td>
+                            <td class="action-cell">
+                                <a class="action-icon action-view" th:href="@{/sales/inquiries/{id}(id=${inquiry.id})}"
+                                   th:aria-label="|Xem tư vấn ${inquiry.code}|" title="Xem chi tiết">
+                                    <svg th:replace="~{common/fragments/icons :: actionIcon('view')}"></svg>
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state" th:if="${#lists.isEmpty(recentInquiries)}">
+                    <h3>Chưa có tư vấn nào</h3>
+                    <p>Tạo tư vấn mua xe để bắt đầu theo dõi khách hàng.</p>
+                    <a class="button button-primary" th:href="@{/sales/inquiries/new}">Tạo tư vấn</a>
+                </div>
+            </section>
+        </div>
+    </th:block>
 </section>
 </body>
 </html>

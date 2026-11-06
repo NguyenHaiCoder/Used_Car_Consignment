@@ -7,7 +7,6 @@ import fu.he.training.fall2026.dto.common.PaginationResponse;
 import fu.he.training.fall2026.entity.sales.Buyer;
 import fu.he.training.fall2026.entity.enums.ContractStatus;
 import fu.he.training.fall2026.entity.enums.ReservationStatus;
-import fu.he.training.fall2026.exception.BuyerCreateException;
 import fu.he.training.fall2026.exception.BuyerException;
 import fu.he.training.fall2026.exception.BuyerException.Reason;
 import fu.he.training.fall2026.repository.BuyerRepository;
@@ -48,7 +47,7 @@ public class BuyerServiceImpl implements BuyerService {
     public BuyerResponse getDetails(long id) {
         validateId(id);
         Buyer buyer = buyerRepository.findById(id)
-                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Không tìm thấy khách mua."));
         return toResponse(buyer);
     }
 
@@ -57,7 +56,7 @@ public class BuyerServiceImpl implements BuyerService {
     public BuyerRequest formFor(long id) {
         validateId(id);
         BuyerResponse buyer = toResponse(buyerRepository.findById(id)
-                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found.")));
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Không tìm thấy khách mua.")));
         BuyerRequest form = new BuyerRequest();
         form.setFullName(buyer.getFullName());
         form.setPhone(buyer.getPhone());
@@ -77,7 +76,7 @@ public class BuyerServiceImpl implements BuyerService {
             errors.put("consentStored", BuyerValidation.CONSENT_REQUIRED);
         }
         if (!errors.isEmpty()) {
-            throw new BuyerCreateException(Reason.VALIDATION, errors);
+            throw new BuyerException(Reason.VALIDATION, errors);
         }
 
         buyerRepository.lockForCreate();
@@ -104,36 +103,36 @@ public class BuyerServiceImpl implements BuyerService {
         Map<String, String> errors = BuyerValidation.errors(
                 form.getFullName(), form.getPhone(), form.getEmail(), form.getAddress());
         if (!"active".equals(form.getStatus()) && !"inactive".equals(form.getStatus())) {
-            errors.put("status", "Select a valid buyer status.");
+            errors.put("status", "Vui lòng chọn trạng thái khách mua hợp lệ.");
         }
 
         Instant revision = null;
         try {
             revision = Instant.parse(form.getRevision());
         } catch (RuntimeException ex) {
-            errors.put("revision", "Reload the buyer before editing; a valid revision is required.");
+            errors.put("revision", "Vui lòng tải lại thông tin khách mua trước khi sửa.");
         }
         if (!errors.isEmpty()) {
-            throw new BuyerCreateException(Reason.VALIDATION, errors);
+            throw new BuyerException(Reason.VALIDATION, errors);
         }
 
         buyerRepository.lockForCreate();
         Buyer buyer = buyerRepository.findById(id)
-                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Không tìm thấy khách mua."));
 
         if (!revision.equals(buyer.getUpdatedAt())) {
             throw new BuyerException(Reason.CONFLICT,
-                    "This buyer was changed by another request. Copy your input, cancel and reopen Edit to review the latest data.");
+                    "Thông tin khách mua đã được thay đổi. Hãy lưu lại nội dung bạn đã nhập, hủy thao tác và mở lại trang sửa để xem dữ liệu mới nhất.");
         }
 
         boolean reactivating = buyer.getDeletedAt() != null && "active".equals(form.getStatus());
         if (buyer.getDeletedAt() == null && "inactive".equals(form.getStatus())) {
-            throw new BuyerCreateException(Reason.VALIDATION,
-                    Map.of("status", "Use Delete Buyer to deactivate this buyer and record a reason."));
+            throw new BuyerException(Reason.VALIDATION,
+                    Map.of("status", "Dùng chức năng xóa khách mua để ngừng hoạt động và ghi nhận lý do."));
         }
         if (reactivating && !buyer.isConsentStored()) {
-            throw new BuyerCreateException(Reason.VALIDATION,
-                    Map.of("status", "Cannot reactivate this buyer without stored consent."));
+            throw new BuyerException(Reason.VALIDATION,
+                    Map.of("status", "Không thể kích hoạt lại khách mua khi chưa ghi nhận sự đồng ý."));
         }
 
         String email = BuyerValidation.clean(form.getEmail());
@@ -164,7 +163,7 @@ public class BuyerServiceImpl implements BuyerService {
 
         buyerRepository.lockForCreate();
         Buyer buyer = buyerRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Không tìm thấy khách mua."));
 
         String blockReason = deletionBlockReasonFor(id);
         if (blockReason != null) throw new BuyerException(Reason.CONFLICT, blockReason);
@@ -179,7 +178,7 @@ public class BuyerServiceImpl implements BuyerService {
     public String deletionBlockReason(long id) {
         validateId(id);
         buyerRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Buyer not found."));
+                .orElseThrow(() -> new BuyerException(Reason.NOT_FOUND, "Không tìm thấy khách mua."));
         return deletionBlockReasonFor(id);
     }
 
@@ -222,13 +221,13 @@ public class BuyerServiceImpl implements BuyerService {
         if (!Set.of("asc", "desc").contains(idSort)
                 || !Set.of("all", "active", "inactive").contains(status)
                 || !Set.of("default", "newest", "oldest").contains(createdSort)) {
-            throw new IllegalArgumentException("Invalid buyer list filter or sort option.");
+            throw new IllegalArgumentException("Bộ lọc hoặc cách sắp xếp danh sách khách mua không hợp lệ.");
         }
 
         String keyword = search == null ? "" : search.strip();
         if (keyword.length() > 180 || keyword.codePoints().anyMatch(Character::isISOControl)) {
             throw new IllegalArgumentException(
-                    "Search must be at most 180 characters without control characters.");
+                    "Từ khóa tìm kiếm tối đa 180 ký tự và không được chứa ký tự điều khiển.");
         }
 
         Sort.Direction idDirection = "asc".equals(idSort) ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -252,14 +251,14 @@ public class BuyerServiceImpl implements BuyerService {
 
     private void validateId(long id) {
         if (id <= 0) {
-            throw new IllegalArgumentException("Buyer ID must be a positive integer.");
+            throw new IllegalArgumentException("Mã khách mua phải là số nguyên dương.");
         }
     }
 
     private void validatePagination(int page, int size) {
         if (page < 1 || size < 1 || size > 100 || (long) (page - 1) * size > Integer.MAX_VALUE) {
             throw new IllegalArgumentException(
-                    "page must be >= 1; size must be between 1 and 100; offset must fit an integer.");
+                    "Trang phải từ 1; số dòng mỗi trang từ 1 đến 100; vị trí bắt đầu phải hợp lệ.");
         }
     }
 
@@ -269,7 +268,7 @@ public class BuyerServiceImpl implements BuyerService {
                 ? buyerRepository.contactPhoneExists(phone)
                 : buyerRepository.otherPhoneExists(phone, id);
         if (phoneExists) {
-            errors.put("phone", "This phone number already belongs to a buyer.");
+            errors.put("phone", "Số điện thoại này đã thuộc về một khách mua.");
         }
 
         if (email != null) {
@@ -277,12 +276,12 @@ public class BuyerServiceImpl implements BuyerService {
                     ? buyerRepository.contactEmailExists(email)
                     : buyerRepository.otherEmailExists(email, id);
             if (emailExists) {
-                errors.put("email", "This email already belongs to a buyer.");
+                errors.put("email", "Email này đã thuộc về một khách mua.");
             }
         }
 
         if (!errors.isEmpty()) {
-            throw new BuyerCreateException(Reason.CONFLICT, errors);
+            throw new BuyerException(Reason.CONFLICT, errors);
         }
     }
 

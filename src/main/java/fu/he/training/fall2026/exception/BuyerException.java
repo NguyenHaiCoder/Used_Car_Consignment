@@ -1,6 +1,7 @@
 package fu.he.training.fall2026.exception;
 
 import java.util.Map;
+
 public class BuyerException extends RuntimeException {
 
     public enum Reason { VALIDATION, CONFLICT, NOT_FOUND }
@@ -10,6 +11,14 @@ public class BuyerException extends RuntimeException {
 
     public BuyerException(Reason reason, String message) {
         this(reason, message, Map.of());
+    }
+
+    public BuyerException(Reason reason, Map<String, String> errors) {
+        this(reason,
+                reason == Reason.CONFLICT
+                        ? "A buyer with this contact information already exists."
+                        : "Please correct the highlighted fields.",
+                errors);
     }
 
     public BuyerException(Reason reason, String message, Map<String, String> errors) {
