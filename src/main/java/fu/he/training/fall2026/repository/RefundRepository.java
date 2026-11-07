@@ -18,7 +18,7 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     @Query("""
             select r from Refund r
               join fetch r.reservation res
-              join fetch res.buyer
+              join fetch res.inquiry
               join fetch res.vehicle
               left join fetch res.assignedTo
             where r.reservation.id = :reservationId
@@ -28,7 +28,7 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
     @Query("""
             select r from Refund r
               join fetch r.reservation res
-              join fetch res.buyer
+              join fetch res.inquiry
               join fetch res.vehicle
               left join fetch res.assignedTo
             where r.status = fu.he.training.fall2026.entity.enums.RefundStatus.PENDING

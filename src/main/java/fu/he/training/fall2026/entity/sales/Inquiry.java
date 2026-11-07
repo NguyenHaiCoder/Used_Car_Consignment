@@ -27,10 +27,6 @@ public class Inquiry extends BaseEntity {
     private String code;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "buyer_id", nullable = false)
-    private Buyer buyer;
-
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
@@ -45,6 +41,32 @@ public class Inquiry extends BaseEntity {
     @Column(length = 40)
     private String channel;
 
+    /** Họ tên khách từ form liên hệ public. */
+    @Column(length = 160)
+    private String fullName;
+
+    /** SĐT khách từ form liên hệ public (chuẩn hóa 0xxxxxxxxx). */
+    @Column(length = 30)
+    private String phone;
+
+    @Column(length = 180)
+    private String email;
+
+    /** PRICE | VIEWING | TEST_DRIVE */
+    @Column(length = 40)
+    private String need;
+
+    /** CCCD/CMND — Sales bổ sung khi chốt đặt cọc / bàn giao. */
+    @Column(length = 20)
+    private String idNumber;
+
+    @Column(length = 500)
+    private String address;
+
     @Column(length = 2000)
     private String notes;
+
+    /** Đã đồng ý lưu thông tin liên hệ (form public). */
+    @Column(nullable = false)
+    private boolean consentStored;
 }

@@ -16,13 +16,14 @@
   <link rel="stylesheet" th:href="@{/css/app/public-sale-news.css}">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
   <script th:src="@{/js/app/public-theme.js}" defer></script>
-  <script type="module" th:src="@{/js/app/public-sale-news.js}"></script>
 </head>
 <body data-theme="light">
   <a class="skip-link" href="#main">Đến danh sách xe</a>
   <header th:replace="~{public/header :: header('listings')}"></header>
 
   <main id="main" class="sale-page" tabindex="-1">
+    <p class="sale-flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+    <p class="sale-flash sale-flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
     <section class="sale-intro" aria-labelledby="page-title">
       <div class="sale-container">
         <nav class="sale-breadcrumb" aria-label="Vị trí trang">
@@ -75,7 +76,7 @@
         <div class="results-controls">
           <a class="clear-filters" th:if="${filtered}" th:href="@{/tin-ban-xe}">Xóa bộ lọc</a>
           <div class="sort-label"><label for="listing-sort">Sắp xếp</label>
-            <select id="listing-sort" name="sort" form="listing-filters" onchange="this.form.requestSubmit()">
+            <select id="listing-sort" name="sort" form="listing-filters">
               <option value="newest" th:selected="${filter.sort == 'newest'}">Mới nhất</option>
               <option value="price-asc" th:selected="${filter.sort == 'price-asc'}">Giá thấp đến cao</option>
               <option value="price-desc" th:selected="${filter.sort == 'price-desc'}">Giá cao đến thấp</option>
@@ -101,10 +102,11 @@
             <p class="listing-price" th:text="${price}">0 ₫</p>
             <p class="listing-specs" th:text="${specs}">Năm · km · nhiên liệu</p>
             <div class="listing-bottom">
-              <button class="sale-button primary listing-contact" type="button"
-                      th:attr="data-listing-id=${car.id},data-title=${car.title},data-specs=${specs},data-price=${price},aria-label=${'Liên hệ về ' + car.title}">
+              <a class="sale-button primary listing-contact"
+                 th:href="@{/tin-ban-xe/{id}/lien-he(id=${car.id})}"
+                 th:attr="aria-label=${'Liên hệ về ' + car.title}">
                 <svg th:replace="~{shell/icons :: icon('user')}"></svg>Liên hệ
-              </button>
+              </a>
             </div>
           </div>
         </article>
@@ -133,49 +135,5 @@
     <div><a class="footer-brand" th:href="@{/home}">GaragePro <span>Consign</span></a><p>Kết nối chủ xe và người mua qua từng hồ sơ ký gửi.</p></div>
     <p>© 2026 GaragePro Consign</p>
   </div></footer>
-
-  <dialog id="contact-dialog" class="contact-dialog" aria-labelledby="contact-title" aria-describedby="contact-description">
-    <div class="contact-heading"><div><p class="eyebrow">GARAGEPRO CONSIGN</p><h2 id="contact-title">Liên hệ tư vấn xe</h2></div>
-      <button class="dialog-close" type="button" data-close-contact aria-label="Đóng liên hệ">×</button></div>
-    <div class="contact-car"><div><strong id="contact-car-title"></strong><small id="contact-car-specs"></small></div><b id="contact-car-price"></b></div>
-    <!--/* Modal này là đầu vào của luồng bán xe: tìm Buyer theo SĐT, chưa có thì tạo, rồi tạo Inquiry (status OPEN, chưa có người phụ trách).
-           Buyer: fullName, phone, email, consentStored. Inquiry: xe theo listingId, channel, notes (ghi kèm nhu cầu).
-           CCCD và địa chỉ không hỏi ở đây, Sales bổ sung khi khách giữ xe.
-           Chờ BE (phân hệ Sales): tạo route POST /tin-ban-xe/lien-he, thêm vào permitAll, rồi bỏ event.preventDefault() trong public-sale-news.js. */-->
-    <form id="listing-contact-form" method="post" th:action="@{/tin-ban-xe/lien-he}">
-      <input type="hidden" name="listingId" id="contact-listing">
-      <input type="hidden" name="channel" value="WEBSITE">
-      <p id="contact-description">Để lại thông tin để được tư vấn về chiếc xe bạn quan tâm.</p>
-      <div class="contact-fields">
-        <label for="contact-name"><span>Họ và tên <span aria-hidden="true">*</span></span>
-          <input id="contact-name" name="fullName" autocomplete="name" required minlength="2" maxlength="160" placeholder="Nhập họ và tên"></label>
-        <div class="contact-row">
-          <label for="contact-phone"><span>Số điện thoại <span aria-hidden="true">*</span></span>
-            <input id="contact-phone" name="phone" type="tel" autocomplete="tel" required maxlength="20" placeholder="Ví dụ: 0912 345 678" aria-describedby="phone-hint">
-            <small id="phone-hint">10 số hoặc bắt đầu bằng +84.</small></label>
-          <label for="contact-email">Email
-            <input id="contact-email" name="email" type="email" autocomplete="email" maxlength="180" placeholder="Không bắt buộc"></label>
-        </div>
-        <fieldset class="contact-need">
-          <legend>Bạn cần tư vấn gì? <span aria-hidden="true">*</span></legend>
-          <label><input type="radio" name="need" value="PRICE" checked><span>Hỏi giá</span></label>
-          <label><input type="radio" name="need" value="VIEWING"><span>Xem xe</span></label>
-          <label><input type="radio" name="need" value="TEST_DRIVE"><span>Lái thử</span></label>
-        </fieldset>
-        <label for="contact-message">Lời nhắn
-          <textarea id="contact-message" name="message" rows="2" maxlength="1000" placeholder="Ví dụ: thời gian bạn tiện nghe máy hoặc đến xem xe"></textarea></label>
-        <label class="contact-consent" for="contact-consent">
-          <input id="contact-consent" type="checkbox" name="consent" required>
-          <span>Tôi đồng ý cho GaragePro lưu thông tin trên để liên hệ tư vấn về xe này. <span aria-hidden="true">*</span></span></label>
-      </div>
-      <p class="contact-demo-note">Bản demo UI: thông tin chỉ được xử lý trên trang, chưa gửi đến nhân viên.</p>
-      <button class="sale-button primary contact-send" type="submit">Gửi yêu cầu liên hệ<svg th:replace="~{shell/icons :: icon('chevron')}"></svg></button>
-    </form>
-    <section id="contact-success" class="contact-success" role="status" hidden>
-      <span class="success-icon"><svg th:replace="~{shell/icons :: icon('check')}"></svg></span>
-      <h3>Đã ghi nhận yêu cầu trong bản demo</h3><p id="contact-success-message"></p><small>Yêu cầu chưa được gửi đến nhân viên.</small>
-      <button type="button" class="sale-button primary" data-close-contact>Hoàn tất</button>
-    </section>
-  </dialog>
 </body>
 </html>

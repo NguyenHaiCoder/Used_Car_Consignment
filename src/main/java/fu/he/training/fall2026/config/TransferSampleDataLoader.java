@@ -12,11 +12,9 @@ import fu.he.training.fall2026.entity.enums.InquiryStatus;
 import fu.he.training.fall2026.entity.enums.ReservationStatus;
 import fu.he.training.fall2026.entity.enums.RoleCode;
 import fu.he.training.fall2026.entity.enums.TransferStatus;
-import fu.he.training.fall2026.entity.sales.Buyer;
 import fu.he.training.fall2026.entity.sales.Inquiry;
 import fu.he.training.fall2026.entity.sales.Reservation;
 import fu.he.training.fall2026.entity.sales.SalesContract;
-import fu.he.training.fall2026.repository.BuyerRepository;
 import fu.he.training.fall2026.repository.ConsignmentRepository;
 import fu.he.training.fall2026.repository.ConsignorRepository;
 import fu.he.training.fall2026.repository.InquiryRepository;
@@ -38,7 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Seed chuỗi dữ liệu đủ để test màn Hồ sơ sang tên:
- * Consignor → Vehicle → Consignment(RESERVED) → Buyer → Inquiry(CONVERTED)
+ * Consignor → Vehicle → Consignment(RESERVED) → Inquiry(CONVERTED)
  * → Reservation(CONVERTED) → SalesContract(SIGNED) → TransferCase (các trạng thái).
  * Chạy một lần khi chưa có transfer_cases.
  */
@@ -54,7 +52,6 @@ public class TransferSampleDataLoader implements ApplicationRunner {
     private final SalesContractRepository salesContractRepository;
     private final ReservationRepository reservationRepository;
     private final InquiryRepository inquiryRepository;
-    private final BuyerRepository buyerRepository;
     private final VehicleRepository vehicleRepository;
     private final ConsignorRepository consignorRepository;
     private final ConsignmentRepository consignmentRepository;
@@ -229,21 +226,17 @@ public class TransferSampleDataLoader implements ApplicationRunner {
         consignment.setOwnerConsent(true);
         consignmentRepository.save(consignment);
 
-        Buyer buyer = new Buyer();
-        buyer.setFullName(buyerName);
-        buyer.setPhone(buyerPhone.replace(" ", ""));
-        buyer.setIdNumber(buyerId);
-        buyer.setAddress(buyerAddress);
-        buyer.setConsentStored(true);
-        buyerRepository.save(buyer);
-
         Inquiry inquiry = new Inquiry();
         inquiry.setCode("TV-TMP-" + vin);
-        inquiry.setBuyer(buyer);
         inquiry.setVehicle(vehicle);
         inquiry.setAssignedTo(salesStaff);
         inquiry.setStatus(InquiryStatus.CONVERTED);
         inquiry.setChannel("WEBSITE");
+        inquiry.setFullName(buyerName);
+        inquiry.setPhone(buyerPhone.replace(" ", ""));
+        inquiry.setIdNumber(buyerId);
+        inquiry.setAddress(buyerAddress);
+        inquiry.setConsentStored(true);
         inquiryRepository.save(inquiry);
         inquiry.setCode(String.format("TV-%06d", inquiry.getId()));
         inquiryRepository.save(inquiry);
@@ -252,7 +245,6 @@ public class TransferSampleDataLoader implements ApplicationRunner {
         reservation.setCode("DC-TMP-" + vin);
         reservation.setInquiry(inquiry);
         reservation.setVehicle(vehicle);
-        reservation.setBuyer(buyer);
         reservation.setAssignedTo(salesStaff);
         reservation.setStatus(ReservationStatus.CONVERTED);
         reservation.setDepositAmount(new BigDecimal("50000000"));

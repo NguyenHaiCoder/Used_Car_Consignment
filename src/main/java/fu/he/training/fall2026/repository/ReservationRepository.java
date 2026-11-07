@@ -15,7 +15,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Query("""
             select r from Reservation r
-              join fetch r.buyer
+              join fetch r.inquiry
               join fetch r.vehicle
               left join fetch r.assignedTo
             where r.id = :id
@@ -25,7 +25,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     /** Phiếu hủy/hết hạn đã chọn Hoàn cọc — Tài chính xử lý. */
     @Query("""
             select r from Reservation r
-              join fetch r.buyer
+              join fetch r.inquiry
               join fetch r.vehicle
               left join fetch r.assignedTo
             where upper(coalesce(r.depositDecision, '')) = 'REFUND'
@@ -38,7 +38,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Query(value = """
             select r from Reservation r
-              join fetch r.buyer b
+              join fetch r.inquiry i
               join fetch r.vehicle v
               left join fetch r.assignedTo u
             where upper(coalesce(r.depositDecision, '')) = 'REFUND'
@@ -60,15 +60,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
               and (:amountMin is null or r.depositAmount >= :amountMin)
               and (:amountMax is null or r.depositAmount <= :amountMax)
               and (lower(r.code) like :pattern
-                   or lower(b.fullName) like :pattern
-                   or lower(b.phone) like :pattern
+                   or lower(coalesce(i.fullName, '')) like :pattern
+                   or lower(coalesce(i.phone, '')) like :pattern
                    or lower(v.make) like :pattern
                    or lower(v.model) like :pattern
                    or lower(coalesce(v.licensePlate, '')) like :pattern)
             """,
             countQuery = """
             select count(r) from Reservation r
-              join r.buyer b
+              join r.inquiry i
               join r.vehicle v
               left join r.assignedTo u
             where upper(coalesce(r.depositDecision, '')) = 'REFUND'
@@ -90,8 +90,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
               and (:amountMin is null or r.depositAmount >= :amountMin)
               and (:amountMax is null or r.depositAmount <= :amountMax)
               and (lower(r.code) like :pattern
-                   or lower(b.fullName) like :pattern
-                   or lower(b.phone) like :pattern
+                   or lower(coalesce(i.fullName, '')) like :pattern
+                   or lower(coalesce(i.phone, '')) like :pattern
                    or lower(v.make) like :pattern
                    or lower(v.model) like :pattern
                    or lower(coalesce(v.licensePlate, '')) like :pattern)

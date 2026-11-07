@@ -23,7 +23,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
               join fetch s.salesContract c
               join fetch c.reservation r
               join fetch r.vehicle v
-              join fetch r.buyer
+              join fetch r.inquiry
               left join fetch r.assignedTo
               join fetch s.consignmentAgreement a
               join fetch a.consignment cg
@@ -37,7 +37,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
               join fetch s.salesContract c
               join fetch c.reservation r
               join fetch r.vehicle v
-              join fetch r.buyer
+              join fetch r.inquiry i
               left join fetch r.assignedTo u
               join fetch s.consignmentAgreement a
               join fetch a.consignment cg
@@ -56,13 +56,14 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
                    or lower(concat(v.make, ' ', v.model)) like :pattern
                    or lower(cg.code) like :pattern
                    or lower(cg.consignor.fullName) like :pattern
-                   or lower(r.buyer.fullName) like :pattern)
+                   or lower(coalesce(i.fullName, '')) like :pattern)
             """,
             countQuery = """
             select count(s) from Settlement s
               join s.salesContract c
               join c.reservation r
               join r.vehicle v
+              join r.inquiry i
               left join r.assignedTo u
               join s.consignmentAgreement a
               join a.consignment cg
@@ -81,7 +82,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
                    or lower(concat(v.make, ' ', v.model)) like :pattern
                    or lower(cg.code) like :pattern
                    or lower(cg.consignor.fullName) like :pattern
-                   or lower(r.buyer.fullName) like :pattern)
+                   or lower(coalesce(i.fullName, '')) like :pattern)
             """)
     Page<Settlement> search(
             @Param("pattern") String pattern,

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!--/* Form liên hệ: mẫu cô giáo (th:object + th:field + BindingResult errors). */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Liên hệ tư vấn xe | GaragePro Consign</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/app/palette.css}">
+  <link rel="stylesheet" th:href="@{/css/app/public-header.css}">
+  <link rel="stylesheet" th:href="@{/css/app/public-sale-news.css}">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script th:src="@{/js/app/public-theme.js}" defer></script>
+</head>
+<body data-theme="light">
+<header th:replace="~{public/header :: header('listings')}"></header>
+
+<main class="container mt-5 pt-5 px-4" style="max-width: 720px;"
+      th:with="specs=${(listing.year ?: '—') + ' · ' + (listing.odometerKm != null ? #numbers.formatInteger(listing.odometerKm, 1, 'POINT') : '—') + ' km · ' + (listing.fuelType ?: '—')},
+               price=${listing.listPrice != null ? #numbers.formatDecimal(listing.listPrice, 1, 'POINT', 0, 'COMMA') + ' ₫' : 'Liên hệ'}">
+
+  <form th:action="@{/tin-ban-xe/lien-he}" method="post" th:object="${inquiry}">
+    <div class="d-flex justify-content-between align-items-start mb-3 gap-3 flex-wrap">
+      <div>
+        <nav class="sale-breadcrumb mb-2" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Trang chủ</a><span aria-hidden="true">/</span>
+          <a th:href="@{/tin-ban-xe}">Tin bán xe</a><span aria-hidden="true">/</span>
+          <span aria-current="page">Liên hệ tư vấn</span>
+        </nav>
+        <h2 class="mb-0">Liên hệ tư vấn xe</h2>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-secondary" th:href="@{/tin-ban-xe}" style="width: 120px">Quay lại</a>
+        <button type="submit" class="btn btn-primary" style="width: 120px">Gửi</button>
+      </div>
+    </div>
+
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></div>
+
+    <div class="contact-car mb-4">
+      <div>
+        <strong th:text="${listing.title}">Tên xe</strong>
+        <small th:text="${specs}">Năm · km · nhiên liệu</small>
+      </div>
+      <b th:text="${price}">0 ₫</b>
+    </div>
+
+    <input type="hidden" th:field="*{listingId}">
+    <input type="hidden" th:field="*{channel}">
+
+    <div class="mb-3">
+      <label for="fullName" class="form-label">
+        Họ và tên <span class="text-danger" aria-hidden="true">*</span>
+      </label>
+      <input type="text" class="form-control" id="fullName"
+             th:field="*{fullName}" placeholder="Nguyễn Văn A" autocomplete="name">
+      <div class="text-danger" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label for="phone" class="form-label">
+          Số điện thoại <span class="text-danger" aria-hidden="true">*</span>
+        </label>
+        <input type="tel" class="form-control" id="phone"
+               th:field="*{phone}" placeholder="0912 345 678" autocomplete="tel">
+        <div class="form-text">10 số hoặc bắt đầu bằng +84.</div>
+        <div class="text-danger" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email"
+               th:field="*{email}" placeholder="Không bắt buộc" autocomplete="email">
+        <div class="text-danger" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">
+        Bạn cần tư vấn gì? <span class="text-danger" aria-hidden="true">*</span>
+      </label>
+      <select class="form-select" th:field="*{need}">
+        <option th:each="n : ${needs}" th:value="${n.key}" th:text="${n.value}">Hỏi giá</option>
+      </select>
+      <div class="text-danger" th:if="${#fields.hasErrors('need')}" th:errors="*{need}"></div>
+    </div>
+
+    <div class="mb-3">
+      <label for="message" class="form-label">Lời nhắn</label>
+      <textarea class="form-control" id="message" rows="3"
+                th:field="*{message}"
+                placeholder="Thời gian bạn tiện nghe máy hoặc đến xem xe"></textarea>
+      <div class="text-danger" th:if="${#fields.hasErrors('message')}" th:errors="*{message}"></div>
+    </div>
+
+    <div class="mb-3 form-check">
+      <input class="form-check-input" type="checkbox" id="consent"
+             th:field="*{consent}" value="true">
+      <label class="form-check-label" for="consent">
+        Tôi đồng ý cho GaragePro lưu thông tin trên để liên hệ tư vấn về xe này.
+        <span class="text-danger" aria-hidden="true">*</span>
+      </label>
+      <div class="text-danger" th:if="${#fields.hasErrors('consentAccepted')}" th:errors="*{consentAccepted}"></div>
+    </div>
+  </form>
+</main>
+
+<footer class="sale-footer mt-5">
+  <div class="sale-container">
+    <div>
+      <a class="footer-brand" th:href="@{/home}">GaragePro <span>Consign</span></a>
+      <p>Kết nối chủ xe và người mua qua từng hồ sơ ký gửi.</p>
+    </div>
+    <p>© 2026 GaragePro Consign</p>
+  </div>
+</footer>
+</body>
+</html>

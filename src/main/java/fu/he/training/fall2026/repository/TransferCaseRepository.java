@@ -19,7 +19,7 @@ public interface TransferCaseRepository extends JpaRepository<TransferCase, Long
                     select t from TransferCase t
                     join fetch t.salesContract sc
                     join fetch sc.reservation r
-                    join fetch r.buyer b
+                    join fetch r.inquiry i
                     join fetch r.vehicle v
                     left join fetch t.responsibleUser u
                     where (:status is null or t.status = :status)
@@ -30,8 +30,8 @@ public interface TransferCaseRepository extends JpaRepository<TransferCase, Long
                       and (:amountMax is null or sc.salePrice <= :amountMax)
                       and (lower(t.code) like :pattern
                            or lower(sc.code) like :pattern
-                           or lower(b.fullName) like :pattern
-                           or lower(b.phone) like :pattern
+                           or lower(coalesce(i.fullName, '')) like :pattern
+                           or lower(coalesce(i.phone, '')) like :pattern
                            or lower(v.make) like :pattern
                            or lower(v.model) like :pattern
                            or lower(coalesce(v.licensePlate, '')) like :pattern
@@ -41,7 +41,7 @@ public interface TransferCaseRepository extends JpaRepository<TransferCase, Long
                     select count(t) from TransferCase t
                     join t.salesContract sc
                     join sc.reservation r
-                    join r.buyer b
+                    join r.inquiry i
                     join r.vehicle v
                     left join t.responsibleUser u
                     where (:status is null or t.status = :status)
@@ -52,8 +52,8 @@ public interface TransferCaseRepository extends JpaRepository<TransferCase, Long
                       and (:amountMax is null or sc.salePrice <= :amountMax)
                       and (lower(t.code) like :pattern
                            or lower(sc.code) like :pattern
-                           or lower(b.fullName) like :pattern
-                           or lower(b.phone) like :pattern
+                           or lower(coalesce(i.fullName, '')) like :pattern
+                           or lower(coalesce(i.phone, '')) like :pattern
                            or lower(v.make) like :pattern
                            or lower(v.model) like :pattern
                            or lower(coalesce(v.licensePlate, '')) like :pattern
@@ -73,9 +73,8 @@ public interface TransferCaseRepository extends JpaRepository<TransferCase, Long
             select t from TransferCase t
             join fetch t.salesContract sc
             join fetch sc.reservation r
-            join fetch r.buyer
-            join fetch r.vehicle
             join fetch r.inquiry i
+            join fetch r.vehicle
             left join fetch i.assignedTo
             left join fetch r.assignedTo
             left join fetch t.responsibleUser

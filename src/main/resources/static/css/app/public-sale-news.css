@@ -14,7 +14,6 @@
 * { box-sizing: border-box; }
 body { margin: 0; color: var(--text-dark); background: var(--page-bg); font: 400 14px/1.6 "Be Vietnam Pro", "Segoe UI", sans-serif; }
 body { --bs-body-color: var(--text-dark); --bs-body-bg: var(--card-bg); --bs-border-color: var(--border); --bs-emphasis-color: var(--text-dark); }
-body:has(.contact-dialog[open]) { overflow: hidden; }
 [hidden] { display: none !important; }
 h1, h2, h3, p { margin: 0; }
 button, input, select, textarea { font: inherit; }
@@ -32,6 +31,8 @@ button { cursor: pointer; }
 .dropdown-menu { --bs-dropdown-bg: var(--card-bg); --bs-dropdown-color: var(--text-dark); --bs-dropdown-link-color: var(--text-dark); --bs-dropdown-link-hover-bg: var(--light-bg); --bs-dropdown-link-hover-color: var(--link-color); --bs-dropdown-link-active-bg: var(--primary); }
 [data-theme="dark"] .navbar-toggler-icon, [data-theme="dark"] .btn-close { filter: invert(1); }
 .sale-page { padding-top: 72px; min-height: calc(100vh - 138px); }
+.sale-flash { max-width: 1240px; margin: 16px auto 0; padding: 12px 28px; color: #0e6a31; background: #f2fbf5; border-bottom: 1px solid #b7e4c7; }
+.sale-flash--error { color: #b01e1e; background: #fff6f6; border-bottom-color: #f5c2c2; }
 .sale-container { max-width: 1240px; margin: 0 auto; padding: 0 28px; }
 .sale-intro { padding: 24px 0 46px; border-bottom: 1px solid var(--border); background: linear-gradient(110deg, var(--light-bg), var(--card-bg)); }
 .sale-breadcrumb { display: flex; align-items: center; gap: 10px; color: var(--gray); font-size: 12px; margin-bottom: 30px; }
@@ -84,7 +85,16 @@ input::placeholder, textarea::placeholder { color: var(--gray); opacity: .8; }
 .listing-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); margin-top: 18px; padding-top: 14px; }
 .listing-location { color: var(--gray); font-size: 11px; }
 .listing-location::before { content: '◦'; color: var(--link-color); margin-right: 6px; }
-.listing-contact { min-height: 36px; padding: 0 14px; }
+.listing-contact { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; text-decoration: none; }
+.listing-contact:hover { text-decoration: none; }
+.contact-page { padding-bottom: 48px; }
+.contact-wrap { max-width: 640px; padding-top: 24px; }
+.contact-wrap h1 { font-size: 28px; font-weight: 800; margin: 6px 0 8px; }
+.contact-lead { color: var(--gray); margin-bottom: 16px; }
+.contact-form { display: grid; gap: 16px; }
+.contact-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.contact-actions .sale-button { min-height: 42px; padding: 0 18px; }
+.field-error { color: #b01e1e; font-size: 11px; font-weight: 500; }
 .listing-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 30px; }
 .page-button { min-width: 36px; height: 36px; padding: 0 10px; color: var(--text-dark); border: 1px solid var(--border); border-radius: 7px; background: var(--card-bg); font-size: 12px; }
 .page-button:hover:not(:disabled) { border-color: var(--blue-500); }

@@ -22,7 +22,7 @@ public interface HandoverRepository extends JpaRepository<Handover, Long> {
             select h from Handover h
               join fetch h.salesContract c
               join fetch c.reservation r
-              join fetch r.buyer
+              join fetch r.inquiry
               join fetch r.vehicle
               left join fetch r.assignedTo
               left join fetch h.handedOverBy
@@ -34,7 +34,7 @@ public interface HandoverRepository extends JpaRepository<Handover, Long> {
             select h from Handover h
               join fetch h.salesContract c
               join fetch c.reservation r
-              join fetch r.buyer
+              join fetch r.inquiry i
               join fetch r.vehicle
               left join fetch r.assignedTo u
               left join fetch h.handedOverBy
@@ -47,8 +47,8 @@ public interface HandoverRepository extends JpaRepository<Handover, Long> {
               and (:amountMax is null or c.salePrice <= :amountMax)
               and (lower(h.code) like :pattern
                    or lower(c.code) like :pattern
-                   or lower(r.buyer.fullName) like :pattern
-                   or lower(r.buyer.phone) like :pattern
+                   or lower(coalesce(i.fullName, '')) like :pattern
+                   or lower(coalesce(i.phone, '')) like :pattern
                    or lower(r.vehicle.make) like :pattern
                    or lower(r.vehicle.model) like :pattern
                    or lower(coalesce(r.vehicle.licensePlate, '')) like :pattern)
@@ -57,7 +57,7 @@ public interface HandoverRepository extends JpaRepository<Handover, Long> {
             select count(h) from Handover h
               join h.salesContract c
               join c.reservation r
-              join r.buyer
+              join r.inquiry i
               join r.vehicle
               left join r.assignedTo u
               left join h.handedOverBy hb
@@ -70,8 +70,8 @@ public interface HandoverRepository extends JpaRepository<Handover, Long> {
               and (:amountMax is null or c.salePrice <= :amountMax)
               and (lower(h.code) like :pattern
                    or lower(c.code) like :pattern
-                   or lower(r.buyer.fullName) like :pattern
-                   or lower(r.buyer.phone) like :pattern
+                   or lower(coalesce(i.fullName, '')) like :pattern
+                   or lower(coalesce(i.phone, '')) like :pattern
                    or lower(r.vehicle.make) like :pattern
                    or lower(r.vehicle.model) like :pattern
                    or lower(coalesce(r.vehicle.licensePlate, '')) like :pattern)

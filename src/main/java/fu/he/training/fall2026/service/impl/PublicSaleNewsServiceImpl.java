@@ -5,6 +5,7 @@ import fu.he.training.fall2026.dto.listing.PublicListingFilter;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
 import fu.he.training.fall2026.entity.consignment.VehicleSaleNews;
 import fu.he.training.fall2026.entity.enums.ListingStatus;
+import fu.he.training.fall2026.exception.ResourceNotFoundException;
 import fu.he.training.fall2026.repository.VehicleSaleNewsRepository;
 import fu.he.training.fall2026.service.FileStorageService;
 import fu.he.training.fall2026.service.PublicSaleNewsService;
@@ -76,6 +77,15 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
         return newsRepository.findNewest(ListingStatus.LISTED, PageRequest.of(0, FEATURED_SIZE)).stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PublicListingCardResponse getListed(Long id) {
+        VehicleSaleNews news = newsRepository.findDetailById(id)
+                .filter(n -> n.getStatus() == ListingStatus.LISTED)
+                .orElseThrow(() -> new ResourceNotFoundException("Tin bán xe", id));
+        return toDto(news);
     }
 
     private Page<VehicleSaleNews> search(String pattern, String brand, Long[] budget, Pageable pageable) {
