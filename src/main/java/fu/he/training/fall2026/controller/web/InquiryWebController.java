@@ -34,6 +34,13 @@ public class InquiryWebController {
     private final InquiryService inquiryService;
     private final PublicSaleNewsService publicSaleNewsService;
 
+    /** Không chọn xe → quay danh sách (tránh 500 khi mở /tin-ban-xe/lien-he). */
+    @GetMapping("/lien-he")
+    public String contactWithoutListing(RedirectAttributes flash) {
+        flash.addFlashAttribute("flashError", "Vui lòng chọn xe cần tư vấn.");
+        return "redirect:/tin-ban-xe";
+    }
+
     /** Mở form tạo Inquiry gắn tin LISTED (giống /departments/detail). */
     @GetMapping("/{listingId}/lien-he")
     public String viewForm(@PathVariable Long listingId, HttpSession session, Model model) {
@@ -56,6 +63,11 @@ public class InquiryWebController {
             Model model,
             RedirectAttributes flash) {
         if (bindingResult.hasErrors()) {
+            if (inquiry.getListingId() == null) {
+                flash.addFlashAttribute("flashError",
+                        bindingResult.getAllErrors().get(0).getDefaultMessage());
+                return "redirect:/tin-ban-xe";
+            }
             fillFormModel(session, model, inquiry.getListingId());
             return FORM_VIEW;
         }
@@ -66,6 +78,10 @@ public class InquiryWebController {
                     "Đã ghi nhận yêu cầu " + code + ". Nhân viên tư vấn sẽ liên hệ sớm.");
             return "redirect:/tin-ban-xe";
         } catch (BusinessException ex) {
+            if (inquiry.getListingId() == null) {
+                flash.addFlashAttribute("flashError", ex.getMessage());
+                return "redirect:/tin-ban-xe";
+            }
             fillFormModel(session, model, inquiry.getListingId());
             model.addAttribute("errorMessage", ex.getMessage());
             return FORM_VIEW;

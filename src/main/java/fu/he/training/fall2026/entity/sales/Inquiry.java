@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 @Getter
 @Setter
@@ -66,7 +67,8 @@ public class Inquiry extends BaseEntity {
     @Column(length = 2000)
     private String notes;
 
-    /** Đã đồng ý lưu thông tin liên hệ (form public). */
+    /** Đã đồng ý lưu thông tin liên hệ (form public). DEFAULT 0 cho hàng cũ. */
     @Column(nullable = false)
+    @ColumnDefault("0")
     private boolean consentStored;
 }
