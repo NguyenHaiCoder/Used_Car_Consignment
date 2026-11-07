@@ -1,16 +1,130 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Chi tiết thanh toán của một hợp đồng. Dòng đầu luôn là tiền cọc, Finance ghi nhận phần còn lại trong hộp thoại.
+       Mỗi mã tham chiếu chỉ dùng một lần. Thu đủ thì mốc Thanh toán tick xong ở màn Sang tên và Bàn giao. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Tài chính', 'finance-payments',
+                    null, ~{::link}, ~{::#payment-detail})}">
+<head>
+  <title>Chi tiết thanh toán</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/sales-deals.js}" defer></script>
+    <script th:src="@{/js/app/finance-deals.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Đối soát giao dịch TT-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="finance/payments/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="payment-detail" class="inq-detail" th:with="s=${statuses.get(item.status)}, open=${item.remaining > 0}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('coins')}"></svg></div>
+      <div>
+        <h2 th:text="${'Thanh toán ' + item.code}">Thanh toán</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/finance/payments}">Giao dịch thanh toán</a>
+          <span>/</span>
+          <span th:text="${item.code}">TT</span>
+        </nav>
+      </div>
+      <span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/finance/payments}">Quay lại</a>
+      <button class="btn-c btn-c--primary" type="button" th:if="${open}" data-dialog="receipt-dialog">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Ghi nhận khoản thu
+      </button>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <section class="inq-facts" aria-label="Số tiền">
+    <div class="card"><svg th:replace="~{shell/icons :: icon('handshake')}"></svg>
+      <div><small>Hợp đồng</small><strong th:text="${item.reference}">HĐ</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('tag')}"></svg>
+      <div><small>Giá bán</small><strong th:text="${#numbers.formatInteger(item.amount, 1, 'POINT') + ' ₫'}">0 ₫</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('coins')}"></svg>
+      <div><small>Đã thu</small><strong th:text="${#numbers.formatInteger(item.collected, 1, 'POINT') + ' ₫'}">0 ₫</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('hourglass')}"></svg>
+      <div><small>Còn lại</small><strong class="deal-amount" th:text="${#numbers.formatInteger(item.remaining, 1, 'POINT') + ' ₫'}">0 ₫</strong></div></div>
+  </section>
+
+  <div class="transfer-layout">
+    <div class="inq-col">
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('list')}"></svg>Các khoản đã thu</h3>
+        <div class="fin-table-wrap">
+          <table class="table fin-table" aria-label="Các khoản đã thu">
+            <thead>
+              <tr><th scope="col">Khoản</th><th scope="col" class="num">Số tiền</th><th scope="col">Phương thức</th>
+                <th scope="col">Mã tham chiếu</th><th scope="col">Ngày</th><th scope="col">Người ghi</th></tr>
+            </thead>
+            <tbody>
+              <tr th:each="r : ${receipts}">
+                <td th:text="${r.type}">Khoản</td>
+                <td class="num news-price" th:text="${#numbers.formatInteger(r.amount, 1, 'POINT') + ' ₫'}">0 ₫</td>
+                <td th:text="${r.method}">Phương thức</td>
+                <td th:text="${r.reference}">Mã</td>
+                <td th:text="${#temporals.format(#temporals.createDate(r.paidOn), 'dd/MM/yyyy')}">01/01/2026</td>
+                <td th:text="${r.staff}">Nhân viên</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="inq-detail-grid">
+        <section class="card inq-card">
+          <h3><svg th:replace="~{shell/icons :: icon('user')}"></svg>Khách mua</h3>
+          <dl class="inq-rows">
+            <div><dt>Họ tên</dt><dd th:text="${item.buyer}">Khách</dd></div>
+            <div><dt>SĐT</dt><dd th:text="${item.phone}">SĐT</dd></div>
+            <div><dt>Nhân viên bán</dt><dd th:text="${item.staff}">NV</dd></div>
+          </dl>
+        </section>
+        <section class="card inq-card">
+          <h3><svg th:replace="~{shell/icons :: icon('car')}"></svg>Xe</h3>
+          <dl class="inq-rows">
+            <div><dt>Xe</dt><dd th:text="${item.car}">Xe</dd></div>
+            <div><dt>Biển số</dt><dd th:text="${item.plate}">Biển số</dd></div>
+            <div><dt>Mã hồ sơ</dt><dd th:text="${item.file}">KG</dd></div>
+          </dl>
+        </section>
+      </div>
+    </div>
+
+    <aside class="contracts-sidebar transfer-standard">
+      <div th:replace="~{documents/transfers/parts :: column('Mốc đóng sale', 'flow', ${milestones})}"></div>
+    </aside>
+  </div>
+
+  <dialog class="intake-dialog inq-close-dialog fin-dialog" id="receipt-dialog" aria-labelledby="receipt-title" th:if="${open}">
+    <form method="post" th:action="@{/finance/payments/{id}/receipts(id=${item.id})}">
+      <h3 id="receipt-title">Ghi nhận khoản thu</h3>
+      <p th:text="${'Còn phải thu ' + #numbers.formatInteger(item.remaining, 1, 'POINT') + ' ₫.'}">Còn phải thu</p>
+      <label for="rc-amount">Số tiền (₫) <span class="req">*</span></label>
+      <input class="fin-input" id="rc-amount" name="amount" inputmode="numeric" maxlength="17" required data-money
+             th:value="${#numbers.formatInteger(item.remaining, 1, 'POINT')}">
+      <label for="rc-method">Phương thức <span class="req">*</span></label>
+      <span class="select">
+        <select id="rc-method" name="method" required>
+          <option th:each="m : ${methods}" th:value="${m}" th:text="${m}">Phương thức</option>
+        </select>
+      </span>
+      <label for="rc-reference">Mã tham chiếu <span class="req">*</span></label>
+      <input class="fin-input" id="rc-reference" name="reference" maxlength="60" required placeholder="Ví dụ: mã giao dịch ngân hàng">
+      <div class="inq-dialog-actions">
+        <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Đóng</button>
+        <button class="btn-c btn-c--primary" type="submit">Ghi nhận</button>
+      </div>
+    </form>
+  </dialog>
+</div>
 </body>
 </html>

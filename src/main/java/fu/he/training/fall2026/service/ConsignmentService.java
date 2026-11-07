@@ -39,6 +39,9 @@ public interface ConsignmentService {
     /** The conditions to check before withdrawing; the consignment can be withdrawn when every one passes. */
     List<WithdrawCheckResponse> withdrawChecks(Long id);
 
+    /** Hà Lệ Quyên: lý do xe đang vướng khách đặt cọc hoặc hợp đồng bán; rỗng nghĩa là rút được. */
+    String buyerHoldDetail(Long id);
+
     /** The latest withdraw request sent to the manager for this consignment, if any. */
     Optional<WithdrawResponse> findWithdrawRequest(Long id);
 

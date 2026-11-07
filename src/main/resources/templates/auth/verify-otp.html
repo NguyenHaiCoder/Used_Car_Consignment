@@ -529,6 +529,7 @@
       <span th:text="${otpError} ?: 'Mã OTP không chính xác. Vui lòng thử lại.'">Mã OTP không chính xác.</span>
     </div>
     <p th:if="${authInfo}" style="text-align:center;color:#86efac;margin-bottom:1rem;font-size:14px;" th:text="${authInfo}"></p>
+    <p id="otpMailNote" hidden style="text-align:center;color:#86efac;margin-bottom:1rem;font-size:14px;"></p>
 
     <form id="otpForm" th:action="@{/auth/verify-otp}" th:object="${verifyOtpRequest}" method="post" onsubmit="return prepareOtpSubmit(event)">
       <input type="hidden" th:field="*{email}" id="emailHidden"/>
@@ -617,6 +618,24 @@
     }
 
     otpInputs[0].focus();
+
+    // Nút Sao chép mã trong email: mail chặn JavaScript nên việc copy làm ở đây.
+    // Mã nằm sau dấu # nên không gửi lên server, và được xóa khỏi thanh địa chỉ ngay.
+    const otpFromMail = (window.location.hash.match(/^#otp=(\d{6})$/) || [])[1];
+    if (otpFromMail) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      otpInputs.forEach((input, i) => {
+        input.value = otpFromMail[i];
+        input.classList.add('filled');
+      });
+      verifyBtn.focus();
+      const mailNote = document.getElementById('otpMailNote');
+      mailNote.textContent = 'Đã điền sẵn mã, bấm Xác nhận để đăng nhập.';
+      mailNote.hidden = false;
+      navigator.clipboard?.writeText(otpFromMail)?.then(() => {
+        mailNote.textContent = 'Đã sao chép và điền sẵn mã, bấm Xác nhận để đăng nhập.';
+      }).catch(() => {});
+    }
 
     // Handle input navigation
     otpInputs.forEach((input, index) => {

@@ -13,7 +13,7 @@ import fu.he.training.fall2026.entity.auth.Approval;
 import fu.he.training.fall2026.entity.enums.ApprovalStatus;
 import fu.he.training.fall2026.entity.enums.ApprovalType;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
-import fu.he.training.fall2026.entity.enums.ListingStatus;
+import fu.he.training.fall2026.entity.enums.ContractStatus;
 import fu.he.training.fall2026.entity.enums.ReservationStatus;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
@@ -141,7 +141,6 @@ public class ConsignmentServiceImpl implements ConsignmentService {
     public List<WithdrawCheckResponse> withdrawChecks(Long id) {
         Consignment consignment = consignmentRepository.findDetailById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
-        Long vehicleId = consignment.getVehicle().getId();
         ConsignmentStatus status = consignment.getStatus();
         boolean open = status != ConsignmentStatus.SOLD
                 && status != ConsignmentStatus.COMPLETED
@@ -149,24 +148,38 @@ public class ConsignmentServiceImpl implements ConsignmentService {
                 && status != ConsignmentStatus.WITHDRAWN
                 && status != ConsignmentStatus.CLOSED;
 
-        List<String> reservations = consignmentRepository.findReservationCodes(vehicleId, ReservationStatus.ACTIVE);
-        String reservationDetail = "";
-        if (!reservations.isEmpty()) {
-            BigDecimal deposit = consignmentRepository.sumReservationDeposits(vehicleId, ReservationStatus.ACTIVE);
-            reservationDetail = "Còn reservation " + String.join(", ", reservations)
-                    + " (tiền cọc đang giữ: " + deposit.stripTrailingZeros().toPlainString() + " ₫).";
-        }
-
-        List<String> listings = consignmentRepository.findListingCodes(id, List.of(ListingStatus.LISTED, ListingStatus.PAUSED));
+        String buyerHold = buyerHoldOf(consignment.getVehicle().getId());
         boolean pending = hasPendingWithdrawRequest(id);
 
         return List.of(
                 new WithdrawCheckResponse("Hồ sơ chưa bán hoặc đã đóng", open, open ? "" : "Trạng thái hiện tại: " + status + "."),
-                new WithdrawCheckResponse("Không có reservation ACTIVE", reservations.isEmpty(), reservationDetail),
-                new WithdrawCheckResponse("Không có tin đang đăng", listings.isEmpty(),
-                        listings.isEmpty() ? "" : "Còn tin: " + String.join(", ", listings) + "."),
+                new WithdrawCheckResponse("Xe chưa có khách đặt cọc hoặc ký hợp đồng", buyerHold.isEmpty(), buyerHold),
                 new WithdrawCheckResponse("Chưa có yêu cầu rút đang chờ duyệt", !pending,
                         pending ? "Đã có yêu cầu gửi quản lý, đang chờ duyệt." : ""));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String buyerHoldDetail(Long id) {
+        Consignment consignment = consignmentRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ ký gửi", id));
+        return buyerHoldOf(consignment.getVehicle().getId());
+    }
+
+    /** Hà Lệ Quyên: chủ xe rút lúc nào cũng được, trừ khi xe đã có khách đặt cọc hoặc đã có hợp đồng bán. */
+    private String buyerHoldOf(Long vehicleId) {
+        StringBuilder detail = new StringBuilder();
+        List<String> reservations = consignmentRepository.findReservationCodes(vehicleId, ReservationStatus.ACTIVE);
+        if (!reservations.isEmpty()) {
+            BigDecimal deposit = consignmentRepository.sumReservationDeposits(vehicleId, ReservationStatus.ACTIVE);
+            detail.append("Còn phiếu đặt cọc ").append(String.join(", ", reservations))
+                    .append(" (tiền cọc đang giữ: ").append(deposit.stripTrailingZeros().toPlainString()).append(" ₫). ");
+        }
+        List<String> contracts = consignmentRepository.findContractCodes(vehicleId, ContractStatus.CANCELLED);
+        if (!contracts.isEmpty()) {
+            detail.append("Đã có hợp đồng bán ").append(String.join(", ", contracts)).append(".");
+        }
+        return detail.toString().trim();
     }
 
     @Override

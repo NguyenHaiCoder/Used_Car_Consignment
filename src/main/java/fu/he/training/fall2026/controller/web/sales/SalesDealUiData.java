@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,7 @@ import org.springframework.ui.Model;
  * Chưa có trong entity: quyết định hoàn hay giữ cọc của Reservation; điều khoản và CCCD, địa chỉ người mua của SalesContract
  * (CCCD, địa chỉ nằm ở Buyer); ba mốc paid, transferred, handedOver do luồng Thanh toán, Sang tên, Bàn giao trả về.
  */
-final class SalesDealUiData {
+public final class SalesDealUiData {
 
     static final String ACTIVE = "ACTIVE";
     static final String CONVERTED = "CONVERTED";
@@ -54,6 +55,15 @@ final class SalesDealUiData {
             6.2. Bên B hủy mua sau khi ký thì tiền cọc được xử lý theo phiếu đặt cọc.
             6.3. Bên A không bàn giao được xe thì hoàn lại toàn bộ số tiền đã nhận.""";
 
+    private static final String LISTED = "LISTED";
+    private static final String RESERVED = "RESERVED";
+    private static final String SOLD = "SOLD";
+    private static final String COMPLETED = "COMPLETED";
+    private static final Map<String, String> CONSIGNMENT_NAMES = SalesInquiryUiData.pairs(
+            LISTED, "Đang đăng bán", RESERVED, "Đã đặt cọc", SOLD, "Đã bán", COMPLETED, "Hoàn thành");
+
+    /** Trạng thái hồ sơ ký gửi của từng xe, chưa có thì coi là Đang đăng bán. Khi nối BE đọc Consignment.status. */
+    private static final Map<String, String> CONSIGNMENT_STATUS = new ConcurrentHashMap<>();
     private static final List<Map<String, Object>> RESERVATIONS = new CopyOnWriteArrayList<>();
     private static final List<Map<String, Object>> CONTRACTS = new CopyOnWriteArrayList<>();
     private static final AtomicLong NEXT_RESERVATION = new AtomicLong(123);
@@ -62,6 +72,7 @@ final class SalesDealUiData {
     static {
         seedReservations();
         seedContracts();
+        seedConsignmentStatus();
     }
 
     private SalesDealUiData() {
@@ -92,7 +103,99 @@ final class SalesDealUiData {
         return CONTRACTS;
     }
 
-    static Optional<Map<String, Object>> contract(long id) {
+    /** Hợp đồng đã ký và chưa hủy, là nguồn để Nhân viên hồ sơ tạo hồ sơ sang tên. */
+    public static List<Map<String, Object>> signedContracts() {
+        return CONTRACTS.stream()
+                .filter(c -> !"".equals(c.get("signedOn")) && !CANCELLED.equals(c.get("status")))
+                .toList();
+    }
+
+    /**
+     * Bốn điều kiện để tạo hồ sơ sang tên. Hồ sơ đã bán vẫn tính là đạt, để màn xem của hồ sơ cũ hiện đúng.
+     */
+    public static List<Map<String, String>> transferChecks(Map<String, Object> contract) {
+        Map<String, Object> reservation = reservationRow((Long) contract.get("reservationId"));
+        Map<String, Object> inquiry = SalesInquiryUiData.inquiry((Long) contract.get("inquiryId")).orElseThrow();
+        boolean deposited = CONVERTED.equals(reservation.get("status"));
+        boolean signed = !"".equals(contract.get("signedOn")) && !CANCELLED.equals(contract.get("status"));
+        String consignment = consignmentStatus(String.valueOf(contract.get("car")));
+        return List.of(
+                check("Có khách mua xe", inquiry.get("code") + " · " + inquiry.get("buyer"),
+                        SalesInquiryUiData.CONVERTED.equals(inquiry.get("status"))),
+                check("Đã đặt cọc giữ xe", reservation.get("code") + " · " + money((Long) reservation.get("deposit")) + " ₫", deposited),
+                check("Hợp đồng bán đã ký", String.valueOf(contract.get("code")), signed),
+                check("Hồ sơ ký gửi đã đặt cọc", contract.get("file") + " · " + CONSIGNMENT_NAMES.get(consignment),
+                        !LISTED.equals(consignment)));
+    }
+
+    /** Ba mốc để đóng sale. Thanh toán và bàn giao do luồng khác cập nhật, ở đây chỉ để theo dõi. */
+    public static List<Map<String, String>> saleMilestones(Map<String, Object> contract) {
+        return List.of(
+                milestone("Thanh toán", "Đã thanh toán đủ", "Chưa thanh toán đủ", (Boolean) contract.get("paid")),
+                milestone("Sang tên", "Đã sang tên", "Chưa sang tên", (Boolean) contract.get("transferred")),
+                milestone("Bàn giao xe", "Đã bàn giao", "Chưa bàn giao", (Boolean) contract.get("handedOver")));
+    }
+
+    private static Map<String, String> milestone(String label, String done, String waiting, boolean passed) {
+        return check(label, passed ? done : waiting, passed);
+    }
+
+    static String consignmentStatus(String car) {
+        return CONSIGNMENT_STATUS.getOrDefault(car, LISTED);
+    }
+
+    /** Hủy cọc hoặc hết hạn giữ xe thì hồ sơ ký gửi quay lại Đang đăng bán. */
+    static void releaseCar(String car) {
+        CONSIGNMENT_STATUS.put(car, LISTED);
+    }
+
+    /** Đạt đủ bốn điều kiện thì mới được tạo hồ sơ sang tên. */
+    public static boolean transferReady(Map<String, Object> contract) {
+        return transferChecks(contract).stream().allMatch(c -> "true".equals(c.get("passed")));
+    }
+
+    private static Map<String, String> check(String label, String note, boolean passed) {
+        return Map.of("label", label, "note", note, "passed", String.valueOf(passed));
+    }
+
+    /** Hồ sơ sang tên hoàn tất thì đánh dấu mốc Sang tên trên hợp đồng. */
+    public static void markTransferred(long contractId) {
+        contract(contractId).ifPresent(c -> c.put("transferred", true));
+    }
+
+    /** Sales gửi yêu cầu thu: hợp đồng chuyển sang Đang thực hiện và hiện bên Tài chính. */
+    static void requestPayment(Map<String, Object> contract) {
+        contract.put("paymentRequested", true);
+        contract.put("status", ACTIVE);
+    }
+
+    public static void markPaid(long contractId) {
+        contract(contractId).ifPresent(c -> c.put("paid", true));
+    }
+
+    public static void markHandedOver(long contractId) {
+        contract(contractId).ifPresent(c -> c.put("handedOver", true));
+    }
+
+    /** Đủ ba mốc: hợp đồng đóng, hồ sơ ký gửi thành Đã bán. */
+    public static void closeSale(long contractId) {
+        contract(contractId).ifPresent(c -> {
+            c.put("status", CLOSED);
+            CONSIGNMENT_STATUS.put(String.valueOf(c.get("car")), SOLD);
+        });
+    }
+
+    /** Chi trả chủ xe xong thì hồ sơ ký gửi hoàn thành. */
+    public static void completeConsignment(String car) {
+        CONSIGNMENT_STATUS.put(car, COMPLETED);
+    }
+
+    /** Phiếu cọc đã chọn Hoàn cọc, Tài chính xử lý tiếp. */
+    public static List<Map<String, Object>> refundableDeposits() {
+        return reservations().stream().filter(r -> "REFUND".equals(r.get("depositDecision"))).toList();
+    }
+
+    public static Optional<Map<String, Object>> contract(long id) {
         return CONTRACTS.stream().filter(c -> Long.valueOf(id).equals(c.get("id"))).findFirst();
     }
 
@@ -135,6 +238,7 @@ final class SalesDealUiData {
         Map<String, Object> row = holdRow(NEXT_RESERVATION.getAndIncrement(), inquiry, ACTIVE, deposit, holdUntil, created);
         row.put("terms", terms);
         RESERVATIONS.add(0, row);
+        CONSIGNMENT_STATUS.put(String.valueOf(inquiry.get("car")), RESERVED);
         return row;
     }
 
@@ -175,6 +279,7 @@ final class SalesDealUiData {
         row.put("paid", false);
         row.put("transferred", false);
         row.put("handedOver", false);
+        row.put("paymentRequested", false);
         return row;
     }
 
@@ -188,7 +293,7 @@ final class SalesDealUiData {
     }
 
     /** Lọc, phân trang và đưa vào Model các biến mà sales/deal-parts đang đọc. */
-    static void bindList(Model model, String base, List<Map<String, Object>> rows, String amountKey, String dateKey,
+    public static void bindList(Model model, String base, List<Map<String, Object>> rows, String amountKey, String dateKey,
             Map<String, Map<String, String>> statuses, Map<String, String> params) {
         String keyword = params.getOrDefault("q", "").trim();
         String lower = keyword.toLowerCase(Locale.ROOT);
@@ -231,21 +336,21 @@ final class SalesDealUiData {
         model.addAttribute("size", CatalogPageSupport.normalizeSize(size));
     }
 
-    static String money(long value) {
+    public static String money(long value) {
         return String.format(Locale.US, "%,d", value).replace(',', '.');
     }
 
     /** Số tiền nhập theo dạng 76.000.000. Không nhập hoặc nhập sai trả về null. */
-    static Long parseMoney(String text) {
+    public static Long parseMoney(String text) {
         String digits = text == null ? "" : text.replaceAll("\\D", "");
         return digits.isEmpty() || digits.length() > 13 ? null : Long.valueOf(digits);
     }
 
-    static Long parseId(String text) {
+    public static Long parseId(String text) {
         return text == null || !text.matches("\\d{1,9}") ? null : Long.valueOf(text);
     }
 
-    static LocalDate parseDate(String text) {
+    public static LocalDate parseDate(String text) {
         return isoDate(text).isEmpty() ? null : LocalDate.parse(text);
     }
 
@@ -257,6 +362,7 @@ final class SalesDealUiData {
             row.put("daysLeft", ChronoUnit.DAYS.between(today, holdUntil));
             if (ACTIVE.equals(row.get("status")) && holdUntil.isBefore(today)) {
                 row.put("status", EXPIRED);
+                releaseCar(String.valueOf(row.get("car")));
                 SalesInquiryUiData.inquiry((Long) row.get("inquiryId")).ifPresent(i -> i.put("status",
                         SalesInquiryUiData.statusWithoutActiveStep((Long) i.get("id"))));
             }
@@ -264,7 +370,7 @@ final class SalesDealUiData {
     }
 
     private static String haystack(Map<String, Object> row) {
-        return String.join(" ", List.of("code", "reservationCode", "file", "car", "plate", "buyer", "phone").stream()
+        return String.join(" ", List.of("code", "contractCode", "reservationCode", "file", "car", "plate", "buyer", "phone").stream()
                 .map(row::get).filter(Objects::nonNull).map(String::valueOf).toList()).toLowerCase(Locale.ROOT);
     }
 
@@ -348,6 +454,20 @@ final class SalesDealUiData {
         contract(201, 101, CLOSED, "2026-10-16T13:55", true, true, true);
     }
 
+    private static void seedConsignmentStatus() {
+        RESERVATIONS.stream()
+                .filter(r -> ACTIVE.equals(r.get("status")) || CONVERTED.equals(r.get("status")))
+                .forEach(r -> CONSIGNMENT_STATUS.put(String.valueOf(r.get("car")), RESERVED));
+        CONTRACTS.forEach(c -> {
+            String car = String.valueOf(c.get("car"));
+            if (CLOSED.equals(c.get("status"))) {
+                CONSIGNMENT_STATUS.put(car, SOLD);
+            } else if (CANCELLED.equals(c.get("status"))) {
+                releaseCar(car);
+            }
+        });
+    }
+
     private static void hold(long id, long inquiryId, String status, long depositMillion, int holdDays, String created) {
         Map<String, Object> inquiry = SalesInquiryUiData.inquiry(inquiryId).orElseThrow();
         LocalDate from = ACTIVE.equals(status) ? LocalDate.now() : LocalDate.parse(created.substring(0, 10));
@@ -390,6 +510,7 @@ final class SalesDealUiData {
         row.put("paid", paid);
         row.put("transferred", transferred);
         row.put("handedOver", handedOver);
+        row.put("paymentRequested", paid || id == 208);
         if (!DRAFT.equals(status)) {
             row.put("signedOn", created.substring(0, 10));
             row.put("buyerIdNumber", String.format("0790%08d", id * 137));

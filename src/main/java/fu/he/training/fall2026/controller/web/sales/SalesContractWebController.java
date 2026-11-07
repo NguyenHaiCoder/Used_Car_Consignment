@@ -103,6 +103,19 @@ public class SalesContractWebController {
         return finish(contract, flash);
     }
 
+    /** Vũ Mạnh Cường: Sales gửi yêu cầu thu, vì Sales không có quyền mở màn Tài chính. */
+    @PostMapping("/{id}/payment-request")
+    public String requestPayment(@PathVariable long id, RedirectAttributes flash) {
+        Map<String, Object> contract = find(id);
+        if (SalesDealUiData.SIGNED.equals(contract.get("status"))) {
+            SalesDealUiData.requestPayment(contract);
+            flash.addFlashAttribute("flashMessage", "Đã gửi yêu cầu thu tiền sang Tài chính.");
+        } else {
+            flash.addFlashAttribute("flashError", "Chỉ gửi yêu cầu thu cho hợp đồng đã ký.");
+        }
+        return "redirect:" + BASE + "/" + id;
+    }
+
     private static String finish(Map<String, Object> contract, RedirectAttributes flash) {
         flash.addFlashAttribute("flashMessage", SalesDealUiData.SIGNED.equals(contract.get("status"))
                 ? "Đã ký hợp đồng " + contract.get("code") + "."

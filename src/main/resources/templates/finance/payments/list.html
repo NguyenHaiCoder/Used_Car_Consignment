@@ -1,11 +1,104 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Giao dịch thanh toán, thiết kế theo màn Quản lý tin đăng.
+       Một danh sách cho cả khoản cần thu (Sales gửi từ hợp đồng) và cọc cần hoàn (phiếu cọc chọn Hoàn cọc).
+       Mock nằm ở FinanceUiData; khi nối BE phải xóa mock, xem agent/VuManhCuongQuyTac.txt. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Giao dịch thanh toán', 'Tài chính', 'finance-payments',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Giao dịch thanh toán</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Giao dịch thanh toán: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="finance/payments/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--money">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('coins')}"></svg></div>
+      <div>
+        <h2>Giao dịch thanh toán</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <span>Giao dịch thanh toán</span>
+        </nav>
+        <p class="news-lead">Tiền cọc là khoản thu đầu tiên, Tài chính ghi nhận phần còn lại đến khi đủ; cọc đã chọn hoàn cũng xử lý tại đây.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('khoản')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm giao dịch', 'Tìm theo mã, hợp đồng, xe, khách...', 'Khoảng ngày tạo', 'Số tiền')}"></form>
+
+  <section class="card records">
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table" aria-label="Danh sách giao dịch thanh toán">
+        <thead>
+          <tr>
+            <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả trên trang"></th>
+            <th scope="col">Mã</th>
+            <th scope="col">Hợp đồng, phiếu</th>
+            <th scope="col">Xe</th>
+            <th scope="col">Khách hàng</th>
+            <th scope="col" class="num">Số tiền</th>
+            <th scope="col" class="num">Còn lại</th>
+            <th scope="col">Người phụ trách</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="p : ${page.content}"
+              th:with="s=${statuses.get(p.status)}, refund=${p.kind == 'refund'},
+                       url=${p.kind == 'refund' ? '/finance/payments/refunds/' + p.id : '/finance/payments/' + p.id}">
+            <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn ' + p.code}"></td>
+            <td><a class="code" th:href="@{${url}}" th:text="${p.code}">TT-1</a></td>
+            <td th:text="${p.reference}">HDBX-1</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${p.car}" th:title="${p.car}">Xe</strong>
+                  <small th:text="${p.plate + ' · ' + p.file}">Biển số · hồ sơ</small>
+                </span>
+              </div>
+            </td>
+            <td class="deal-person">
+              <strong th:text="${p.buyer}" th:title="${p.buyer}">Khách</strong>
+              <small th:text="${p.phone}">SĐT</small>
+            </td>
+            <td class="num news-price" th:text="${#numbers.formatInteger(p.amount, 1, 'POINT') + ' ₫'}">0 ₫</td>
+            <td class="num" th:text="${refund ? '—' : #numbers.formatInteger(p.remaining, 1, 'POINT') + ' ₫'}">0 ₫</td>
+            <td th:text="${p.staff}" th:title="${p.staff}">Nhân viên</td>
+            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td>
+              <div class="row-actions news-actions">
+                <a class="row-action" th:href="@{${url}}" th:attr="aria-label=${'Xem ' + p.code}" title="Xem chi tiết">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có giao dịch phù hợp</h4>
+      <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+    </div>
+    <nav th:replace="~{sales/deal-parts :: pager('khoản')}"></nav>
+  </section>
+</div>
 </body>
 </html>

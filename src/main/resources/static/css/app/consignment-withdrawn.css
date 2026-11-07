@@ -155,3 +155,7 @@
   .withdrawn-form-row,
   #consignment-withdrawn .withdrawn-form-row--3 { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Xe đã có khách đặt cọc hoặc ký hợp đồng thì không gửi yêu cầu rút được */
+.flash--error { border-color: #f3b9b9; background: #fdecec; color: #a11c1c; }
+.withdrawn-actions .btn-c:disabled { opacity: .55; cursor: not-allowed; }

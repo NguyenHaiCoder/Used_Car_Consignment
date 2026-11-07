@@ -251,6 +251,7 @@
   font: 600 12px "Be Vietnam Pro", sans-serif;
   cursor: pointer;
 }
+.sig-clear[hidden] { display: none; }
 .sig-clear:hover { border-color: var(--blue-600); color: var(--blue-600); background: var(--blue-50); }
 .sig-name { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
 .sig-title-role { font-size: 12px; color: #555; }

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: phần dùng chung của Quyết toán phía Tài chính và phía Quản lý. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<section th:fragment="table" class="card records">
+  <div class="table-wrap" th:unless="${page.empty}">
+    <table class="table" aria-label="Danh sách quyết toán">
+      <thead>
+        <tr>
+          <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả trên trang"></th>
+          <th scope="col">Mã quyết toán</th>
+          <th scope="col">Hợp đồng</th>
+          <th scope="col">Xe</th>
+          <th scope="col">Chủ xe</th>
+          <th scope="col" class="num">Giá bán</th>
+          <th scope="col" class="num">Chủ xe nhận</th>
+          <th scope="col">Ngày tạo</th>
+          <th scope="col">Trạng thái</th>
+          <th scope="col">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="q2 : ${page.content}" th:with="s=${statuses.get(q2.status)}, url=${base + '/' + q2.id}">
+          <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn ' + q2.code}"></td>
+          <td><a class="code" th:href="@{${url}}" th:text="${q2.code}">QT-1</a></td>
+          <td th:text="${q2.contractCode}">HDBX-1</td>
+          <td>
+            <div class="vehicle">
+              <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+              <span>
+                <strong th:text="${q2.car}" th:title="${q2.car}">Xe</strong>
+                <small th:text="${q2.plate + ' · ' + q2.file}">Biển số · hồ sơ</small>
+              </span>
+            </div>
+          </td>
+          <td th:text="${q2.owner}" th:title="${q2.owner}">Chủ xe</td>
+          <td class="num" th:text="${#numbers.formatInteger(q2.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</td>
+          <td class="num news-price" th:text="${#numbers.formatInteger(q2.net, 1, 'POINT') + ' ₫'}">0 ₫</td>
+          <td class="news-date"><span th:text="${#temporals.format(#temporals.createDateTime(q2.created), 'dd/MM/yyyy')}">01/01/2026</span></td>
+          <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+          <td>
+            <div class="row-actions news-actions">
+              <a class="row-action" th:href="@{${url}}" th:attr="aria-label=${'Xem ' + q2.code}" title="Xem chi tiết">
+                <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+              </a>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty" th:if="${page.empty}">
+    <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+    <h4>Không có quyết toán phù hợp</h4>
+    <p>Quyết toán tự mở sau khi đóng sale.</p>
+  </div>
+  <nav th:replace="~{sales/deal-parts :: pager('quyết toán')}"></nav>
+</section>
+
+<th:block th:fragment="summary(item)">
+  <section class="card inq-card">
+    <h3><svg th:replace="~{shell/icons :: icon('coins')}"></svg>Bảng tính tiền chủ xe</h3>
+    <dl class="deal-money fin-sheet">
+      <div><dt>Giá bán</dt><dd th:text="${#numbers.formatInteger(item.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <div><dt th:text="${'Hoa hồng theo hợp đồng ký gửi (' + item.commissionRate + ')'}">Hoa hồng</dt>
+        <dd th:text="${'− ' + #numbers.formatInteger(item.commission, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <div><dt>Phí cố định</dt><dd th:text="${'− ' + #numbers.formatInteger(item.fee, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <div class="fin-total"><dt>Chủ xe nhận</dt><dd th:text="${#numbers.formatInteger(item.net, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+    </dl>
+  </section>
+
+  <section class="card inq-card">
+    <h3><svg th:replace="~{shell/icons :: icon('user')}"></svg>Chủ xe nhận tiền</h3>
+    <dl class="inq-rows">
+      <div><dt>Chủ xe</dt><dd th:text="${item.owner}">Chủ xe</dd></div>
+      <div><dt>Ngân hàng</dt><dd th:text="${item.bank}">Ngân hàng</dd></div>
+      <div><dt>Số tài khoản</dt><dd th:text="${item.account}">****</dd></div>
+      <div><dt>Hợp đồng bán</dt><dd th:text="${item.contractCode}">HĐ</dd></div>
+      <div><dt>Xe</dt><dd th:text="${item.car + ' · ' + item.file}">Xe</dd></div>
+    </dl>
+  </section>
+</th:block>
+</body>
+</html>

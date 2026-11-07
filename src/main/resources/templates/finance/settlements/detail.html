@@ -1,16 +1,80 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Chi tiết quyết toán của Tài chính. Số tiền tự tính, không nhập tay.
+       Nháp thì gửi Quản lý duyệt, đã duyệt thì chi trả ngay trên màn này. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Tài chính', 'finance-settlements',
+                    null, ~{::link}, ~{::#settlement-detail})}">
+<head>
+  <title>Chi tiết quyết toán</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/finance-deals.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Quyết toán QT-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="finance/settlements/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="settlement-detail" class="inq-detail" th:with="s=${statuses.get(item.status)}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('clipboard')}"></svg></div>
+      <div>
+        <h2 th:text="${'Quyết toán ' + item.code}">Quyết toán</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/finance/settlements}">Quyết toán và chi trả</a>
+          <span>/</span>
+          <span th:text="${item.code}">QT</span>
+        </nav>
+      </div>
+      <span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/finance/settlements}">Quay lại</a>
+      <form method="post" th:if="${item.status == 'DRAFT'}" th:action="@{/finance/settlements/{id}/submit(id=${item.id})}">
+        <button class="btn-c btn-c--primary" type="submit">Gửi Quản lý duyệt</button>
+      </form>
+      <button class="btn-c btn-c--primary" type="button" th:if="${item.status == 'APPROVED'}" data-dialog="payout-dialog">Chi trả chủ xe</button>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+  <p class="flash flash--error" th:if="${item.rejectReason != ''}"
+     th:text="${'Quản lý đã trả lại: ' + item.rejectReason}" role="alert"></p>
+
+  <div class="transfer-layout">
+    <div class="inq-detail-grid">
+      <th:block th:replace="~{finance/settlement-parts :: summary(${item})}"></th:block>
+      <section class="card inq-card" th:if="${item.status == 'PAID_OUT'}">
+        <h3><svg th:replace="~{shell/icons :: icon('check')}"></svg>Đã chi trả</h3>
+        <dl class="inq-rows">
+          <div><dt>Lệnh chi</dt><dd th:text="${item.payoutCode}">PC</dd></div>
+          <div><dt>Mã tham chiếu</dt><dd th:text="${item.payoutReference}">Mã</dd></div>
+          <div><dt>Ngày chi</dt><dd th:text="${#temporals.format(#temporals.createDate(item.paidOn), 'dd/MM/yyyy')}">01/01/2026</dd></div>
+        </dl>
+      </section>
+    </div>
+    <aside class="contracts-sidebar transfer-standard">
+      <div th:replace="~{documents/transfers/parts :: column('Tiến độ quyết toán', 'flow', ${steps})}"></div>
+    </aside>
+  </div>
+
+  <dialog class="intake-dialog inq-close-dialog fin-dialog" id="payout-dialog" aria-labelledby="payout-title" th:if="${item.status == 'APPROVED'}">
+    <form method="post" th:action="@{/finance/settlements/{id}/payout(id=${item.id})}">
+      <h3 id="payout-title">Chi trả chủ xe</h3>
+      <p th:text="${'Chi ' + #numbers.formatInteger(item.net, 1, 'POINT') + ' ₫ cho ' + item.owner + ' · ' + item.bank + ' ' + item.account + '.'}">Chi trả</p>
+      <label for="po-reference">Mã tham chiếu <span class="req">*</span></label>
+      <input class="fin-input" id="po-reference" name="reference" maxlength="60" required placeholder="Ví dụ: mã ủy nhiệm chi">
+      <div class="inq-dialog-actions">
+        <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Đóng</button>
+        <button class="btn-c btn-c--primary" type="submit">Xác nhận đã chi</button>
+      </div>
+    </form>
+  </dialog>
+</div>
 </body>
 </html>

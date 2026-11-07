@@ -1,11 +1,43 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Duyệt quyết toán của Quản lý. Không hiện bản nháp của Tài chính. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Duyệt quyết toán', 'Quản lý', 'manager-settlements',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Duyệt quyết toán</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Hoa hồng &amp; quyết toán chủ xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="manager/settlements/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--money deal-list--review">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg></div>
+      <div>
+        <h2>Duyệt quyết toán</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/manager/dashboard}">Dashboard</a>
+          <span>/</span>
+          <span>Duyệt quyết toán</span>
+        </nav>
+        <p class="news-lead">Đối chiếu số tiền Tài chính đã lập rồi duyệt hoặc trả lại; đã duyệt thì Tài chính mới được chi cho chủ xe.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('hồ sơ')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm quyết toán', 'Tìm theo mã, hợp đồng, xe...', 'Khoảng ngày tạo', 'Chủ xe nhận')}"></form>
+  <section th:replace="~{finance/settlement-parts :: table}"></section>
+</div>
 </body>
 </html>

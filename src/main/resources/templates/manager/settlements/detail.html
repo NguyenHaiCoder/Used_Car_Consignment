@@ -1,16 +1,66 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Duyệt quyết toán của Quản lý. Chỉ xem số tiền, duyệt hoặc trả lại; trả lại bắt buộc có lý do. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Quản lý', 'manager-settlements',
+                    null, ~{::link}, ~{::#settlement-review})}">
+<head>
+  <title>Duyệt quyết toán</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/finance-deals.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Quyết toán QT-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="manager/settlements/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="settlement-review" class="inq-detail" th:with="s=${statuses.get(item.status)}, pending=${item.status == 'PENDING_REVIEW'}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg></div>
+      <div>
+        <h2 th:text="${'Quyết toán ' + item.code}">Quyết toán</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/manager/settlements}">Duyệt quyết toán</a>
+          <span>/</span>
+          <span th:text="${item.code}">QT</span>
+        </nav>
+      </div>
+      <span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/manager/settlements}">Quay lại</a>
+      <button class="btn-c btn-c--danger" type="button" th:if="${pending}" data-dialog="reject-dialog">Trả lại</button>
+      <form method="post" th:if="${pending}" th:action="@{/manager/settlements/{id}/decide(id=${item.id})}">
+        <input type="hidden" name="decision" value="APPROVED">
+        <button class="btn-c btn-c--primary" type="submit">Duyệt quyết toán</button>
+      </form>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <div class="inq-detail-grid">
+    <th:block th:replace="~{finance/settlement-parts :: summary(${item})}"></th:block>
+  </div>
+
+  <dialog class="intake-dialog inq-close-dialog fin-dialog" id="reject-dialog" aria-labelledby="reject-title" th:if="${pending}">
+    <form method="post" th:action="@{/manager/settlements/{id}/decide(id=${item.id})}">
+      <input type="hidden" name="decision" value="REJECTED">
+      <h3 id="reject-title">Trả lại quyết toán</h3>
+      <p th:text="${'Quyết toán ' + item.code + ' sẽ quay về Nháp để Tài chính xem lại.'}">Trả lại</p>
+      <label for="rj-reason">Lý do <span class="req">*</span></label>
+      <textarea id="rj-reason" name="reason" rows="3" maxlength="1000" required></textarea>
+      <div class="inq-dialog-actions">
+        <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Đóng</button>
+        <button class="btn-c btn-c--danger" type="submit">Trả lại</button>
+      </div>
+    </form>
+  </dialog>
+</div>
 </body>
 </html>

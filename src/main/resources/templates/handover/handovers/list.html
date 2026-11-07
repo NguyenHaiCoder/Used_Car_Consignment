@@ -1,11 +1,102 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Hàng đợi bàn giao, thiết kế theo màn Quản lý tin đăng.
+       Mỗi hợp đồng đã ký có một dòng. Phải thu đủ tiền và sang tên xong mới Sẵn sàng bàn giao. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Hàng đợi bàn giao', 'Bàn giao xe', 'handover-queue',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Hàng đợi bàn giao</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Hàng đợi bàn giao xe: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="handover/handovers/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--money">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
+      <div>
+        <h2>Hàng đợi bàn giao xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <span>Hàng đợi bàn giao</span>
+        </nav>
+        <p class="news-lead">Xe chỉ được bàn giao khi đã thu đủ tiền và sang tên xong; bàn giao xong thì đóng sale.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('xe')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm bàn giao', 'Tìm theo mã, hợp đồng, xe, khách...', 'Khoảng ngày ký', 'Giá bán')}"></form>
+
+  <section class="card records">
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table" aria-label="Hàng đợi bàn giao xe">
+        <thead>
+          <tr>
+            <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả trên trang"></th>
+            <th scope="col">Mã bàn giao</th>
+            <th scope="col">Hợp đồng</th>
+            <th scope="col">Xe</th>
+            <th scope="col">Khách nhận xe</th>
+            <th scope="col">Thanh toán</th>
+            <th scope="col">Sang tên</th>
+            <th scope="col">Người phụ trách</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="h : ${page.content}" th:with="s=${statuses.get(h.status)}">
+            <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn ' + h.code}"></td>
+            <td><a class="code" th:href="@{/handover/handovers/{id}(id=${h.id})}" th:text="${h.code}">BG-1</a></td>
+            <td th:text="${h.contractCode}">HDBX-1</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${h.car}" th:title="${h.car}">Xe</strong>
+                  <small th:text="${h.plate + ' · ' + h.file}">Biển số · hồ sơ</small>
+                </span>
+              </div>
+            </td>
+            <td class="deal-person">
+              <strong th:text="${h.buyer}" th:title="${h.buyer}">Khách</strong>
+              <small th:text="${h.phone}">SĐT</small>
+            </td>
+            <td th:classappend="${h.paid} ? 'fin-yes' : 'fin-no'" th:text="${h.paid ? 'Đã thu đủ' : 'Chưa đủ'}">Thanh toán</td>
+            <td th:classappend="${h.transferred} ? 'fin-yes' : 'fin-no'" th:text="${h.transferred ? 'Đã xong' : 'Chưa xong'}">Sang tên</td>
+            <td th:text="${h.staff == '' ? 'Chưa có' : h.staff}">Nhân viên</td>
+            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td>
+              <div class="row-actions news-actions">
+                <a class="row-action" th:href="@{/handover/handovers/{id}(id=${h.id})}"
+                   th:attr="aria-label=${'Xem ' + h.code}" title="Xem chi tiết">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có xe phù hợp</h4>
+      <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+    </div>
+    <nav th:replace="~{sales/deal-parts :: pager('xe')}"></nav>
+  </section>
+</div>
 </body>
 </html>

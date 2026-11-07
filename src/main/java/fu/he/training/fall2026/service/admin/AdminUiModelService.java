@@ -418,6 +418,7 @@ public class AdminUiModelService {
         return List.of(
                 new Link("Tổng quan", "/manager/dashboard", "Điều hành"),
                 new Link("Hàng đợi phê duyệt", "/manager/approvals", "Điều hành"),
+                new Link("Duyệt quyết toán", "/manager/settlements", "Điều hành"),
                 new Link("Nhật ký hoạt động", "/manager/audit", "Quản trị"),
                 new Link("Báo cáo vận hành", "/manager/reports", "Điều hành"));
     }

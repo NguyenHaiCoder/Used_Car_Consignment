@@ -1,14 +1,85 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Biên nhận bàn giao để in, chỉ có sau khi đã bàn giao xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${'Biên nhận ' + item.code}, 'Bàn giao xe', 'handover-queue',
+                    null, ~{::link}, ~{::#handover-receipt})}">
+<head>
+  <title>Biên nhận bàn giao</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/sales-deals.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Biên nhận bàn giao BG-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="handover/handovers/receipt">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="handover-receipt" class="contracts-wrap">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('file')}"></svg></div>
+      <div>
+        <h2>Biên nhận bàn giao xe</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/handover/handovers}">Hàng đợi bàn giao</a>
+          <span>/</span>
+          <a th:href="@{/handover/handovers/{id}(id=${item.id})}" th:text="${item.code}">BG</a>
+          <span>/</span>
+          <span>Biên nhận</span>
+        </nav>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/handover/handovers/{id}(id=${item.id})}">Quay lại</a>
+      <button class="btn-c btn-c--primary" type="button" data-print>In biên nhận</button>
+    </div>
   </div>
-</section>
+
+  <div class="contract-doc fin-receipt">
+    <div class="contract-title-block">
+      <div class="contract-doc-title">Biên nhận bàn giao xe</div>
+      <div class="contract-doc-num" th:text="${'Số: ' + item.code + ' · Ngày ' + #temporals.format(#temporals.createDate(item.handedOn), 'dd/MM/yyyy')}">Số</div>
+    </div>
+    <div class="article">
+      <div class="article-heading">Thông tin xe</div>
+      <div class="article-body">
+        <div class="contract-row deal-row--car"><span class="cl">Xe:</span><span class="cv" th:text="${item.car}">Xe</span></div>
+        <div class="contract-row deal-row--car"><span class="cl">Biển số:</span><span class="cv" th:text="${item.plate}">Biển số</span></div>
+        <div class="contract-row deal-row--car"><span class="cl">VIN:</span><span class="cv" th:text="${item.vin}">VIN</span></div>
+        <div class="contract-row deal-row--car"><span class="cl">Hợp đồng:</span><span class="cv" th:text="${item.contractCode}">HĐ</span></div>
+      </div>
+    </div>
+    <div class="article">
+      <div class="article-heading">Nội dung bàn giao</div>
+      <div class="article-body">
+        <div class="contract-row deal-row--car"><span class="cl">Số km:</span>
+          <span class="cv" th:text="${#numbers.formatInteger(item.odo, 1, 'POINT') + ' km'}">0 km</span></div>
+        <div class="contract-row deal-row--car"><span class="cl">Số chìa khóa:</span><span class="cv" th:text="${item.keys}">0</span></div>
+        <div class="contract-row deal-row--car"><span class="cl">Giao kèm:</span>
+          <span class="cv" th:text="${#lists.isEmpty(item.items) ? 'Không có' : #strings.listJoin(item.items, ', ')}">Phụ kiện</span></div>
+        <div class="contract-row deal-row--car" th:if="${item.notes != ''}"><span class="cl">Ghi chú:</span>
+          <span class="cv" th:text="${item.notes}">Ghi chú</span></div>
+      </div>
+    </div>
+    <div class="contract-signatures">
+      <div class="sig-block">
+        <div class="sig-role">Nhân viên giao xe</div>
+        <div class="sig-pad deal-sig">
+          <img th:if="${item.staffSignature != ''}" th:src="${item.staffSignature}" alt="Chữ ký nhân viên">
+          <span th:if="${item.staffSignature == ''}">Đã ký</span>
+        </div>
+        <div class="sig-name" th:text="${item.staff}">Nhân viên</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-role">Khách nhận xe</div>
+        <div class="sig-pad deal-sig">
+          <img th:if="${item.receiverSignature != ''}" th:src="${item.receiverSignature}" alt="Chữ ký khách">
+          <span th:if="${item.receiverSignature == ''}">Đã ký</span>
+        </div>
+        <div class="sig-name" th:text="${item.buyer}">Khách</div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

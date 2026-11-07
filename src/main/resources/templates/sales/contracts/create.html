@@ -2,7 +2,7 @@
 <!--/* Đỗ Lan Anh: màn Tạo, xem Hợp đồng bán xe, giao diện văn bản pháp lý giống Hợp đồng ký gửi (dùng chung
        consignment-contracts.css và consignment-contracts.js cho phần ký tên, nên giữ id contract-create).
        Chỉ lập từ phiếu đặt cọc còn hiệu lực. Bản nháp sửa được, ký xong khóa nội dung.
-       Nút Thanh toán để sẵn cho luồng Thanh toán của Vũ Mạnh Cường, chưa nối. */-->
+       Nút Thanh toán gửi yêu cầu thu sang Tài chính, luồng sau đó là của Vũ Mạnh Cường. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${contract != null ? contract.code : 'Tạo hợp đồng bán xe'}, 'Kinh doanh', 'sales-contracts',
                     null, ~{::link}, ~{::#contract-create})}">
@@ -354,9 +354,13 @@
         <svg th:replace="~{shell/icons :: icon('undo')}"></svg>Quay lại danh sách
       </a>
       <div class="contracts-actions-right">
-        <!--/* Vũ Mạnh Cường nối nút này sang luồng Thanh toán. */-->
-        <button type="button" class="btn-c btn-c--outline" disabled title="Thuộc luồng Thanh toán, sẽ nối sau">
-          <svg th:replace="~{shell/icons :: icon('coins')}"></svg>Thanh toán
+        <!--/* Vũ Mạnh Cường: hợp đồng đã ký mới gửi được; Sales không có quyền mở màn Tài chính nên chỉ gửi yêu cầu. */-->
+        <button type="submit" class="btn-c btn-c--outline" formnovalidate
+                th:formaction="${contract.id != null} ? @{/sales/contracts/{id}/payment-request(id=${contract.id})}"
+                th:disabled="${contract.status != 'SIGNED'}"
+                th:title="${contract.paymentRequested ? 'Đã gửi sang Tài chính' : 'Hợp đồng đã ký mới gửi được'}">
+          <svg th:replace="~{shell/icons :: icon('coins')}"></svg>
+          <th:block th:text="${contract.paymentRequested ? 'Đã gửi thu tiền' : 'Thanh toán'}">Thanh toán</th:block>
         </button>
         <button type="submit" class="btn-c btn-c--secondary" name="intent" value="draft" th:if="${editable}">Lưu nháp</button>
         <button type="submit" class="btn-c btn-c--primary" name="intent" value="sign" th:if="${editable}">

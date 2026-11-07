@@ -1,11 +1,109 @@
 <!DOCTYPE html>
+<!--/* Nguyễn Phúc Khang: màn Hồ sơ sang tên, thiết kế theo màn Quản lý tin đăng.
+       Dùng id news-list để ăn chung inspector-news.css, inspector-news.js và khung lọc sales/deal-parts. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Hồ sơ sang tên', 'Hồ sơ giấy tờ', 'document-transfers',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Hồ sơ sang tên</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Hồ sơ sang tên: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="documents/transfers/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--transfers">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('file')}"></svg></div>
+      <div>
+        <h2>Hồ sơ sang tên</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/home}">Dashboard</a>
+          <span>/</span>
+          <span>Hồ sơ sang tên</span>
+        </nav>
+        <p class="news-lead">Theo dõi sang tên xe cho người mua sau khi ký hợp đồng; hoàn tất sang tên là một trong ba mốc để đóng sale.</p>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/documents/transfers/new}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tạo mới
+      </a>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('hồ sơ')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm hồ sơ sang tên', 'Tìm theo mã, hợp đồng, xe...', 'Khoảng hạn xử lý', 'Giá bán')}"></form>
+
+  <section class="card records">
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table" aria-label="Danh sách hồ sơ sang tên">
+        <thead>
+          <tr>
+            <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả hồ sơ trên trang"></th>
+            <th scope="col">Mã hồ sơ</th>
+            <th scope="col">Hợp đồng</th>
+            <th scope="col">Xe</th>
+            <th scope="col">Người mua</th>
+            <th scope="col">Hạn xử lý</th>
+            <th scope="col">Người phụ trách</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="t : ${page.content}" th:with="s=${statuses.get(t.status)}, done=${t.status == 'COMPLETED'}">
+            <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn hồ sơ ' + t.code}"></td>
+            <td><a class="code" th:href="@{/documents/transfers/{id}(id=${t.id})}" th:text="${t.code}">ST-1</a></td>
+            <td th:text="${t.contractCode}">HDBX-1</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${t.car}" th:title="${t.car}">Xe</strong>
+                  <small th:text="${t.plate + ' · ' + t.file}">Biển số · hồ sơ</small>
+                </span>
+              </div>
+            </td>
+            <td class="deal-person">
+              <strong th:text="${t.buyer}" th:title="${t.buyer}">Người mua</strong>
+              <small th:text="${t.phone}">SĐT</small>
+            </td>
+            <td class="news-date" th:classappend="${!done and t.daysLeft < 0} ? 'transfer-late'">
+              <span th:text="${#temporals.format(#temporals.createDate(t.deadline), 'dd/MM/yyyy')}">01/01/2026</span>
+              <small th:unless="${done}"
+                     th:text="${t.daysLeft < 0 ? 'Trễ ' + (-t.daysLeft) + ' ngày' : (t.daysLeft == 0 ? 'Hết hôm nay' : 'Còn ' + t.daysLeft + ' ngày')}">Còn</small>
+            </td>
+            <td th:text="${t.staff == '' ? 'Chưa phân công' : t.staff}">Nhân viên</td>
+            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td>
+              <div class="row-actions news-actions">
+                <a class="row-action" th:href="@{/documents/transfers/{id}(id=${t.id})}"
+                   th:attr="aria-label=${'Xem hồ sơ ' + t.code}" title="Xem hồ sơ">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có hồ sơ sang tên phù hợp</h4>
+      <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+    </div>
+    <nav th:replace="~{sales/deal-parts :: pager('hồ sơ')}"></nav>
+  </section>
+</div>
 </body>
 </html>

@@ -1,17 +1,156 @@
 <!DOCTYPE html>
+<!--/* Vũ Mạnh Cường: màn Checklist bàn giao và Đóng sale. Chưa đủ điều kiện thì chỉ xem; sẵn sàng thì nhập checklist và ký hai bên;
+       bàn giao xong có biên nhận và nút Đóng sale. Giữ id contract-create để dùng lại phần ký tên của consignment-contracts.js. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Bàn giao xe', 'handover-queue',
+                    null, ~{::link}, ~{::#contract-create})}">
+<head>
+  <title>Checklist bàn giao</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <script th:src="@{/js/app/consignment-contracts.js}" defer></script>
+    <script th:src="@{/js/app/sales-deals.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Checklist bàn giao BG-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="handover/handovers/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="contract-create" class="inq-detail"
+     th:with="s=${statuses.get(item.status)}, ready=${item.status == 'READY'},
+              done=${item.status == 'COMPLETED' or item.status == 'CLOSED'}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
+      <div>
+        <h2 th:text="${'Bàn giao ' + item.code}">Bàn giao</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/handover/handovers}">Hàng đợi bàn giao</a>
+          <span>/</span>
+          <span th:text="${item.code}">BG</span>
+        </nav>
+      </div>
+      <span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/handover/handovers}">Quay lại</a>
+      <a class="btn-c btn-c--outline" th:if="${done}" th:href="@{/handover/handovers/{id}/receipt(id=${item.id})}">
+        <svg th:replace="~{shell/icons :: icon('file')}"></svg>Biên nhận
+      </a>
+      <form method="post" th:if="${item.status == 'COMPLETED'}" th:action="@{/handover/handovers/{id}/close(id=${item.id})}">
+        <button class="btn-c btn-c--primary" type="submit">Đóng sale</button>
+      </form>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: steps}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <div class="transfer-layout">
+    <div class="inq-col">
+      <div class="inq-detail-grid">
+        <section class="card inq-card">
+          <h3><svg th:replace="~{shell/icons :: icon('user')}"></svg>Khách nhận xe</h3>
+          <dl class="inq-rows">
+            <div><dt>Họ tên</dt><dd th:text="${item.buyer}">Khách</dd></div>
+            <div><dt>SĐT</dt><dd th:text="${item.phone}">SĐT</dd></div>
+            <div><dt>Số CCCD</dt><dd th:text="${item.buyerIdNumber == '' ? 'Chưa có' : item.buyerIdNumber}">CCCD</dd></div>
+            <div><dt>Hợp đồng</dt><dd th:text="${item.contractCode}">HĐ</dd></div>
+          </dl>
+        </section>
+        <section class="card inq-card">
+          <h3><svg th:replace="~{shell/icons :: icon('car')}"></svg>Xe bàn giao</h3>
+          <dl class="inq-rows">
+            <div><dt>Xe</dt><dd th:text="${item.car}">Xe</dd></div>
+            <div><dt>Biển số</dt><dd th:text="${item.plate}">Biển số</dd></div>
+            <div><dt>VIN</dt><dd th:text="${item.vin}">VIN</dd></div>
+            <div><dt>Màu</dt><dd th:text="${item.color}">Màu</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <section class="card inq-card" th:if="${item.status == 'PENDING'}">
+        <h3><svg th:replace="~{shell/icons :: icon('hourglass')}"></svg>Chưa thể bàn giao</h3>
+        <p class="muted" th:text="${!item.paid and !item.transferred ? 'Cần thu đủ tiền và sang tên xong.' : (!item.paid ? 'Cần thu đủ tiền.' : 'Cần sang tên xong.')}">Chờ điều kiện</p>
+      </section>
+
+      <form class="section-card create-wrap transfer-form" id="contract-form" method="post" th:if="${ready}"
+            th:action="@{/handover/handovers/{id}/confirm(id=${item.id})}">
+        <div class="section-head">
+          <svg th:replace="~{shell/icons :: icon('clipboard')}"></svg>
+          <h3>Checklist bàn giao</h3>
+        </div>
+        <div class="section-body">
+          <div class="form-row form-row--2">
+            <div class="field">
+              <label for="hd-odo">Số km <span class="req">*</span></label>
+              <div class="field-input"><input id="hd-odo" name="odo" inputmode="numeric" maxlength="9" required
+                                              th:value="${item.odo}"></div>
+            </div>
+            <div class="field">
+              <label for="hd-keys">Số chìa khóa <span class="req">*</span></label>
+              <div class="field-input"><input id="hd-keys" name="keys" inputmode="numeric" maxlength="2" required
+                                              th:value="${item.keys}"></div>
+            </div>
+          </div>
+          <fieldset class="fin-items">
+            <legend>Giấy tờ và phụ kiện giao kèm</legend>
+            <label class="check-item" th:each="p : ${handoverItems}">
+              <input type="checkbox" name="items" th:value="${p}"> <span th:text="${p}">Phụ kiện</span>
+            </label>
+          </fieldset>
+          <div class="field">
+            <label for="hd-notes">Ghi chú</label>
+            <textarea class="field-textarea" id="hd-notes" name="notes" rows="2" maxlength="2000"></textarea>
+          </div>
+          <div class="contract-signatures fin-signatures">
+            <div class="sig-block">
+              <div class="sig-role">Nhân viên giao xe</div>
+              <input type="hidden" name="staffSignature" data-sig-input="party-a">
+              <div class="sig-pad" data-sig="party-a">
+                <canvas class="sig-canvas" aria-label="Ký tên nhân viên"></canvas>
+                <span class="sig-placeholder">Chạm để ký tên</span>
+              </div>
+              <button type="button" class="sig-clear" hidden>Ký lại</button>
+            </div>
+            <div class="sig-block">
+              <div class="sig-role">Khách nhận xe</div>
+              <input type="hidden" name="receiverSignature" data-sig-input="party-b">
+              <div class="sig-pad" data-sig="party-b">
+                <canvas class="sig-canvas" aria-label="Ký tên khách"></canvas>
+                <span class="sig-placeholder">Chạm để ký tên</span>
+              </div>
+              <button type="button" class="sig-clear" hidden>Ký lại</button>
+              <div class="sig-name" th:text="${item.buyer}">Khách</div>
+            </div>
+          </div>
+          <div class="fin-actions">
+            <button class="btn-c btn-c--primary" type="submit">Xác nhận bàn giao</button>
+          </div>
+        </div>
+      </form>
+
+      <section class="card inq-card" th:if="${done}">
+        <h3><svg th:replace="~{shell/icons :: icon('check')}"></svg>Đã bàn giao</h3>
+        <dl class="inq-rows">
+          <div><dt>Ngày bàn giao</dt><dd th:text="${#temporals.format(#temporals.createDate(item.handedOn), 'dd/MM/yyyy')}">01/01/2026</dd></div>
+          <div><dt>Nhân viên</dt><dd th:text="${item.staff}">NV</dd></div>
+          <div><dt>Số km</dt><dd th:text="${#numbers.formatInteger(item.odo, 1, 'POINT') + ' km'}">0 km</dd></div>
+          <div><dt>Số chìa khóa</dt><dd th:text="${item.keys}">0</dd></div>
+          <div><dt>Giao kèm</dt><dd th:text="${#lists.isEmpty(item.items) ? 'Không có' : #strings.listJoin(item.items, ', ')}">Phụ kiện</dd></div>
+          <div th:if="${item.notes != ''}"><dt>Ghi chú</dt><dd th:text="${item.notes}">Ghi chú</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <aside class="contracts-sidebar transfer-standard">
+      <div th:replace="~{documents/transfers/parts :: column('Mốc đóng sale', 'flow', ${milestones})}"></div>
+    </aside>
+  </div>
+</div>
 </body>
 </html>

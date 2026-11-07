@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Phúc Khang: phần dùng chung của màn Tạo và Chi tiết hồ sơ sang tên. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/* Cột dọc trạng thái, dùng lại timeline của màn hợp đồng. rows gồm label, note, passed. */-->
+<div th:fragment="column(title, icon, rows)" class="csb-card">
+    <div class="csb-head">
+      <svg th:replace="~{shell/icons :: icon(${icon})}"></svg>
+      <h4 th:text="${title}">Tiêu đề</h4>
+    </div>
+    <div class="csb-body">
+      <div class="timeline">
+        <div class="tl-item" th:each="c, st : ${rows}" th:with="ok=${c.passed == 'true'}">
+          <div class="tl-line-wrap">
+            <div class="tl-dot" th:classappend="${ok} ? 'done'">
+              <th:block th:if="${ok}"><svg th:replace="~{shell/icons :: icon('check')}"></svg></th:block>
+              <th:block th:unless="${ok}"><svg th:replace="~{shell/icons :: icon('clock')}"></svg></th:block>
+            </div>
+            <div class="tl-connector" th:unless="${st.last}" th:classappend="${ok} ? 'done'"></div>
+          </div>
+          <div class="tl-text">
+            <strong th:text="${c.label}">Điều kiện</strong>
+            <small th:text="${c.note}">Ghi chú</small>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<th:block th:fragment="contractCards(item)">
+  <section class="card inq-card">
+    <h3><svg th:replace="~{shell/icons :: icon('handshake')}"></svg>Hợp đồng bán xe</h3>
+    <dl class="inq-rows">
+      <div><dt>Số hợp đồng</dt><dd th:text="${item.contractCode}">HĐ</dd></div>
+      <div><dt>Ngày ký</dt><dd th:text="${#temporals.format(#temporals.createDate(item.signedOn), 'dd/MM/yyyy')}">01/01/2026</dd></div>
+      <div><dt>Giá bán</dt><dd th:text="${#numbers.formatInteger(item.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <div><dt>Nhân viên bán</dt><dd th:text="${item.salesStaff}">NV</dd></div>
+    </dl>
+  </section>
+
+  <section class="card inq-card">
+    <h3><svg th:replace="~{shell/icons :: icon('user')}"></svg>Người nhận sang tên</h3>
+    <dl class="inq-rows">
+      <div><dt>Họ tên</dt><dd th:text="${item.buyer}">Người mua</dd></div>
+      <div><dt>SĐT</dt><dd th:text="${item.phone}">SĐT</dd></div>
+      <div><dt>Số CCCD</dt><dd th:text="${item.buyerIdNumber == '' ? 'Chưa có' : item.buyerIdNumber}">CCCD</dd></div>
+      <div><dt>Địa chỉ</dt><dd th:text="${item.buyerAddress == '' ? 'Chưa có' : item.buyerAddress}">Địa chỉ</dd></div>
+    </dl>
+  </section>
+</th:block>
+
+<section th:fragment="carCard(item)" class="card inq-card">
+  <h3><svg th:replace="~{shell/icons :: icon('car')}"></svg>Xe sang tên</h3>
+  <dl class="inq-rows">
+    <div><dt>Xe</dt><dd th:text="${item.car}">Xe</dd></div>
+    <div><dt>Biển số</dt><dd th:text="${item.plate}">Biển số</dd></div>
+    <div><dt>VIN</dt><dd th:text="${item.vin}">VIN</dd></div>
+    <div><dt>Mã hồ sơ</dt><dd th:text="${item.file}">KG</dd></div>
+    <div><dt>Chủ xe cũ</dt><dd th:text="${item.owner}">Chủ xe</dd></div>
+  </dl>
+</section>
+</body>
+</html>

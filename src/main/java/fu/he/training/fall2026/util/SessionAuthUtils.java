@@ -131,9 +131,9 @@ public final class SessionAuthUtils {
             case CONSIGNMENT -> "/consignments";
             case INSPECTOR -> "/inspector/vehicles";
             case SALES -> "/sales/inquiries";
-            case FINANCE -> "/finance/dashboard";
-            case HANDOVER -> "/handover/dashboard";
-            case DOCUMENTS -> "/documents/dashboard";
+            case FINANCE -> "/finance/payments";
+            case HANDOVER -> "/handover/handovers";
+            case DOCUMENTS -> "/documents/transfers";
         };
     }
 

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--/* Nguyễn Phúc Khang: màn Tạo hồ sơ sang tên. Ô chọn chỉ hiện hợp đồng đủ 4 điều kiện và chưa có hồ sơ,
+       chọn xong trang tải lại để xem thông tin và cột Hồ sơ đạt chuẩn rồi mới tạo. */-->
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Tạo hồ sơ sang tên', 'Hồ sơ giấy tờ', 'document-transfers',
+                    null, ~{::link}, ~{::#transfer-create})}">
+<head>
+  <title>Tạo hồ sơ sang tên</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <script th:src="@{/js/app/sales-deals.js}" defer></script>
+  </th:block>
+</head>
+<body>
+<div id="transfer-create" class="inq-detail">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('file')}"></svg></div>
+      <div>
+        <h2>Tạo hồ sơ sang tên</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/documents/transfers}">Hồ sơ sang tên</a>
+          <span>/</span>
+          <span>Tạo mới</span>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <form class="section-card create-wrap transfer-form" method="get" th:action="@{/documents/transfers/new}"
+        th:unless="${#lists.isEmpty(candidates)}">
+    <div class="section-head">
+      <svg th:replace="~{shell/icons :: icon('handshake')}"></svg>
+      <h3>Chọn hợp đồng bán xe</h3>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label for="tr-contract">Hợp đồng đủ điều kiện <span class="req">*</span></label>
+        <span class="select">
+          <select id="tr-contract" name="contractId" required data-auto-submit>
+            <option value="">Chọn hợp đồng</option>
+            <option th:each="c : ${candidates}" th:value="${c.id}" th:selected="${item != null and c.id == item.id}"
+                    th:text="${c.code + ' · ' + c.buyer + ' · ' + c.car + ' · ' + c.plate}">Hợp đồng</option>
+          </select>
+        </span>
+        <small class="deal-hint">Chỉ hiện hợp đồng đã ký, khách đã đặt cọc và chưa có hồ sơ sang tên.</small>
+      </div>
+    </div>
+  </form>
+
+  <section class="card inq-card" th:if="${#lists.isEmpty(candidates)}">
+    <h3><svg th:replace="~{shell/icons :: icon('info')}"></svg>Chưa có hợp đồng đủ điều kiện</h3>
+    <p class="muted">Hợp đồng bán phải được ký xong thì mới tạo được hồ sơ sang tên.</p>
+  </section>
+
+  <div class="transfer-layout" th:if="${item != null}">
+    <div class="inq-detail-grid">
+      <div class="inq-col">
+        <th:block th:replace="~{documents/transfers/parts :: contractCards(${item})}"></th:block>
+      </div>
+      <div class="inq-col">
+        <section th:replace="~{documents/transfers/parts :: carCard(${item})}"></section>
+      </div>
+    </div>
+    <aside class="contracts-sidebar transfer-standard">
+      <div th:replace="~{documents/transfers/parts :: column('Hồ sơ đạt chuẩn', 'shield-check', ${checks})}"></div>
+    </aside>
+  </div>
+
+  <form class="create-actions" method="post" th:if="${item != null}" th:action="@{/documents/transfers}">
+    <input type="hidden" name="contractId" th:value="${item.id}">
+    <a class="btn-c btn-c--ghost" th:href="@{/documents/transfers}">Hủy</a>
+    <button class="btn-c btn-c--primary" type="submit">Tạo hồ sơ sang tên</button>
+  </form>
+</div>
+</body>
+</html>

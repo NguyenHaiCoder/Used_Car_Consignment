@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* Hà Lệ Quyên: màn yêu cầu rút hồ sơ — mock UI, rút bất cứ lúc nào.
+<!--/* Hà Lệ Quyên: màn yêu cầu rút hồ sơ — mock UI, rút bất cứ lúc nào, trừ xe đã có khách đặt cọc hoặc ký hợp đồng.
        Gửi: lý do, người gửi, thời điểm gửi, ngày dự kiến trả xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${'Rút ký gửi ' + consignment.code}, 'Hệ thống Quản lý Ký gửi xe', 'consignments',
@@ -38,6 +38,9 @@
   </div>
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError != null}" th:text="${flashError}" role="alert"></p>
+  <p class="flash flash--error" th:if="${flashError == null and buyerHold != null and buyerHold != ''}"
+     th:text="${'Chưa thể rút vì xe đã có khách. ' + buyerHold}" role="alert"></p>
 
   <section class="csb-card">
     <header class="csb-head">
@@ -162,7 +165,7 @@
 
       <footer class="withdrawn-actions">
         <a class="btn-c btn-c--ghost" th:href="@{/consignments/{id}(id=${consignment.id})}">Hủy</a>
-        <button class="btn-c btn-c--primary" type="submit">
+        <button class="btn-c btn-c--primary" type="submit" th:disabled="${buyerHold != null and buyerHold != ''}">
           <svg th:replace="~{shell/icons :: icon('send')}"></svg>Gửi yêu cầu rút
         </button>
       </footer>

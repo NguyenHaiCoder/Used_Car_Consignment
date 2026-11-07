@@ -1,0 +1,54 @@
+/* Nguyễn Phúc Khang: màn Hồ sơ sang tên. Khung list lấy từ inspector-news.css và sales-deals.css, ở đây chỉ chỉnh cột riêng. */
+
+/* Danh sách */
+#news-list.deal-list--transfers .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#news-list.deal-list--transfers .records th:nth-child(2) { width: 100px; }  /* Mã hồ sơ */
+#news-list.deal-list--transfers .records th:nth-child(3) { width: 112px; }  /* Hợp đồng */
+#news-list.deal-list--transfers .records th:nth-child(6) { width: 104px; }  /* Hạn xử lý */
+#news-list.deal-list--transfers .records th:nth-child(7) { width: 124px; }  /* Người phụ trách */
+#news-list.deal-list--transfers .records th:nth-child(8) { width: 112px; }  /* Trạng thái */
+#news-list.deal-list--transfers .records th:nth-child(9) { width: 72px; }   /* Thao tác */
+.transfer-late, .transfer-late span, .transfer-late small { color: var(--red) !important; font-weight: 600; }
+
+/* Timeline */
+.transfer-steps-card { padding: 12px 14px; }
+.transfer-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+.transfer-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; text-align: center; }
+/* Đoạn nối từ tâm bước này sang tâm bước sau, xanh khi bước này đã xong */
+.transfer-steps li:not(:last-child)::after {
+  content: ""; position: absolute; top: 14px; left: calc(50% + 18px); right: calc(-50% + 18px);
+  height: 2px; background: var(--line);
+}
+.transfer-steps li.is-done:not(:last-child)::after { background: var(--green); }
+.transfer-dot {
+  display: grid; place-items: center; width: 28px; height: 28px; border: 2px solid var(--line); border-radius: 50%;
+  background: #fff; font-size: 12.5px; font-weight: 700; color: var(--mute);
+}
+.transfer-dot .ic { width: 16px; height: 16px; }
+.transfer-steps strong { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.transfer-steps .is-done .transfer-dot { border-color: var(--green); background: var(--green); color: #fff; }
+.transfer-steps .is-done strong { color: var(--ink); }
+.transfer-steps .is-current .transfer-dot { border-color: var(--blue-600); background: var(--blue-50); color: var(--blue-600); }
+.transfer-steps .is-current strong { color: var(--blue-600); font-weight: 700; }
+
+/* Chi tiết và Tạo: thông tin ở giữa, cột dọc Hồ sơ đạt chuẩn bên phải */
+.transfer-layout { display: grid; grid-template-columns: minmax(0, 1fr) 284px; gap: 10px; align-items: start; }
+.transfer-standard { position: static; gap: 10px; }
+.transfer-form { display: block; margin: 0; }
+.transfer-file { width: 100%; padding: 7px 8px; border: 1px dashed var(--line); border-radius: 8px; background: #fff; font: inherit; font-size: 12.5px; }
+.transfer-actions { display: flex; justify-content: flex-end; margin: 0; }
+
+@media (max-width: 1500px) {
+  #news-list.deal-list--transfers .records th:nth-child(2) { width: 96px; }
+  #news-list.deal-list--transfers .records th:nth-child(3) { width: 104px; }
+  #news-list.deal-list--transfers .records th:nth-child(6) { width: 96px; }
+  #news-list.deal-list--transfers .records th:nth-child(7) { width: 118px; }
+  #news-list.deal-list--transfers .records th:nth-child(8) { width: 104px; }
+  #news-list.deal-list--transfers .records th:nth-child(9) { width: 64px; }
+}
+@media (max-width: 1100px) {
+  .transfer-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  #news-list.deal-list--transfers .kpis { grid-template-columns: 1fr; }
+}

@@ -1,18 +1,133 @@
 <!DOCTYPE html>
+<!--/* Nguyễn Phúc Khang: màn Chi tiết hồ sơ sang tên. Giữa là thông tin hợp đồng và thao tác của trạng thái hiện tại, cột phải là Hồ sơ đạt chuẩn.
+       Luồng đi thẳng: Chờ xử lý → Bắt đầu xử lý → Đang xử lý → Hoàn tất sang tên (cần tệp bằng chứng) → Hoàn tất. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Hồ sơ giấy tờ', 'document-transfers',
+                    null, ~{::link}, ~{::#transfer-detail})}">
+<head>
+  <title>Chi tiết hồ sơ sang tên</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+  </th:block>
+</head>
 <body>
-<!-- Hồ sơ sang tên ST-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="documents/transfers/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="transfer-detail" class="inq-detail"
+     th:with="s=${statuses.get(item.status)}, done=${item.status == 'COMPLETED'},
+              deadlineText=${#temporals.format(#temporals.createDate(item.deadline), 'dd/MM/yyyy')}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('file')}"></svg></div>
+      <div>
+        <h2 th:text="${'Hồ sơ sang tên ' + item.code}">Hồ sơ sang tên</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/documents/transfers}">Hồ sơ sang tên</a>
+          <span>/</span>
+          <span th:text="${item.code}">ST</span>
+        </nav>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/documents/transfers}">Quay lại</a>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: steps}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <section class="inq-facts" aria-label="Thông tin chung">
+    <div class="card"><svg th:replace="~{shell/icons :: icon('handshake')}"></svg>
+      <div><small>Hợp đồng</small><strong th:text="${item.contractCode}">HĐ</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('user')}"></svg>
+      <div><small>Người phụ trách</small><strong th:text="${item.staff == '' ? 'Chưa phân công' : item.staff}">NV</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
+      <div><small>Hạn xử lý</small>
+        <strong th:classappend="${!done and item.daysLeft < 0} ? 'transfer-late'"
+                th:text="${deadlineText + (done ? '' : (item.daysLeft < 0 ? ' · trễ ' + (-item.daysLeft) + ' ngày' : (item.daysLeft == 0 ? ' · hôm nay' : ' · còn ' + item.daysLeft + ' ngày')))}">01/01/2026</strong></div></div>
+    <div class="card"><svg th:replace="~{shell/icons :: icon(${s.icon})}"></svg>
+      <div><small>Trạng thái</small><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></div></div>
+  </section>
+
+  <section class="card transfer-steps-card" aria-label="Tiến độ sang tên">
+    <ol class="transfer-steps">
+      <li th:each="g : ${steps}" th:classappend="${g.state != '' ? 'is-' + g.state : ''}"
+          th:attr="aria-current=${g.state == 'current' ? 'step' : null}">
+        <span class="transfer-dot">
+          <!--/* Bọc th:if ra ngoài: th:replace chạy trước th:if nên không đặt chung một thẻ được */-->
+          <th:block th:if="${g.state == 'done'}"><svg th:replace="~{shell/icons :: icon('check')}"></svg></th:block>
+          <th:block th:unless="${g.state == 'done'}" th:text="${g.number}">1</th:block>
+        </span>
+        <strong th:text="${g.label}">Trạng thái</strong>
+      </li>
+    </ol>
+  </section>
+
+  <div class="transfer-layout">
+    <div class="inq-detail-grid">
+    <div class="inq-col">
+        <th:block th:replace="~{documents/transfers/parts :: contractCards(${item})}"></th:block>
+    </div>
+
+    <div class="inq-col">
+      <section th:replace="~{documents/transfers/parts :: carCard(${item})}"></section>
+
+      <section class="card inq-card" th:if="${item.status == 'PENDING'}">
+        <h3><svg th:replace="~{shell/icons :: icon('flow')}"></svg>Bắt đầu xử lý</h3>
+        <p class="muted">Bấm để nhận hồ sơ này, bạn sẽ là người phụ trách.</p>
+        <form class="transfer-actions" method="post" th:action="@{/documents/transfers/{id}/start(id=${item.id})}">
+          <button class="btn-c btn-c--primary" type="submit">Bắt đầu xử lý</button>
+        </form>
+      </section>
+
+      <form class="section-card create-wrap transfer-form" method="post" enctype="multipart/form-data"
+            th:if="${item.status == 'IN_PROGRESS'}" th:action="@{/documents/transfers/{id}/complete(id=${item.id})}">
+        <div class="section-head">
+          <svg th:replace="~{shell/icons :: icon('check')}"></svg>
+          <h3>Hoàn tất sang tên</h3>
+        </div>
+        <div class="section-body">
+          <div class="field">
+            <label for="tr-evidence">Tệp bằng chứng <span class="req">*</span></label>
+            <input class="transfer-file" id="tr-evidence" type="file" name="evidence" required
+                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+            <small class="deal-hint">Ví dụ đăng ký xe mới. Nhận PDF, Word, Excel, JPG, PNG.</small>
+          </div>
+          <div class="field">
+            <label for="tr-notes">Ghi chú</label>
+            <textarea class="field-textarea" id="tr-notes" name="notes" rows="2" maxlength="2000"
+                      th:text="${item.notes}"></textarea>
+          </div>
+          <div class="transfer-actions">
+            <button class="btn-c btn-c--primary" type="submit">Hoàn tất sang tên</button>
+          </div>
+        </div>
+      </form>
+
+      <section class="card inq-card" th:if="${done}">
+        <h3><svg th:replace="~{shell/icons :: icon('check')}"></svg>Kết quả sang tên</h3>
+        <dl class="inq-rows">
+          <div><dt>Hoàn tất ngày</dt><dd th:text="${#temporals.format(#temporals.createDate(item.completedOn), 'dd/MM/yyyy')}">01/01/2026</dd></div>
+          <div><dt>Bằng chứng</dt>
+            <dd>
+              <a class="deal-link" th:if="${hasEvidenceFile}" target="_blank" rel="noopener"
+                 th:href="@{/documents/transfers/{id}/evidence(id=${item.id})}" th:text="${item.evidence}">Tệp</a>
+              <th:block th:unless="${hasEvidenceFile}" th:text="${item.evidence}">Tệp</th:block>
+            </dd></div>
+          <div th:if="${item.notes != ''}"><dt>Ghi chú</dt><dd th:text="${item.notes}">Ghi chú</dd></div>
+        </dl>
+      </section>
+    </div>
+    </div>
+    <aside class="contracts-sidebar transfer-standard">
+      <div th:replace="~{documents/transfers/parts :: column('Hồ sơ đạt chuẩn', 'shield-check', ${checks})}"></div>
+      <div th:replace="~{documents/transfers/parts :: column('Mốc đóng sale', 'flow', ${milestones})}"></div>
+    </aside>
+  </div>
+</div>
 </body>
 </html>

@@ -132,10 +132,11 @@ public class ConsignmentWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
-    /** Màn yêu cầu rút hồ sơ — mock UI, rút bất cứ lúc nào. */
+    /** Màn yêu cầu rút hồ sơ — mock UI, rút bất cứ lúc nào, trừ xe đã có khách đặt cọc hoặc ký hợp đồng. */
     @GetMapping("/{id}/withdraw")
     public String withdrawForm(@PathVariable Long id, Model model) {
         model.addAttribute("consignment", consignmentService.get(id));
+        model.addAttribute("buyerHold", consignmentService.buyerHoldDetail(id));
         if (!model.containsAttribute("withdrawSent")) {
             model.addAttribute("withdrawSent", false);
         }
@@ -149,6 +150,11 @@ public class ConsignmentWebController {
             @RequestParam String reason,
             @RequestParam(required = false) String returnDate,
             RedirectAttributes flash) {
+        String buyerHold = consignmentService.buyerHoldDetail(id);
+        if (!buyerHold.isEmpty()) {
+            flash.addFlashAttribute("flashError", "Chưa thể gửi yêu cầu rút: " + buyerHold);
+            return "redirect:" + BASE + "/" + id + "/withdraw";
+        }
         Map<String, Object> preview = new LinkedHashMap<>();
         preview.put("reason", reason);
         preview.put("requestedByName", "Hà Lệ Quyên");

@@ -5,6 +5,7 @@ import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.MailService;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +28,17 @@ public class MailServiceImpl implements MailService {
     @Value("${app.mail.from-name:GaragePro Consign}")
     private String fromName;
 
+    @Value("${app.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     @Override
     public void sendOtpEmail(OtpMailRequest request) {
         try {
             String html = buildOtpHtml(
                     request.getFullName() != null ? request.getFullName() : "bạn",
                     request.getOtpCode(),
-                    request.getExpiresInMinutes());
+                    request.getExpiresInMinutes(),
+                    copyLink(request));
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(
@@ -53,8 +58,18 @@ public class MailServiceImpl implements MailService {
         }
     }
 
+    /**
+     * Link của nút Sao chép mã. Mail chặn JavaScript nên nút chỉ có thể là link: trang nhập OTP tự copy và điền sẵn mã.
+     * Mã nằm sau dấu # nên trình duyệt không gửi lên server và không vào log.
+     */
+    private String copyLink(OtpMailRequest request) {
+        return baseUrl + "/verify-otp?mode=login&email="
+                + URLEncoder.encode(request.getToEmail(), StandardCharsets.UTF_8)
+                + "#otp=" + request.getOtpCode();
+    }
+
     /** HTML OTP nhúng trong service — không dùng file template riêng. */
-    private static String buildOtpHtml(String fullName, String otpCode, int expiresInMinutes) {
+    private static String buildOtpHtml(String fullName, String otpCode, int expiresInMinutes, String copyLink) {
         String safeName = escapeHtml(fullName);
         String safeOtp = escapeHtml(otpCode);
         return """
@@ -79,7 +94,11 @@ public class MailServiceImpl implements MailService {
                             <p style="margin:0 0 8px;font-size:13px;color:#777;letter-spacing:.08em;text-transform:uppercase;">
                               Mã xác minh
                             </p>
-                            <p style="margin:0 0 24px;font-size:36px;font-weight:800;letter-spacing:.35em;color:#FF7A00;">%s</p>
+                            <p style="margin:0 0 12px;font-size:36px;font-weight:800;letter-spacing:.35em;color:#FF7A00;">
+                              <span id="otp-code" style="-webkit-user-select:all;user-select:all;">%s</span>
+                            </p>
+                            <a href="%s" target="_blank" rel="noopener"
+                               style="display:inline-block;margin:0 0 24px;padding:9px 18px;border:1px solid #FF7A00;border-radius:8px;background:#fff;color:#FF7A00;font-size:14px;font-weight:600;text-decoration:none;">Sao chép mã</a>
                             <p style="margin:0;font-size:13px;color:#888;line-height:1.5;">
                               Nếu bạn không yêu cầu đăng nhập, hãy bỏ qua email này.
                             </p>
@@ -90,7 +109,7 @@ public class MailServiceImpl implements MailService {
                   </table>
                 </body>
                 </html>
-                """.formatted(safeName, expiresInMinutes, safeOtp);
+                """.formatted(safeName, expiresInMinutes, safeOtp, escapeHtml(copyLink));
     }
 
     private static String escapeHtml(String value) {

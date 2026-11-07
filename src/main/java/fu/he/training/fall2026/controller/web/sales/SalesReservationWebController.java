@@ -158,6 +158,7 @@ public class SalesReservationWebController {
         if (SalesDealUiData.ACTIVE.equals(item.get("status"))) {
             long inquiryId = (Long) item.get("inquiryId");
             item.put("status", SalesDealUiData.CANCELLED);
+            SalesDealUiData.releaseCar(String.valueOf(item.get("car")));
             item.put("cancelledAt", LocalDateTime.now().withSecond(0).withNano(0).toString());
             SalesInquiryUiData.inquiry(inquiryId).ifPresent(
                     i -> i.put("status", SalesInquiryUiData.statusWithoutActiveStep(inquiryId)));

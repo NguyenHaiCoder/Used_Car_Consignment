@@ -2,7 +2,7 @@ package fu.he.training.fall2026.repository;
 
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
-import fu.he.training.fall2026.entity.enums.ListingStatus;
+import fu.he.training.fall2026.entity.enums.ContractStatus;
 import fu.he.training.fall2026.entity.enums.ReservationStatus;
 import java.math.BigDecimal;
 import java.util.List;
@@ -78,9 +78,9 @@ public interface ConsignmentRepository extends JpaRepository<Consignment, Long> 
     @Query("select coalesce(sum(r.depositAmount), 0) from Reservation r where r.vehicle.id = :vehicleId and r.status = :status")
     BigDecimal sumReservationDeposits(@Param("vehicleId") Long vehicleId, @Param("status") ReservationStatus status);
 
-    /** Codes of the consignment's sale listings in any of the given statuses (withdraw blockers). */
-    @Query("select n.code from VehicleSaleNews n where n.consignment.id = :consignmentId and n.status in :statuses order by n.code")
-    List<String> findListingCodes(@Param("consignmentId") Long consignmentId, @Param("statuses") List<ListingStatus> statuses);
+    /** Hà Lệ Quyên: hợp đồng bán của xe, trừ trạng thái truyền vào. Hợp đồng nháp vẫn tính vì phiếu cọc đã rời ACTIVE. */
+    @Query("select s.code from SalesContract s where s.reservation.vehicle.id = :vehicleId and s.status <> :excluded order by s.code")
+    List<String> findContractCodes(@Param("vehicleId") Long vehicleId, @Param("excluded") ContractStatus excluded);
 
     /** Rows of {status, count} used for the status counters above the list. */
     @Query("select c.status, count(c) from Consignment c group by c.status")
