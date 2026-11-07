@@ -79,7 +79,7 @@
               <small th:text="${t.phone}">SĐT</small>
             </td>
             <td class="news-date" th:classappend="${!done and t.daysLeft < 0} ? 'transfer-late'">
-              <span th:text="${#temporals.format(#temporals.createDate(t.deadline), 'dd/MM/yyyy')}">01/01/2026</span>
+              <span th:text="${#temporals.format(t.deadline, 'dd/MM/yyyy')}">01/01/2026</span>
               <small th:unless="${done}"
                      th:text="${t.daysLeft < 0 ? 'Trễ ' + (-t.daysLeft) + ' ngày' : (t.daysLeft == 0 ? 'Hết hôm nay' : 'Còn ' + t.daysLeft + ' ngày')}">Còn</small>
             </td>

@@ -1,0 +1,491 @@
+================================================================================
+PHÂN TÍCH YÊU CẦU — MÀN HỒ SƠ SANG TÊN
+  Module: Documents / Transfer
+  URL gốc: /documents/transfers
+  Role: Nhân viên hồ sơ (Demo Documents trên UI)
+Nguồn bám sát:
+  - templates/documents/transfers/{list,create,detail,parts}.html
+  - templates/sales/deal-parts.html (KPI / toolbar / pager dùng chung)
+  - TransferWebController
+  - TransferUiData (mock in-memory)
+  - SalesDealUiData (hợp đồng, điều kiện tạo, mốc đóng sale)
+  - Entity sẵn có: TransferCase, TransferStatus (chưa gắn BE)
+Trạng thái hiện tại: UI + mock bộ nhớ, CHƯA ghi DB / FileStorage thật.
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+A. MỤC ĐÍCH NGHIỆP VỤ
+────────────────────────────────────────────────────────────────────────────────
+
+  Theo dõi sang tên xe cho người mua sau khi hợp đồng bán đã ký.
+  Hoàn tất sang tên là MỘT TRONG BA MỐC để đóng sale:
+    1) Thanh toán đủ
+    2) Sang tên xong
+    3) Bàn giao xe
+
+  Quan hệ: mỗi SalesContract đã ký có tối đa 1 hồ sơ sang tên
+           (TransferCase 1–1 SalesContract; id hồ sơ mock = id hợp đồng).
+
+  Luồng trạng thái (UI mock — đi thẳng):
+    PENDING (Chờ xử lý)
+      → [Bắt đầu xử lý] → IN_PROGRESS (Đang xử lý)
+      → [Hoàn tất sang tên + tệp bằng chứng] → COMPLETED (Hoàn tất)
+
+────────────────────────────────────────────────────────────────────────────────
+B. CÁC MÀN HÌNH & FILE
+────────────────────────────────────────────────────────────────────────────────
+
+  1) List   GET  /documents/transfers          → documents/transfers/list.html
+  2) Create GET  /documents/transfers/new      → documents/transfers/create.html
+            POST /documents/transfers
+  3) Detail GET  /documents/transfers/{id}     → documents/transfers/detail.html
+            POST /documents/transfers/{id}/start
+            POST /documents/transfers/{id}/complete
+            GET  /documents/transfers/{id}/evidence  (tải/xem tệp)
+
+  Fragment dùng chung:
+    - documents/transfers/parts.html  : contractCards, carCard, column(timeline)
+    - sales/deal-parts.html           : kpis, toolbar, pager
+
+────────────────────────────────────────────────────────────────────────────────
+C. MÀN LIST — /documents/transfers (đúng screenshot)
+────────────────────────────────────────────────────────────────────────────────
+
+C.1. Header
+  - Tiêu đề: "Hồ sơ sang tên"
+  - Breadcrumb: Dashboard / Hồ sơ sang tên
+  - Lead: theo dõi sang tên sau ký HĐ; mốc đóng sale
+  - Nút "+ Tạo mới" → GET /documents/transfers/new
+
+C.2. Flash
+  - flashMessage (success), flashError (error)
+
+C.3. KPI cards (deal-parts :: kpis('hồ sơ'))
+  - Mỗi status trong TransferUiData.STATUSES = 1 thẻ
+  - Label: Chờ xử lý | Đang xử lý | Hoàn tất
+  - Số đếm = counts[status] trên TOÀN BỘ mock (không theo filter khác)
+  - Bấm thẻ → GET base?status={KEY}&size={size}  (bỏ filter khác để khớp số)
+
+  Seed mặc định (TransferUiData):
+    SEEDED ids: 201, 203, 204, 205, 206, 207, 208
+    - Hầu hết PENDING nếu contract.transferred=false
+    - transferred=true → COMPLETED
+    - id=207 → IN_PROGRESS, staff=Ngọc Mai, deadline = today+5
+    - id=205 → IN_PROGRESS, staff=Đức Long, deadline = today-2 (TRỄ)
+  → KPI mẫu thường gặp: Chờ xử lý 1 · Đang xử lý 2 · Hoàn tất 4
+    (phụ thuộc flag transferred của SalesDealUiData)
+
+C.4. Toolbar lọc (deal-parts :: toolbar)
+  Form GET /documents/transfers — SalesDealUiData.bindList xử lý:
+    q          : tìm (haystack: mã, HĐ, xe, biển, người mua, …)
+    status     : PENDING | IN_PROGRESS | COMPLETED (hidden + KPI)
+    staff      : lọc người phụ trách (dropdown “Tất cả nhân viên”)
+    from / to  : khoảng HẠN XỬ LÝ (dateKey = "deadline")
+    amountMin/Max : giá bán (triệu đồng) — Lọc nâng cao (amountKey = "salePrice")
+    size       : 5 | 10 | 20
+    page       : 0-based
+  Nút:
+    - Áp dụng (trong Lọc nâng cao)
+    - Làm mới → GET /documents/transfers (xóa mọi filter)
+
+C.5. Bảng danh sách
+  Cột:
+    Checkbox        : UI chọn hàng (data-check-all / data-check-row) — chưa có action bulk
+    Mã hồ sơ        : ST-{id 6 số} — link → detail
+    Hợp đồng        : contractCode (HDBX-…)
+    Xe              : car (strong) + plate · file (small)
+    Người mua       : buyer + phone
+    Hạn xử lý       : dd/MM/yyyy + small:
+                        COMPLETED → không hiện “còn/trễ”
+                        daysLeft < 0 → "Trễ N ngày" (+ class transfer-late)
+                        daysLeft == 0 → "Hết hôm nay"
+                        else → "Còn N ngày"
+    Người phụ trách : staff rỗng → "Chưa phân công"
+    Trạng thái      : pill theo statuses[status].label / pill class
+    Thao tác        : Eye → GET /documents/transfers/{id}
+
+  Empty: "Không có hồ sơ sang tên phù hợp"
+  Pager: deal-parts :: pager('hồ sơ')
+
+C.6. Model attributes list (bindList + @ModelAttribute statuses)
+  base, page, counts, staffs, q, status, staff,
+  dateFrom, dateTo, amountMin, amountMax, size, statuses
+
+────────────────────────────────────────────────────────────────────────────────
+D. MÀN TẠO — /documents/transfers/new
+────────────────────────────────────────────────────────────────────────────────
+
+D.1. Điều kiện hợp đồng được chọn (candidates)
+  TransferUiData.canCreate(contract):
+    - Chưa có hồ sơ sang tên cho contract đó
+    - SalesDealUiData.transferReady(contract) = đủ 4 check:
+        1. Có khách mua xe (inquiry CONVERTED)
+        2. Đã đặt cọc giữ xe (reservation CONVERTED)
+        3. Hợp đồng bán đã ký (có signedOn, không CANCELLED)
+        4. Hồ sơ ký gửi đã đặt cọc (consignment status ≠ LISTED)
+
+D.2. Form chọn HĐ (GET auto-submit)
+  - select name=contractId, data-auto-submit → GET /new?contractId=
+  - Chỉ hiện candidates
+  - Nếu candidates rỗng: card "Chưa có hợp đồng đủ điều kiện"
+
+D.3. Preview khi đã chọn
+  - item = TransferUiData.preview(contract) (Map giống case sẽ tạo)
+  - parts :: contractCards + carCard
+  - Cột phải: "Hồ sơ đạt chuẩn" = SalesDealUiData.transferChecks(contract)
+
+D.4. Nút tạo
+  POST /documents/transfers  hidden contractId
+  - Hủy → list
+  - "Tạo hồ sơ sang tên" → create trong memory
+  Validate controller:
+    - thiếu HĐ → flashError, redirect /new
+    - đã có hồ sơ → flashMessage, redirect detail
+    - chưa đủ điều kiện → flashError, redirect /new
+    - OK → TransferUiData.create + flash + redirect detail
+  Mã hồ sơ: ST-%06d (id = contract id)
+  Deadline mặc định: signedOn + 30 ngày
+  Status tạo mới: PENDING (trừ khi contract.transferred sẵn → COMPLETED trong seed)
+
+────────────────────────────────────────────────────────────────────────────────
+E. MÀN CHI TIẾT — /documents/transfers/{id}
+────────────────────────────────────────────────────────────────────────────────
+
+E.1. Header
+  - "Hồ sơ sang tên {code}"
+  - Nút "Quay lại" → list
+
+E.2. Fact cards
+  Hợp đồng | Người phụ trách | Hạn xử lý (+ trễ/còn) | Trạng thái pill
+
+E.3. Timeline tiến độ (TransferUiData.steps)
+  3 bước theo STATUSES: done / current / (pending)
+  COMPLETED → mọi bước done
+
+E.4. Cột giữa
+  - contractCards + carCard (parts)
+  - Nếu PENDING:
+      Form POST /{id}/start — nút "Bắt đầu xử lý"
+      → status=IN_PROGRESS, staff = SessionAuthUtils.getFullName(session)
+  - Nếu IN_PROGRESS:
+      Form multipart POST /{id}/complete
+        evidence* (file): pdf,doc,docx,xls,xlsx,jpg,jpeg,png
+        notes (textarea, max 2000)
+      Nút "Hoàn tất sang tên"
+      Validate:
+        - thiếu file → flashError
+        - sai extension → flashError
+        - OK → lưu Evidence in-memory, status=COMPLETED, completedOn=today,
+               SalesDealUiData.markTransferred(id), flash
+  - Nếu COMPLETED:
+      Card "Kết quả sang tên": ngày hoàn tất, link bằng chứng, ghi chú
+      Link evidence: GET /{id}/evidence
+        PDF/JPG/PNG → inline; Word/Excel → attachment download
+
+E.5. Cột phải
+  - Hồ sơ đạt chuẩn (transferChecks)
+  - Mốc đóng sale (saleMilestones: Thanh toán / Sang tên / Bàn giao)
+
+────────────────────────────────────────────────────────────────────────────────
+F. DỮ LIỆU MẪU (TransferUiData) — XÓA TOÀN BỘ KHI LÀM BE
+────────────────────────────────────────────────────────────────────────────────
+
+  *** Khi implement BE: XÓA hẳn class TransferUiData và mọi tham chiếu tới nó.
+      Không giữ FIELD MAP mock; không seed in-memory; không Evidence ConcurrentHashMap. ***
+
+  File/điểm phải gỡ:
+    - controller/web/documents/TransferUiData.java          (xóa file)
+    - TransferWebController: mọi gọi TransferUiData.*       (thay bằng Service)
+    - Comment/doc còn nhắc mock TransferUiData
+
+  Field map mock (chỉ để đối chiếu khi map DTO — KHÔNG mang sang BE):
+    id, code, contractCode, salesStaff, signedOn, salePrice,
+    buyer, phone, buyerIdNumber, buyerAddress,
+    car, file, plate, km, color, fuel, owner, vin,
+    status, staff, deadline, daysLeft, notes, evidence, completedOn
+  → Phần lớn lấy JOIN từ SalesContract → Reservation → Buyer / Vehicle / Inquiry / Consignment
+    (xem mục J), không lưu trùng trên TransferCase.
+
+────────────────────────────────────────────────────────────────────────────────
+G. QUY ƯỚC BE ĐÃ CHỐT (bổ sung theo yêu cầu)
+────────────────────────────────────────────────────────────────────────────────
+
+G.1. Mã hồ sơ — private generateCode trong ServiceImpl
+  Format: ST-%06d, tham số = id hợp đồng (sales_contract_id), khớp mock hiện tại
+    (ST-000208 ↔ contract 208).
+
+  Trong TransferServiceImpl:
+    private static String generateCode(Long salesContractId) {
+        return String.format("ST-%06d", salesContractId);
+    }
+  Luồng create (pattern Quyên + TMP rồi mã thật):
+    1) setCode(temporaryCode())  // TMP-… thỏa NOT NULL + UNIQUE trước khi chắc mã cuối
+    2) save()
+    3) setCode(generateCode(salesContract.getId()))
+  Không ghép "ST-"+id trong Controller / HTML / Thymeleaf.
+
+G.2. Người phụ trách = người đang đăng nhập (ĐÃ CHỐT)
+  - Field entity: responsibleUser (ManyToOne User) — thay String responsibleParty.
+  - Gán LUÔN = user đang đăng nhập hiện tại (SessionAuthUtils.getUserId / User session).
+  - Thời điểm gán: khi BẮT ĐẦU XỬ LÝ (POST /{id}/start)
+      → setResponsibleUser(currentUser); không chọn tay, không gán user khác.
+  - UI list/detail: hiện responsibleUser.fullName;
+    còn PENDING (chưa start) → "Chưa phân công" (responsibleUser = null).
+  - Lọc “Tất cả nhân viên” trên list: theo responsibleUser.
+
+G.3. Xóa mock khi làm
+  Xóa TransferUiData + field map mục F; controller chỉ còn Service.
+
+────────────────────────────────────────────────────────────────────────────────
+H. MA TRẬN ENDPOINT (hiện mock → sau chuyển Service)
+────────────────────────────────────────────────────────────────────────────────
+
+  Method  Path                              Mục đích
+  ------  --------------------------------  -----------------------
+  GET     /documents/transfers              List + filter/KPI
+  GET     /documents/transfers/new           Form chọn HĐ + preview
+  POST    /documents/transfers              Tạo hồ sơ
+  GET     /documents/transfers/{id}          Chi tiết
+  POST    /documents/transfers/{id}/start    PENDING → IN_PROGRESS
+                                            (+ gán user đăng nhập)
+  POST    /documents/transfers/{id}/complete IN_PROGRESS → COMPLETED
+  GET     /documents/transfers/{id}/evidence Xem/tải bằng chứng
+
+────────────────────────────────────────────────────────────────────────────────
+I. CHECKLIST KHI GẮN BE (theo QuyTac3 + mục G)
+────────────────────────────────────────────────────────────────────────────────
+
+  [ ] XÓA toàn bộ TransferUiData + tham chiếu
+  [ ] TransferCaseRepository (search, findBySalesContractId, exists…)
+  [ ] TransferService + Impl: search/count/get/candidates/create/start/complete
+  [ ] private generateCode(salesContractId) → ST-%06d
+  [ ] start: gán người phụ trách = user đang đăng nhập (bắt buộc)
+  [ ] Upload evidence → FileStorageService.uploadDocument; lưu evidencePath
+  [ ] complete: validate file + notes; cập nhật mốc “sang tên” phía sale
+  [ ] Bổ sung field entity còn thiếu (mục J) trước khi code Controller
+
+────────────────────────────────────────────────────────────────────────────────
+J. KIỂM TRA ENTITY — ĐỦ CHO MÀN HÌNH? (bổ sung, chưa code)
+────────────────────────────────────────────────────────────────────────────────
+
+J.1. TransferCase hiện có
+  code, salesContract (OneToOne unique), status, stage, responsibleParty (String),
+  deadline, evidencePath, notes
+  + BaseEntity: id, createdAt, updatedAt
+
+J.2. Relationship với entity khác (đồ thị đọc UI)
+
+  TransferCase 1 ──1 SalesContract
+       SalesContract 1 ──1 Reservation
+            Reservation *──1 Buyer          → người nhận sang tên (tên, SĐT, CCCD, địa chỉ)
+            Reservation *──1 Vehicle        → xe (make/model/vin/plate/color/…)
+            Reservation *──1 Inquiry        → check “có khách mua”; salesStaff ≈ Inquiry.assignedTo
+            Reservation *──1 User assignedTo (NV bán / giữ chỗ — tùy nghiệp vụ)
+       SalesContract ←──1 Payment / PaymentRequest   → mốc “Thanh toán”
+       SalesContract ←──1 Handover                   → mốc “Bàn giao”
+       SalesContract.saleClosed                      → đóng sale (cờ tổng)
+
+  Vehicle ←──* Consignment (+ Consignor)             → mã hồ sơ KG / chủ xe cũ
+  TransferCase ←──* DocumentChecklist (transfer_case_id) → checklist giấy tờ (module khác)
+
+  Kết luận quan hệ lõi 1–1 TransferCase ↔ SalesContract ĐÚNG với UI.
+  Phần lớn cột list/detail/preview KHÔNG cần copy vào TransferCase — join qua contract.
+
+J.3. Map cột UI → nguồn BE (không trùng lưu)
+
+  UI field              Nguồn đề xuất
+  --------------------  --------------------------------------------------
+  Mã hồ sơ (ST-…)       TransferCase.code ← generateCode(contract.id)
+  Hợp đồng              SalesContract.code
+  Xe / biển / VIN…      Reservation.vehicle (+ display)
+  Người mua / SĐT/CCCD  Reservation.buyer
+  Nhân viên bán         Inquiry.assignedTo hoặc Reservation.assignedTo
+  Giá bán / Ngày ký     SalesContract.salePrice / signedOn
+  Mã hồ sơ KG           Consignment.code (qua vehicle)
+  Chủ xe cũ             Consignment.consignor.fullName
+  Hạn xử lý             TransferCase.deadline
+  Người phụ trách       User đăng nhập (FK hoặc fullName) — mục G.2
+  Trạng thái            TransferCase.status
+  Ghi chú / bằng chứng  TransferCase.notes / evidencePath
+  Hồ sơ đạt chuẩn       Tính từ Inquiry/Reservation/Contract/Consignment (service)
+  Mốc đóng sale         Payment* + TransferCase.COMPLETED + Handover
+
+J.4. Còn THIẾU / NÊN BỔ SUNG trên TransferCase
+
+  1) completedOn (LocalDate) — UI chi tiết “Hoàn tất ngày” đang có;
+     updatedAt không thay được vì đổi notes/status khác cũng cập nhật.
+     → NÊN thêm: private LocalDate completedOn;
+
+  2) Người phụ trách kiểu User — responsibleParty String yếu (đổi tên, lọc staff khó).
+     → NÊN đổi thành:
+         @ManyToOne(fetch = LAZY) @JoinColumn(name = "responsible_user_id")
+         private User responsibleUser;
+       (có thể giữ tạm String để hiển thị snapshot — không bắt buộc)
+
+  3) stage (String) — UI không dùng. Có thể bỏ hoặc để nullable, không bắt buộc.
+
+  4) TransferStatus.BLOCKED — enum có, UI không có nút. Giữ enum; service chỉ dùng
+     PENDING / IN_PROGRESS / COMPLETED trừ khi sau này có nghiệp vụ chặn.
+
+J.5. Thiếu phía SalesContract / milestone (không nằm trên TransferCase)
+
+  Mock có flag contract.transferred / paid / handedOver.
+  Entity thật:
+    - “Sang tên xong”  ≈ TransferCase.status == COMPLETED (không cần cột transferred)
+    - “Thanh toán đủ”  ≈ Payment / PaymentRequest theo sales_contract_id
+    - “Bàn giao”       ≈ Handover theo sales_contract_id (handedOverAt / status)
+  → Không bắt buộc thêm boolean transferred trên SalesContract nếu service
+    đọc TransferCase + Payment + Handover khi build saleMilestones.
+
+J.6. Kết luận entity (chung)
+
+  ĐỦ làm khung màn (1–1 SalesContract, status, deadline, evidence, notes).
+  CHƯA ĐỦ sạch cho UI hoàn chỉnh nếu thiếu:
+    - completedOn
+    - responsibleUser (FK User) thay String responsibleParty
+  Các field xe/buyer/HĐ lấy bằng relationship — không bổ sung cột trùng.
+  Khi code: xóa TransferUiData; generateCode private; start gán user đăng nhập.
+
+────────────────────────────────────────────────────────────────────────────────
+K. UI LIST + CREATE KHỚP TransferCase / SalesContract CHƯA?
+    (bám HTML gốc list.html + create.html + parts.html — chưa code)
+────────────────────────────────────────────────────────────────────────────────
+
+K.1. Phạm vi kiểm tra
+  - List: documents/transfers/list.html (+ deal-parts KPI/toolbar)
+  - Create: documents/transfers/create.html + parts :: contractCards / carCard / column
+  - Chỉ đối chiếu dữ liệu hiển thị / lọc / tạo với entity:
+      TransferCase, SalesContract (+ join bắt buộc qua Reservation)
+
+K.2. MÀN LIST — từng cột HTML → entity
+
+  HTML (list)              Có trên TransferCase?   Có trên SalesContract?   Nguồn đúng khi BE
+  ------------------------ ----------------------- ------------------------ --------------------------
+  t.code (ST-…)            ✓ code                  —                        TransferCase.code
+  t.contractCode (HDBX-…)  — (qua FK)              ✓ code                   SalesContract.code
+  t.car (tên xe)           ✗                       ✗                        Vehicle.make+model(+year)
+                                                                            qua reservation.vehicle
+  t.plate                  ✗                       ✗                        Vehicle.licensePlate
+  t.file (KG-…)            ✗                       ✗                        Consignment.code
+                                                                            (vehicle → consignments)
+  t.buyer                  ✗                       ✗                        Buyer.fullName
+  t.phone                  ✗                       ✗                        Buyer.phone
+  t.deadline               ✓ deadline              ✗                        TransferCase.deadline
+  t.daysLeft               ✗ (tính runtime)        ✗                        Service: deadline − today
+  t.staff                  ~ responsibleParty      ✗                        Nên → User.fullName
+  t.status                 ✓ status                ✗                        TransferCase.status
+  KPI counts by status     ✓ status                ✗                        count group by status
+  Lọc q (mã/HĐ/xe)         code (+ join)           code (+ join)            JPQL multi-field
+  Lọc staff                ~ responsibleParty      ✗                        responsibleUser
+  Lọc from/to deadline     ✓ deadline              ✗                        TransferCase.deadline
+  Lọc giá bán (triệu)      ✗                       ✓ salePrice              SalesContract.salePrice
+
+  Kết luận LIST:
+  - Cột thuộc hồ sơ sang tên (mã ST, hạn, NV phụ trách, trạng thái): TransferCase ĐỦ
+    (NV nên nâng String → FK User).
+  - Cột Hợp đồng + lọc giá: SalesContract ĐỦ (code, salePrice).
+  - Cột Xe / Người mua: KHÔNG nằm trên TransferCase hay SalesContract —
+    phải JOIN Reservation → Vehicle / Buyer. Không thiếu cột trên 2 entity này;
+    thiếu là “đường join trong query/DTO”, không phải thiếu field TransferCase/SalesContract.
+  - t.file (KG): cần Consignment theo vehicle — ngoài 2 entity đích; không thêm vào
+    TransferCase/SalesContract.
+
+K.3. MÀN CREATE — HTML gốc cần gì?
+
+  A) Dropdown candidates (create.html)
+     Hiển thị: c.code · c.buyer · c.car · c.plate ; value = c.id (contractId)
+     Submit POST chỉ gửi contractId.
+
+     SalesContract cần có: id, code, signedOn, status (để lọc đã ký)
+     + reservation.buyer (tên), reservation.vehicle (label, plate)
+     TransferCase: dùng để loại HĐ đã có hồ sơ (existsBySalesContractId)
+     → Không thiếu field trên TransferCase/SalesContract; cần query join.
+
+  B) Preview contractCards (parts.html) sau khi chọn HĐ
+     Số hợp đồng     → SalesContract.code                 ✓
+     Ngày ký         → SalesContract.signedOn             ✓
+     Giá bán         → SalesContract.salePrice            ✓
+     Nhân viên bán   → KHÔNG có trên SalesContract        ✗ THIẾU đường dẫn
+                       (mock: salesStaff). Entity thật:
+                       Inquiry.assignedTo hoặc Reservation.assignedTo
+                       → SalesContract không có field NV bán; lấy qua Reservation/Inquiry.
+     Họ tên / SĐT / CCCD / Địa chỉ người nhận
+                     → Buyer (qua reservation.buyer)      ✓ đủ trên Buyer
+                       KHÔNG thuộc TransferCase/SalesContract (đúng, không copy)
+
+  C) Preview carCard (parts.html)
+     Xe              → Vehicle make/model/year            ✓ Vehicle
+     Biển số         → Vehicle.licensePlate               ✓ (nullable)
+     VIN             → Vehicle.vin                        ✓
+     Mã hồ sơ (KG)   → Consignment.code                   ✗ không trên SC/TC
+     Chủ xe cũ       → Consignor.fullName                 ✗ không trên SC/TC
+
+  D) Cột “Hồ sơ đạt chuẩn” (4 checks — create aside)
+     1 Có khách mua     → Inquiry.status                  (qua reservation.inquiry)
+     2 Đã đặt cọc       → Reservation.status / deposit    ✓ Reservation
+     3 HĐ bán đã ký     → SalesContract.signedOn+status   ✓ SalesContract
+     4 HS ký gửi đã cọc → Consignment.status              (qua vehicle)
+     → SalesContract ĐỦ cho check (3). Check (1)(2)(4) ngoài TransferCase/SalesContract.
+
+  E) POST tạo hồ sơ — field ghi vào TransferCase
+     salesContract (FK)  ✓
+     code ST-%06d        ✓ (generate từ contract id)
+     status = PENDING    ✓
+     deadline            ✓ (signedOn + 30 ngày — signedOn lấy từ SalesContract)
+     responsibleParty    lúc tạo = null/empty (“Chưa phân công”) ✓
+     evidencePath/notes  lúc tạo trống ✓
+     stage               UI create không dùng
+
+K.4. SalesContract — đủ cho list + create?
+
+  ĐỦ cho phần “hợp đồng”:
+    code, salePrice, signedOn, status, reservation (cổng sang Buyer/Vehicle/Inquiry)
+
+  KHÔNG có / không cần thêm vào SalesContract chỉ vì màn này:
+    - buyer, phone, car, plate, vin, file KG, owner  → entity khác (đúng chuẩn chuẩn hóa)
+    - salesStaff                                     → User qua Reservation/Inquiry
+    - transferred / paid / handedOver (mock)         → suy từ TransferCase/Payment/Handover
+      (create list không hiện 3 mốc này; chỉ detail mới có milestones)
+
+  → Không bắt buộc bổ sung cột mới trên SalesContract để khớp list/create HTML.
+
+K.5. TransferCase — đủ cho list + create?
+
+  ĐỦ để LƯU hồ sơ tạo mới + cột list thuộc TC:
+    code, salesContract, status, deadline, responsibleParty, evidencePath, notes
+
+  THIẾU / YẾU so với HTML list+create (và flow ngay sau create):
+    1) responsibleUser (ManyToOne User) — list lọc “Tất cả nhân viên” + cột phụ trách
+       String responsibleParty tạm dùng được nhưng kém (đổi tên NV, FK chuẩn project).
+    2) Không thiếu field “xe/buyer/HĐ” trên TransferCase — lấy qua SalesContract.reservation.
+
+  completedOn: list/create KHÔNG hiện; chỉ detail. Vẫn nên bổ sung cho màn detail
+  (đã ghi mục J.4) — ngoài phạm vi cột list/create nhưng cùng module.
+
+K.6. Bảng “THIẾU” cần ghi nhận (list + create) — chưa code
+
+  #  Thiếu gì                         Thuộc entity nào?     Bắt buộc cho list/create?
+  -  -------------------------------  --------------------  -------------------------
+  1  FK User người phụ trách          TransferCase          Nên (lọc staff + start)
+  2  completedOn                      TransferCase          Không (chỉ detail)
+  3  NV bán trên SalesContract        —                     Không thêm cột SC;
+                                                            đọc Reservation/Inquiry.assignedTo
+  4  Cột xe/buyer/KG/owner trên TC/SC —                     Không — join Vehicle/
+                                                            Buyer/Consignment/Consignor
+  5  Query/DTO gom join               Service layer         Có — bắt buộc khi bỏ mock
+
+K.7. Kết luận khớp UI list + create
+
+  - TransferCase + SalesContract: ĐỦ trường lõi để tạo hồ sơ và hiện
+    mã ST, mã HĐ, hạn, trạng thái, giá/ngày ký, lọc giá & hạn.
+  - UI list/create KHÔNG khớp nếu chỉ đọc 2 bảng đó một mình:
+    còn thiếu dữ liệu xe, biển, KG, người mua, SĐT, NV bán, chủ xe cũ
+    → phải join Reservation → Buyer, Vehicle, Inquiry, Consignment, Consignor.
+  - Chỉ nên bổ sung trên TransferCase: responsibleUser (và completedOn cho detail).
+  - Không cần thêm field buyer/car/plate… vào TransferCase hoặc SalesContract.
+  - Khi làm BE: xóa TransferUiData; Response DTO flatten các field HTML đang dùng
+    (code, contractCode, car, plate, file, buyer, phone, deadline, daysLeft, staff, status…).
+
+================================================================================
+Hết PhanTich3.txt
+================================================================================

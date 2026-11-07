@@ -1,0 +1,337 @@
+================================================================================
+QUY TẮC / SYNTAX CODE — theo commit của Quyên
+  Commit: b3f28add1e715f724ce8f3b639cfaa67fbdda0ef
+  Author: lequyen17 <halequyen1725@gmail.com>
+  Title : Feature/dev quyen (#3)
+  Phạm vi phân tích: Web Controller, Service interface, ServiceImpl,
+                     Repository, DTO Request/Response (Consignor / Consignment /
+                     Agreement / Manager)
+Mục đích file này: làm chuẩn khi gắn BE cho Brand/Model catalog (và module khác).
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+1. CẤU TRÚC PACKAGE & ĐẶT TÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  controller/web/{role|module}/XxxWebController.java
+    ví dụ: controller.web.consignment.ConsignorWebController
+           controller.web.manager.ManagerConsignmentWebController
+
+  service/XxxService.java              ← interface
+  service/impl/XxxServiceImpl.java     ← implementation
+
+  repository/XxxRepository.java        ← extends JpaRepository
+
+  dto/{module}/XxxRequest.java         ← form vào (mutable, validation)
+  dto/{module}/XxxResponse.java        ← dữ liệu ra list/detail (immutable)
+
+  entity/... + entity.enums.*
+  exception.BusinessException, ResourceNotFoundException
+
+  Naming:
+  - Controller class: *WebController (Thymeleaf web, không phải REST)
+  - Service method: search / get / listAll / formFor / create / update / ...
+  - Repository method: search, findDetailById, existsDuplicate, countByStatus
+  - View path: {module}/.../app-list.html, app-form.html, app-detail.html
+    (create + edit DÙNG CHUNG 1 file form — điểm then chốt của Quyên)
+
+────────────────────────────────────────────────────────────────────────────────
+2. WEB CONTROLLER — PATTERN
+────────────────────────────────────────────────────────────────────────────────
+
+2.1. Khai báo class
+  @Controller
+  @RequestMapping("/consignment/consignors")   // path nghiệp vụ rõ ràng
+  @RequiredArgsConstructor                     // inject final deps (Lombok)
+  public class ConsignorWebController { ... }
+
+  - Comment class = mã use-case / mô tả ngắn (VD: "02.01 Consignor Management …")
+  - Hằng số: PAGE_SIZE, BASE (URL redirect), FORM_VIEW (tên template dùng chung)
+  - Dependency: chỉ Service (không gọi Repository trực tiếp từ Controller)
+
+2.2. List
+  @GetMapping
+  public String list(
+      @RequestParam(required = false) String q,
+      @RequestParam(defaultValue = "0") int page,
+      Model model) {
+      Page<XxxResponse> result = xxxService.search(q, page, PAGE_SIZE);
+      model.addAttribute("page", result);
+      model.addAttribute("q", q == null ? "" : q);
+      // nếu có filter status: đưa status + counts vào model
+      return ".../app-list";
+  }
+  Quy tắc:
+  - q null → "" để Thymeleaf không lỗi
+  - Phân trang qua Service (Page), PAGE_SIZE cố định (thường 10)
+  - Không filter/stream trong Controller khi đã có BE
+
+2.3. Create / Edit form (CÙNG 1 HTML)
+  GET /new  → model "form" = new XxxRequest(); return FORM_VIEW;
+  GET /{id}/edit → model "form" = service.formFor(id); return FORM_VIEW;
+  - Cùng attribute name = "form"
+  - Edit cần service.formFor map Entity → Request (có setId)
+
+2.4. Detail
+  GET /{id} → model entity/DTO từ service.get(id); return app-detail
+  Có thể gắn thêm dữ liệu liên quan (withdrawRequest, agreement, …)
+
+2.5. Save (create + update chung 1 POST)
+  @PostMapping
+  public String save(
+      @Valid @ModelAttribute("form") XxxRequest form,
+      BindingResult errors,
+      RedirectAttributes flash) {          // thêm Model nếu cần re-render kèm dropdown
+
+      if (!errors.hasErrors()) {
+          try {
+              if (form.getId() == null) {
+                  Long id = service.create(form);
+                  flash.addFlashAttribute("flashMessage", "Đã tạo …");
+                  return "redirect:" + BASE + "/" + id;
+              }
+              service.update(form.getId(), form);
+              flash.addFlashAttribute("flashMessage", "Đã cập nhật …");
+              return "redirect:" + BASE + "/" + form.getId();
+          } catch (BusinessException ex) {
+              errors.reject("duplicate"|"business", ex.getMessage());
+          }
+      }
+      // lỗi validation / business → trả lại FORM_VIEW (giữ form)
+      // nếu form cần select list: nạp lại consignors/vehicles vào model
+      return FORM_VIEW;
+  }
+
+  Quy tắc bắt buộc:
+  - @Valid + BindingResult ĐỨNG NGAY SAU form
+  - Phân nhánh create/update bằng form.getId() == null (hidden id trên HTML)
+  - Thành công: RedirectAttributes flashMessage tiếng Việt ngắn
+  - BusinessException → errors.reject (không ném ra ngoài làm 500)
+  - Không @ResponseBody; luôn trả view name hoặc "redirect:..."
+
+2.6. Action riêng (submit, withdraw, activate…)
+  - POST mapping riêng: /submit, /withdraw, /{id}/deactivate…
+  - Gọi service method tương ứng
+  - Flash + redirect về detail hoặc list
+  - Có thể lấy user từ session: SessionAuthUtils.getUserId(session)
+
+2.7. Manager / role khác
+  - Controller riêng package (web.manager), path /manager/...
+  - Có thể @ModelAttribute("navigation") trả List.of() nếu sidebar không cần menu riêng
+  - Thường read-only: chỉ GetMapping, reuse cùng Service
+
+────────────────────────────────────────────────────────────────────────────────
+3. DTO
+────────────────────────────────────────────────────────────────────────────────
+
+3.1. XxxRequest (form)
+  @Getter @Setter
+  - Mutable (Lombok Getter/Setter)
+  - Field id (Long) — null = create, có giá trị = update
+  - Bean Validation trên field:
+      @NotBlank(message = "…tiếng Việt…")
+      @Size(max = …)
+      @Pattern(regexp = "…")
+      @Email
+      @AssertTrue (checkbox đồng ý)
+  - Message lỗi viết tiếng Việt, hướng người dùng
+
+3.2. XxxResponse (hiển thị)
+  @Value @Builder
+  - Immutable
+  - Chỉ field cần cho list/detail (không lộ entity)
+  - Nested DTO được phép (VD: vehicle trong ConsignmentResponse)
+
+────────────────────────────────────────────────────────────────────────────────
+4. SERVICE INTERFACE
+────────────────────────────────────────────────────────────────────────────────
+
+  public interface XxxService {
+      Page<XxxResponse> search(...);
+      XxxResponse get(Long id);
+      List<XxxResponse> listAll();          // cho pick-list / dropdown
+      XxxRequest formFor(Long id);          // map entity → form edit
+      Long create(XxxRequest form);         // trả id vừa tạo
+      void update(Long id, XxxRequest form);
+      // method nghiệp vụ: submit, requestWithdraw, countByStatus, …
+  }
+
+  Quy tắc:
+  - Interface mỏng, đặt ở service/ (không đặt trong impl)
+  - Javadoc ngắn: điều kiện / @throws BusinessException khi nào
+  - Trả DTO / Page / Optional — không trả Entity ra Controller
+  - create trả Long id; update trả void
+
+────────────────────────────────────────────────────────────────────────────────
+5. SERVICE IMPLEMENTATION
+────────────────────────────────────────────────────────────────────────────────
+
+  @Service
+  @RequiredArgsConstructor
+  public class XxxServiceImpl implements XxxService {
+
+      private final XxxRepository xxxRepository;
+      // inject thêm repo khác nếu cần (không inject Controller)
+
+  5.1. Transaction
+      - Đọc:  @Transactional(readOnly = true)
+      - Ghi:  @Transactional
+      - Đặt trên từng method (không bắt buộc class-level)
+
+  5.2. Search
+      String pattern = keyword == null || keyword.isBlank()
+              ? "%"
+              : "%" + keyword.trim().toLowerCase() + "%";
+      return repo.search(pattern, PageRequest.of(
+              Math.max(page, 0), size, Sort.by(Sort.Direction.DESC, "createdAt")))
+              .map(XxxServiceImpl::toDto);
+
+  5.3. get / formFor
+      Entity e = repo.findById(id)
+          .orElseThrow(() -> new ResourceNotFoundException("Tên đối tượng", id));
+      - get → toDto(e)
+      - formFor → new Request + set từng field từ entity (kể cả id)
+
+  5.4. create / update
+      create:
+        rejectDuplicate / validate nghiệp vụ
+        Entity e = new Entity(); apply(e, form); return repo.save(e).getId();
+      update:
+        load entity (404 nếu không có)
+        rejectDuplicate(form, id)  // exclude chính nó
+        apply(e, form); repo.save(e);
+
+  5.5. Helper private (chuẩn Quyên)
+      private static XxxResponse toDto(Entity e) {
+          return XxxResponse.builder()...build();
+      }
+      private static void apply(Entity target, XxxRequest form) {
+          // trim bắt buộc; blank optional → null qua blankToNull
+          target.setName(form.getName().trim());
+          ...
+      }
+      private static String blankToNull(String value) {
+          return value == null || value.isBlank() ? null : value.trim();
+      }
+      private void rejectDuplicate(...) {
+          if (repo.existsDuplicate(...))
+              throw new BusinessException("…", HttpStatus.CONFLICT);
+      }
+      private static void requireDraft(...) {  // guard trạng thái
+          if (status != DRAFT)
+              throw new BusinessException("…", HttpStatus.CONFLICT);
+      }
+
+  5.6. Exception
+      - Không tìm thấy: ResourceNotFoundException("Nhãn tiếng Việt", id)
+      - Sai nghiệp vụ / trùng: BusinessException(message, HttpStatus.CONFLICT)
+      - Message tiếng Việt, rõ ràng với end-user
+
+────────────────────────────────────────────────────────────────────────────────
+6. REPOSITORY
+────────────────────────────────────────────────────────────────────────────────
+
+  public interface XxxRepository extends JpaRepository<Entity, Long> {
+
+      // JPQL text block """ ... """
+      @Query("""
+          select c from Consignor c
+          where lower(c.fullName) like :pattern
+             or c.phone like :pattern
+             ...
+          """)
+      Page<Entity> search(@Param("pattern") String pattern, Pageable pageable);
+
+      // Count/exists dạng boolean JPQL
+      @Query("""
+          select count(c) > 0 from Consignor c
+          where (c.phone = :phone or c.idNumber = :idNumber) and c.id <> :excludeId
+          """)
+      boolean existsDuplicate(@Param("phone") String phone, ...);
+
+      // Detail có join fetch tránh N+1
+      @Query("select c from Consignment c join fetch c.consignor join fetch c.vehicle where c.id = :id")
+      Optional<Entity> findDetailById(@Param("id") Long id);
+
+      // Search có fetch + countQuery tách riêng khi join fetch + Page
+      @Query(value = """ select ... join fetch ... """,
+             countQuery = """ select count(...) ... """)
+      Page<Entity> search(...);
+  }
+
+  Quy tắc:
+  - Comment JavaDoc trên method: giải thích pattern ("%foo%"), ý nghĩa excludeId
+  - Dùng @Param rõ ràng
+  - Không viết logic nghiệp vụ trong Repository
+  - Ưu tiên JPQL; tham số null được xử lý trong query (:status is null or …)
+
+────────────────────────────────────────────────────────────────────────────────
+7. HTML / FORM (đi kèm controller Quyên)
+────────────────────────────────────────────────────────────────────────────────
+
+  - create & edit: 1 file app-form.html
+  - Hidden: <input type="hidden" name="id" ...>  (rỗng khi tạo)
+  - th:object / th:field hoặc ModelAttribute name="form"
+  - List: app-list.html; Detail: app-detail.html
+  - Flash: th:if="${flashMessage}"
+  - Confirm JS chỉ dùng khi action phá hủy / đổi trạng thái nhạy cảm (nếu có)
+
+────────────────────────────────────────────────────────────────────────────────
+8. FLOW TỔNG QUÁT (áp dụng khi code Brand / Model)
+────────────────────────────────────────────────────────────────────────────────
+
+  Browser
+    → XxxWebController  (@Valid form, flash, redirect)
+      → XxxService (interface)
+        → XxxServiceImpl  (@Transactional, toDto/apply/blankToNull, BusinessException)
+          → XxxRepository (JPQL search / existsDuplicate / findById)
+            → Entity + DB
+
+  Checklist khi viết Brand/Model theo chuẩn này:
+  [ ] BrandRequest / BrandResponse ; ModelRequest / ModelResponse
+  [ ] BrandService + BrandServiceImpl ; ModelService + ModelServiceImpl
+  [ ] BrandRepository / ModelRepository (search pattern, filter status, count KPI)
+  [ ] WebController bỏ CatalogUiData; inject Service; PAGE_SIZE / BASE / FORM_VIEW
+  [ ] create+edit chung 1 form HTML (hoặc giữ 2 file UI hiện tại nhưng POST chung
+      vẫn phân nhánh bằng form.id — nếu giữ 2 file thì vẫn tuân save pattern)
+  [ ] activate/deactivate: service đổi status + flash; không hard delete
+  [ ] ResourceNotFoundException khi id không tồn tại (bỏ fallback Map giả)
+  [ ] Unique name / (brand+name) → existsDuplicate + BusinessException CONFLICT
+  [ ] trim + blankToNull trước khi save
+
+────────────────────────────────────────────────────────────────────────────────
+9. SYNTAX / STYLE NHỎ (quan sát từ commit)
+────────────────────────────────────────────────────────────────────────────────
+
+  - Import tường minh, không wildcard
+  - 4-space indent; dấu { cùng dòng
+  - final field + @RequiredArgsConstructor (không viết constructor tay)
+  - static helper khi không cần state (toDto, apply, blankToNull, requireDraft)
+  - Math.max(page, 0) khi tạo PageRequest
+  - Sort mặc định DESC createdAt (list mới nhất trước) hoặc ASC tên (pick-list)
+  - Flash message câu hoàn chỉnh, tiếng Việt, kết thúc bằng dấu chấm
+  - Comment English ngắn trên class/method use-case; message user-facing = Vietnamese
+  - Không để logic filter nặng trong Controller khi đã có Service
+  - Optional dùng cho “có thể không có” (findLatest, findWithdrawRequest)
+  - Map<Enum, Long> cho bộ đếm trạng thái KPI (countByStatus)
+
+────────────────────────────────────────────────────────────────────────────────
+10. ĐỐI CHIẾU NHANH: Catalog UI-mock HIỆN TẠI vs CHUẨN QUYÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  BrandCatalogWebController / ModelCatalogWebController hiện tại:
+    - Map mock + stream filter trong Controller
+    - Không DTO, Service, Repository
+    - save chỉ nhận id+name; activate/deactivate no-op
+    - find() fallback object giả
+
+  Khi làm BE theo Quyên:
+    - Chuyển filter/paging xuống Service + Repository JPQL
+    - Request/Response + @Valid
+    - create/update chung POST + flash
+    - Soft status qua service method riêng
+    - 404 thật bằng ResourceNotFoundException
+
+================================================================================
+Hết QuyTac1.txt
+================================================================================

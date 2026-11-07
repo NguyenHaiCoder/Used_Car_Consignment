@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* UI-only: xem hãng xe. */-->
+<!--/* Chi tiết hãng xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${'Hãng xe ' + item.name}, 'Hệ thống Quản lý Ký gửi xe', 'brands',
                     null, ~{::link}, ~{::#brand-view})}">
@@ -42,17 +42,17 @@
     <header class="csb-head">
       <svg th:replace="~{shell/icons :: icon('info')}"></svg>
       <h4>Thông tin hãng xe</h4>
-      <span class="pill" th:classappend="${item.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
-            th:text="${item.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+      <span class="pill" th:classappend="${item.status.name() == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+            th:text="${item.status.name() == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
     </header>
     <div class="csb-body">
-      <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${'HX-' + item.id}">HX-1</span></div>
+      <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${item.code}">HX-1</span></div>
       <div class="meta-row"><span class="mk">Tên hãng</span><span class="mv" th:text="${item.name}">Hyundai</span></div>
       <div class="meta-row"><span class="mk">Số dòng xe</span><span class="mv" th:text="${item.modelCount}">0</span></div>
       <div class="meta-row"><span class="mk">Ghi chú</span><span class="mv" th:text="${item.note ?: '—'}">—</span></div>
     </div>
     <div class="detail-actions">
-      <a class="btn-c btn-c--outline" th:href="@{/consignment/models(brand=${item.name})}">Xem dòng xe</a>
+      <a class="btn-c btn-c--outline" th:href="@{/consignment/models(brandId=${item.id})}">Xem dòng xe</a>
     </div>
   </section>
 </div>

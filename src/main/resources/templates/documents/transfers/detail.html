@@ -19,7 +19,7 @@
 <body>
 <div id="transfer-detail" class="inq-detail"
      th:with="s=${statuses.get(item.status)}, done=${item.status == 'COMPLETED'},
-              deadlineText=${#temporals.format(#temporals.createDate(item.deadline), 'dd/MM/yyyy')}">
+              deadlineText=${#temporals.format(item.deadline, 'dd/MM/yyyy')}">
   <div class="contracts-header">
     <div class="contracts-header-left">
       <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('file')}"></svg></div>
@@ -111,7 +111,7 @@
       <section class="card inq-card" th:if="${done}">
         <h3><svg th:replace="~{shell/icons :: icon('check')}"></svg>Kết quả sang tên</h3>
         <dl class="inq-rows">
-          <div><dt>Hoàn tất ngày</dt><dd th:text="${#temporals.format(#temporals.createDate(item.completedOn), 'dd/MM/yyyy')}">01/01/2026</dd></div>
+          <div><dt>Hoàn tất ngày</dt><dd th:text="${item.completedOn != null ? #temporals.format(item.completedOn, 'dd/MM/yyyy') : '—'}">01/01/2026</dd></div>
           <div><dt>Bằng chứng</dt>
             <dd>
               <a class="deal-link" th:if="${hasEvidenceFile}" target="_blank" rel="noopener"

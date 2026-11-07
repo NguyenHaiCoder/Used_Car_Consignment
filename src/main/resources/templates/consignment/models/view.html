@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* UI-only: xem dòng xe. */-->
+<!--/* Chi tiết dòng xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${'Dòng xe ' + item.name}, 'Hệ thống Quản lý Ký gửi xe', 'models',
                     null, ~{::link}, ~{::#model-view})}">
@@ -42,11 +42,11 @@
     <header class="csb-head">
       <svg th:replace="~{shell/icons :: icon('info')}"></svg>
       <h4>Thông tin dòng xe</h4>
-      <span class="pill" th:classappend="${item.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
-            th:text="${item.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+      <span class="pill" th:classappend="${item.status.name() == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+            th:text="${item.status.name() == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
     </header>
     <div class="csb-body">
-      <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${'DX-' + item.id}">DX-1</span></div>
+      <div class="meta-row"><span class="mk">Mã</span><span class="mv code" th:text="${item.code}">DX-1</span></div>
       <div class="meta-row"><span class="mk">Hãng xe</span><span class="mv" th:text="${item.brandName}">Hyundai</span></div>
       <div class="meta-row"><span class="mk">Dòng xe</span><span class="mv" th:text="${item.name}">Tucson</span></div>
       <div class="meta-row"><span class="mk">Ghi chú</span><span class="mv" th:text="${item.note ?: '—'}">—</span></div>

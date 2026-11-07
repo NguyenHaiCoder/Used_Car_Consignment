@@ -1,0 +1,306 @@
+================================================================================
+PHÂN TÍCH YÊU CẦU — 2 MÀN HÌNH DANH MỤC
+  1) Quản lý hãng xe  (/consignment/brands)
+  2) Quản lý dòng xe  (/consignment/models)
+Nguồn bám sát:
+  - templates/consignment/brands/{list,create,edit,view}.html
+  - templates/consignment/models/{list,create,edit,view}.html
+  - templates/consignment/catalog-pager.html
+  - BrandCatalogWebController, ModelCatalogWebController
+  - CatalogUiData (mock), CatalogPageSupport (phân trang mock)
+Trạng thái hiện tại: UI-only + mock data, CHƯA gắn service/repository BE.
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+A. MÀN HÌNH 1 — QUẢN LÝ HÃNG XE
+────────────────────────────────────────────────────────────────────────────────
+
+A.1. Mục đích
+  Quản trị danh mục hãng xe (Brand): xem danh sách, tìm/lọc, phân trang,
+  thêm / xem / sửa, ngưng hoạt động / kích hoạt lại.
+  URL gốc: GET /consignment/brands
+  View: consignment/brands/list
+  Layout: shell/layout, nav key = 'brands'
+  CSS: consignment-workflow.css, consignment-contracts.css, consignment-catalog.css
+
+A.2. Dữ liệu mẫu (CatalogUiData.BRANDS)
+  Mỗi phần tử Map:
+    id (Long), name (String), status (ACTIVE|INACTIVE),
+    modelCount (int), note (String, mặc định "")
+  Seed:
+    HX-1 Hyundai  ACTIVE   modelCount=5
+    HX-2 Toyota   ACTIVE   modelCount=8
+    HX-3 Honda    ACTIVE   modelCount=4
+    HX-4 Kia      ACTIVE   modelCount=3
+    HX-5 Mazda    INACTIVE modelCount=2
+  → KPI khớp UI: Tổng 5 | Đang dùng 4 | Ngưng hoạt động 1
+
+A.3. Model attributes trang list (BrandCatalogWebController.list)
+  page         : Page<Map> từ CatalogPageSupport.pageOf(filtered, page, size)
+  q            : chuỗi tìm kiếm ("" nếu null)
+  status       : ACTIVE | INACTIVE | "" (tất cả)
+  size         : normalizeSize → chỉ cho phép 5 | 10 | 20 (mặc định 10)
+  total        : BRANDS.size() — KPI tổng (không theo bộ lọc hiện tại)
+  activeCount  : số bản ghi ACTIVE trong toàn bộ BRANDS (không theo bộ lọc)
+  flashMessage : (HTML hỗ trợ) hiện chưa set trong controller mock
+
+A.4. Vùng giao diện & chức năng nút (list.html)
+
+  [Header]
+  - Breadcrumb: Consignment / Quản lý danh mục / Hãng xe
+  - Tiêu đề: "Quản lý hãng xe"
+  - Nút "+ Thêm hãng xe"
+      → GET /consignment/brands/new → brands/create.html
+
+  [KPI cards]
+  - Tổng hãng        = ${total}
+  - Đang dùng        = ${activeCount}
+  - Ngưng hoạt động  = ${total - activeCount}
+  Lưu ý: KPI đếm trên toàn bộ mock, không đổi theo filter/search.
+
+  [Toolbar tìm kiếm — form GET /consignment/brands]
+  - Ô search name=q, placeholder "Tìm theo tên hãng..."
+  - Dropdown trạng thái (link GET, giữ q + size):
+      * Tất cả trạng thái → không gửi status
+      * Đang dùng         → status=ACTIVE
+      * Ngưng hoạt động  → status=INACTIVE
+  - Hidden: status (nếu đang lọc), size
+  - Nút "Tìm kiếm" (submit GET)
+  Logic filter controller:
+      statusFilter khớp đúng field status
+      keyword = q.trim().toLowerCase(); name.contains(keyword)
+
+  [Bảng — Danh sách hãng xe (page.totalElements)]
+  Cột:
+    Mã          : "HX-" + id
+    Tên hãng    : link → GET /consignment/brands/{id} (view)
+    Số dòng xe  : modelCount
+    Trạng thái  : pill ACTIVE="Đang dùng" / khác="Ngưng hoạt động"
+    Thao tác:
+      Eye    → GET /consignment/brands/{id}            (Xem)
+      Pencil → GET /consignment/brands/{id}/edit       (Sửa)
+      Trash  (chỉ ACTIVE) → POST .../{id}/deactivate
+             confirm: "Ngưng hoạt động hãng xe này?"
+      Check  (chỉ !ACTIVE) → POST .../{id}/activate
+             confirm: "Kích hoạt lại hãng xe này?"
+  Empty: "Không có hãng xe phù hợp."
+  Pager: fragment catalog-pager :: pager('/consignment/brands', 'hãng xe')
+
+A.5. Phân trang (catalog-pager + CatalogPageSupport)
+  Query: page (0-based, default 0), size (5|10|20)
+  Hiển thị: "Hiển thị a–b / N hãng xe"
+  Đổi size → page=0, giữ q + status
+  Prev / số trang (window ±2) / Next
+
+A.6. Màn hình phụ Hãng xe
+
+  CREATE — GET /new → brands/create.html
+    Form POST /consignment/brands
+    Field: name* (text), status (ACTIVE|INACTIVE), note (text)
+    Nút: "Lưu hãng xe" | "Huỷ" → list
+    Controller emptyForm: id=null, name="", status=ACTIVE, note="", modelCount=0
+
+  EDIT — GET /{id}/edit → brands/edit.html
+    Form POST /consignment/brands + hidden id
+    Field giống create; title "Sửa hãng xe · {name}"
+    Nút: "Lưu thay đổi" | "Huỷ" → view /{id}
+
+  VIEW — GET /{id} → brands/view.html
+    Hiển thị: Mã HX-{id}, Tên, Số dòng xe, Ghi chú, pill trạng thái
+    Nút: "Sửa" → edit | "Danh sách" → list
+    Link "Xem dòng xe" → GET /consignment/models?brand={item.name}
+      (Model controller hỗ trợ param brand; list HTML hiện chưa có UI filter brand)
+
+  SAVE — POST /consignment/brands
+    Nhận: id (optional), name
+    Mock: id==null → redirect list; có id → redirect view
+    CHƯA persist; CHƯA đọc status/note từ form (HTML gửi nhưng controller bỏ qua)
+
+  DEACTIVATE / ACTIVATE — POST /{id}/deactivate | /{id}/activate
+    find(id) rồi redirect list — CHƯA đổi status thật trên mock
+
+A.7. find(id) fallback
+  Không tìm thấy → Map giả: name=Hyundai, status=ACTIVE, modelCount=0, note=""
+  (tránh 404 khi demo UI)
+
+────────────────────────────────────────────────────────────────────────────────
+B. MÀN HÌNH 2 — QUẢN LÝ DÒNG XE
+────────────────────────────────────────────────────────────────────────────────
+
+B.1. Mục đích
+  Quản trị danh mục dòng xe (Model) gắn với hãng:
+  list / search / filter status / phân trang / CRUD UI / activate-deactivate.
+  URL gốc: GET /consignment/models
+  View: consignment/models/list
+  Layout nav key = 'models'
+
+B.2. Dữ liệu mẫu (CatalogUiData.MODELS)
+  Mỗi phần tử Map:
+    id, brandName, name, status (ACTIVE|INACTIVE), note
+  Seed (8 dòng):
+    DX-1 Hyundai Tucson   ACTIVE
+    DX-2 Hyundai Santa Fe ACTIVE
+    DX-3 Hyundai Accent   ACTIVE
+    DX-4 Toyota  Camry    ACTIVE
+    DX-5 Toyota  Vios     ACTIVE
+    DX-6 Honda   Civic    INACTIVE
+    DX-7 Kia     Seltos   ACTIVE
+    DX-8 Mazda   CX-5     ACTIVE
+  → KPI: Tổng 8 | Đang dùng 7 | Ngưng hoạt động 1
+  brandNames() = tên tất cả BRANDS (kể cả INACTIVE) cho dropdown form
+
+B.3. Model attributes trang list (ModelCatalogWebController.list)
+  page, q, status, size, total, activeCount  — giống brands
+  brand   : filter theo brandName (param hỗ trợ; list UI chưa có dropdown brand)
+  brands  : CatalogUiData.brandNames() (đưa vào model dù list không dùng)
+
+B.4. Vùng giao diện & chức năng nút (list.html)
+
+  [Header]
+  - Breadcrumb: Consignment / Quản lý danh mục / Dòng xe
+  - Nút "+ Thêm dòng xe" → GET /consignment/models/new
+
+  [KPI]
+  - Tổng dòng / Đang dùng / Ngưng hoạt động
+  - Đếm trên toàn bộ MODELS (không theo filter)
+
+  [Toolbar — form GET /consignment/models]
+  - Ô search name=q, placeholder "Tìm theo dòng xe, hãng..."
+  - Dropdown status: Tất cả / ACTIVE / INACTIVE (giống brands)
+  - Nút "Tìm kiếm"
+  Logic filter controller:
+      brandFilter khớp brandName (nếu có)
+      statusFilter khớp status
+      keyword khớp name HOẶC brandName (contains, lower-case)
+
+  [Bảng — Danh sách dòng xe (page.totalElements)]
+  Cột:
+    Mã       : "DX-" + id
+    Hãng xe  : brandName (text)
+    Dòng xe  : link → GET /consignment/models/{id}
+    Trạng thái: pill ACTIVE / INACTIVE
+    Thao tác:
+      Eye    → view
+      Pencil → edit
+      Trash  (ACTIVE)  → POST .../{id}/deactivate + confirm
+      Check  (!ACTIVE) → POST .../{id}/activate + confirm
+  Empty / pager: giống brands, entityLabel = 'dòng xe'
+
+B.5. Màn hình phụ Dòng xe
+
+  CREATE — GET /new → models/create.html
+    Form POST /consignment/models
+    Field:
+      brandName* (select từ ${brands})
+      name* (dòng xe)
+      status (ACTIVE|INACTIVE)
+      note
+    Nút: "Lưu dòng xe" | "Huỷ" → list
+    emptyForm: id=null, brandName="", name="", status=ACTIVE, note=""
+
+  EDIT — GET /{id}/edit → models/edit.html
+    Form POST + hidden id
+    brandName select + name + status + note
+    Nút: "Lưu thay đổi" | "Huỷ" → view
+
+  VIEW — GET /{id} → models/view.html
+    Title: "{brandName} · {name}"
+    Meta: Mã DX-{id}, Hãng, Dòng, Ghi chú, pill
+    Nút: "Sửa" | "Danh sách"
+    Link "Quản lý hãng xe" → /consignment/brands
+
+  SAVE — POST /consignment/models
+    Nhận: id (optional), name  — giống brands, mock redirect
+    HTML gửi thêm brandName, status, note nhưng controller chưa bind
+
+  DEACTIVATE / ACTIVATE — mock: find rồi redirect list
+
+B.6. find(id) fallback
+  brandName=Hyundai, name=Tucson, status=ACTIVE, note=""
+
+────────────────────────────────────────────────────────────────────────────────
+C. SO SÁNH 2 MÀN HÌNH
+────────────────────────────────────────────────────────────────────────────────
+
+Giống:
+  - Cùng pattern catalog: KPI + toolbar search/status + table + soft activate/deactivate
+  - Cùng trạng thái ACTIVE / INACTIVE (không xóa cứng)
+  - Cùng phân trang CatalogPageSupport + catalog-pager
+  - Create/Edit form riêng file; POST chung 1 endpoint; edit dùng hidden id
+  - Controller UI-only, Map mock, không Service/Repository
+
+Khác:
+  - Brand có cột modelCount; Model có cột brandName
+  - Mã hiển thị: HX-{id} vs DX-{id}
+  - Search Model tìm cả name + brandName; Brand chỉ name
+  - Model controller có param brand (deep-link từ brand view); Brand không có filter tương tự
+  - Form Model bắt buộc chọn hãng; Form Brand không phụ thuộc entity khác
+
+────────────────────────────────────────────────────────────────────────────────
+D. MA TRẬN ENDPOINT (cả 2 module)
+────────────────────────────────────────────────────────────────────────────────
+
+  Method  Path                              Mục đích              Persist?
+  ------  --------------------------------  --------------------  --------
+  GET     /consignment/brands               List + filter         đọc mock
+  GET     /consignment/brands/new           Form tạo
+  GET     /consignment/brands/{id}          Chi tiết
+  GET     /consignment/brands/{id}/edit     Form sửa
+  POST    /consignment/brands               Lưu (create/update)   CHƯA
+  POST    /consignment/brands/{id}/deactivate  Ngưng              CHƯA
+  POST    /consignment/brands/{id}/activate    Kích hoạt lại      CHƯA
+
+  GET     /consignment/models               List + filter         đọc mock
+  GET     /consignment/models/new           Form tạo
+  GET     /consignment/models/{id}          Chi tiết
+  GET     /consignment/models/{id}/edit     Form sửa
+  POST    /consignment/models               Lưu (create/update)   CHƯA
+  POST    /consignment/models/{id}/deactivate  Ngưng              CHƯA
+  POST    /consignment/models/{id}/activate    Kích hoạt lại      CHƯA
+
+────────────────────────────────────────────────────────────────────────────────
+E. YÊU CẦU CHỨC NĂNG CẦN IMPLEMENT KHI GẮN BE
+  (suy ra từ HTML + controller mock — checklist cho Dev)
+────────────────────────────────────────────────────────────────────────────────
+
+Brand:
+  1. CRUD hãng: name bắt buộc; status; note tùy chọn
+  2. List có search theo tên + filter status + phân trang size 5/10/20
+  3. KPI: tổng / ACTIVE / INACTIVE (quyết định: đếm global như mock hay theo filter)
+  4. Soft deactivate / activate (không hard delete) + confirm JS
+  5. Hiển thị mã HX-{id}; đếm số dòng xe thuộc hãng (modelCount)
+  6. Flash message sau thao tác (HTML đã có chỗ hiển thị)
+  7. Từ chi tiết hãng → xem danh sách dòng xe lọc theo brand
+
+Model:
+  1. CRUD dòng xe: brand bắt buộc (FK/hãng), name bắt buộc; status; note
+  2. List search theo tên dòng HOẶC tên hãng + filter status + phân trang
+  3. KPI tương tự brands
+  4. Soft deactivate / activate + confirm
+  5. Mã DX-{id}; dropdown hãng khi create/edit
+  6. Hỗ trợ query ?brand=... (deep-link từ brand view)
+  7. Flash message
+
+Ràng buộc nghiệp vụ gợi ý (chưa có trong mock, cần chốt khi code BE):
+  - Tên hãng / (hãng + tên dòng) unique?
+  - Ngưng hãng khi còn dòng ACTIVE / còn xe gắn?
+  - Ngưng dòng khi còn hồ sơ ký gửi / tin bán đang dùng?
+  - Đổi tên hãng → cập nhật brandName ở model hay dùng FK id?
+
+────────────────────────────────────────────────────────────────────────────────
+F. KHOẢNG TRỐNG HIỆN TẠI (UI mock vs yêu cầu thật)
+────────────────────────────────────────────────────────────────────────────────
+
+  1. POST save chỉ bind id + name → status, note, brandName bị bỏ qua
+  2. activate/deactivate không đổi data (refresh vẫn như cũ)
+  3. Không validation server, không BusinessException, không flash
+  4. KPI không phản ánh kết quả lọc
+  5. List Model chưa có UI chọn lọc theo brand (chỉ controller + deep-link)
+  6. Dùng Map thay DTO/Entity; chưa Repository/Service
+  7. find() fallback trả record giả thay vì 404
+
+→ Khi implement BE nên bám quy tắc layer của commit Quyên (xem QuyTac1.txt).
+
+================================================================================
+Hết PhanTich1.txt
+================================================================================

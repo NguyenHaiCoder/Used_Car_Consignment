@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* UI-only: sửa dòng xe. */-->
+<!--/* Sửa dòng xe — validate Thymeleaf + BindingResult. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Sửa dòng xe', 'Hệ thống Quản lý Ký gửi xe', 'models',
                     null, ~{::link}, ~{::#model-edit})}">
@@ -29,34 +29,46 @@
     </div>
   </div>
 
-  <form class="catalog-form" method="post" th:action="@{/consignment/models}">
-    <input type="hidden" name="id" th:value="${form.id}">
+  <form class="catalog-form" method="post" th:action="@{/consignment/models}" th:object="${form}" novalidate>
+    <input type="hidden" th:field="*{id}">
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}"
+       th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+
     <div class="form-row">
       <div class="field">
-        <label>Hãng xe <span class="req">*</span></label>
-        <select name="brandName" required>
-          <option th:each="b : ${brands}" th:value="${b}" th:text="${b}"
-                  th:selected="${b == form.brandName}">Hyundai</option>
+        <label for="brandId">Hãng xe <span class="req">*</span></label>
+        <select id="brandId" th:field="*{brandId}"
+                th:classappend="${#fields.hasErrors('brandId')} ? 'is-invalid'">
+          <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}">Hyundai</option>
         </select>
+        <span class="field-error" th:if="${#fields.hasErrors('brandId')}" th:errors="*{brandId}"></span>
       </div>
       <div class="field">
-        <label>Dòng xe <span class="req">*</span></label>
-        <input type="text" name="name" required th:value="${form.name}">
+        <label for="name">Dòng xe <span class="req">*</span></label>
+        <input id="name" type="text" th:field="*{name}" maxlength="120"
+               th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+        <span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
       </div>
     </div>
+
     <div class="form-row">
       <div class="field">
-        <label>Trạng thái</label>
-        <select name="status">
-          <option value="ACTIVE" th:selected="${form.status == 'ACTIVE'}">Đang dùng</option>
-          <option value="INACTIVE" th:selected="${form.status == 'INACTIVE'}">Ngưng hoạt động</option>
+        <label for="status">Trạng thái</label>
+        <select id="status" th:field="*{status}"
+                th:classappend="${#fields.hasErrors('status')} ? 'is-invalid'">
+          <option th:value="ACTIVE">Đang dùng</option>
+          <option th:value="INACTIVE">Ngưng hoạt động</option>
         </select>
+        <span class="field-error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></span>
       </div>
       <div class="field">
-        <label>Ghi chú</label>
-        <input type="text" name="note" th:value="${form.note}">
+        <label for="note">Ghi chú</label>
+        <input id="note" type="text" th:field="*{note}" maxlength="500"
+               th:classappend="${#fields.hasErrors('note')} ? 'is-invalid'">
+        <span class="field-error" th:if="${#fields.hasErrors('note')}" th:errors="*{note}"></span>
       </div>
     </div>
+
     <div class="catalog-actions">
       <button class="btn-c btn-c--primary" type="submit">Lưu thay đổi</button>
       <a class="btn-c btn-c--ghost" th:href="@{/consignment/models/{id}(id=${form.id})}">Huỷ</a>

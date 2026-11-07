@@ -85,4 +85,11 @@ public interface ConsignmentRepository extends JpaRepository<Consignment, Long> 
     /** Rows of {status, count} used for the status counters above the list. */
     @Query("select c.status, count(c) from Consignment c group by c.status")
     List<Object[]> countByStatus();
+
+    @Query("""
+            select c from Consignment c join fetch c.consignor
+            where c.vehicle.id = :vehicleId
+            order by c.id desc
+            """)
+    List<Consignment> findByVehicleIdOrderByIdDesc(@Param("vehicleId") Long vehicleId);
 }

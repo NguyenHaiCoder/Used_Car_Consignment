@@ -1,0 +1,161 @@
+================================================================================
+PHÂN TÍCH ENTITY + GENERATE CODE — Hãng xe / Dòng xe
+Ngày: 2026-11-07
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+1. KIỂM TRA ENTITY TRƯỚC KHI BỔ SUNG
+────────────────────────────────────────────────────────────────────────────────
+
+Đã có (liên quan danh mục / xe):
+  ✓ CatalogStatus          (ACTIVE | INACTIVE) — dùng chung KPI trạng thái
+  ✓ BaseEntity             (id, createdAt, updatedAt)
+  ✓ VehicleType            — "loại xe" (SUV, SEDAN…) KHÁC hãng/dòng
+  ✓ InspectionType         — loại kiểm định (FK → VehicleType)
+  ✓ Vehicle                — make/model đang là String tự do, CHƯA FK catalog
+
+CHƯA CÓ (bắt buộc cho 2 màn hình Quản lý hãng / dòng):
+  ✗ Brand                  — hãng xe
+  ✗ VehicleModel           — dòng xe (thuộc Brand)
+  ✗ BrandRepository / VehicleModelRepository
+  ✗ BrandService(+Impl) / VehicleModelService(+Impl)
+  ✗ DTO Request/Response catalog
+
+→ Đã bổ sung các phần trên (entity + repo + service + DTO).
+  Controller HTML mock (BrandCatalogWebController / ModelCatalogWebController)
+  VẪN dùng CatalogUiData — chưa gắn Service (bước tiếp theo khi wire BE).
+
+────────────────────────────────────────────────────────────────────────────────
+2. ENTITY ĐÃ BỔ SUNG
+────────────────────────────────────────────────────────────────────────────────
+
+2.1. Brand  → bảng vehicle_brands
+  Field        Kiểu              Ghi chú
+  -----------  ----------------  ------------------------------------------
+  id           Long (Base)       IDENTITY
+  code         String(40) UNIQUE Hệ thống: HX-{id} (không nhập tay)
+  name         String(120) UNIQUE @Nationalized, tên hãng
+  status       CatalogStatus     ACTIVE / INACTIVE
+  note         String(500)       nullable
+  createdAt / updatedAt
+
+2.2. VehicleModel  → bảng vehicle_models
+  Field        Kiểu              Ghi chú
+  -----------  ----------------  ------------------------------------------
+  id           Long (Base)       IDENTITY
+  code         String(40) UNIQUE Hệ thống: DX-{id}
+  brand        ManyToOne Brand   brand_id NOT NULL (LAZY)
+  name         String(120)       @Nationalized
+  status       CatalogStatus
+  note         String(500)       nullable
+  UK (brand_id, name)           Không trùng tên dòng trong cùng hãng
+
+Tại sao tên VehicleModel (không phải Model)?
+  Tránh đụng org.springframework.ui.Model và từ khóa/ý nghĩa generic "Model".
+
+────────────────────────────────────────────────────────────────────────────────
+3. GENERATE CODE — HX-{id} / DX-{id}
+────────────────────────────────────────────────────────────────────────────────
+
+UI cũ (Thymeleaf mock):
+  th:text="${'HX-' + b.id}"
+  th:text="${'DX-' + m.id}"
+  → Chỉ ghép chuỗi ở view, KHÔNG lưu DB, KHÔNG phải source of truth.
+
+Chuẩn BE (đã làm trong 2 ServiceImpl), bám pattern ConsignmentServiceImpl
+(KG-{id}) / SaleNews (TD-…) / Inspection (KD-…):
+
+  BrandServiceImpl
+    private static String generateCode(Long id) {
+        return "HX-" + id;
+    }
+
+  VehicleModelServiceImpl
+    private static String generateCode(Long id) {
+        return "DX-" + id;
+    }
+
+Luồng create:
+  1) setCode(temporaryCode())     // TMP-{uuid12} — thỏa NOT NULL + UNIQUE trước khi có id
+  2) save()                       // Hibernate cấp id
+  3) setCode(generateCode(id))    // HX-5 / DX-8 — mã thật
+  4) transaction commit           // ddl-auto update sẽ flush code mới
+
+Tại sao private trong ServiceImpl?
+  - Mã là quy ước hệ thống, không cho Controller/HTML tự ghép
+  - Response trả field code đã lưu → list/view dùng ${item.code} thay vì 'HX-'+id
+  - Đổi prefix sau này chỉ sửa 1 chỗ (generateCode)
+
+Khác VehicleType.code:
+  VehicleType: user nhập / normalize (SUV_MINI)
+  Brand/Model: hệ thống sinh theo id — form Request KHÔNG có field code
+
+────────────────────────────────────────────────────────────────────────────────
+4. LAYER ĐÃ CÓ / CÒN THIẾU ĐỂ XONG 2 MÀN HÌNH
+────────────────────────────────────────────────────────────────────────────────
+
+Đã có:
+  [x] Entity Brand, VehicleModel
+  [x] Enum CatalogStatus (reuse)
+  [x] DTO BrandRequest/Response, VehicleModelRequest/Response
+  [x] BrandRepository, VehicleModelRepository (search, duplicate, count KPI)
+  [x] BrandService + BrandServiceImpl (generateCode HX-)
+  [x] VehicleModelService + VehicleModelServiceImpl (generateCode DX-)
+  [x] Nghiệp vụ soft activate/deactivate
+      - Ngưng hãng: chặn nếu còn dòng xe ACTIVE
+  [x] Unique tên hãng; unique (brand + tên dòng)
+
+Còn thiếu để thay mock UI:
+  [ ] Gắn BrandCatalogWebController → BrandService (bỏ CatalogUiData.BRANDS)
+  [ ] Gắn ModelCatalogWebController → VehicleModelService
+  [ ] Form create/edit: bind brandId (không còn brandName string thuần)
+  [ ] Template list: dùng ${b.code} / ${m.code} thay 'HX-'+id / 'DX-'+id
+  [ ] Flash message + @Valid theo QuyTac1
+  [ ] (Tuỳ chọn) Seed data 5 hãng / 8 dòng thay mock
+  [ ] (Tuỳ chọn sau) Vehicle.make/model → FK Brand/VehicleModel
+      Hiện Vehicle vẫn String — không chặn 2 màn catalog
+
+Không cần entity mới khác cho 2 màn này:
+  VehicleType / InspectionType là module danh mục khác (loại xe / loại kiểm định).
+
+────────────────────────────────────────────────────────────────────────────────
+5. ÁNH XẠ CỘT UI → ENTITY / RESPONSE
+────────────────────────────────────────────────────────────────────────────────
+
+Màn Hãng xe:
+  Mã           → Brand.code          (HX-{id})
+  Tên hãng     → Brand.name
+  Số dòng xe   → BrandResponse.modelCount  (= countByBrandId)
+  Trạng thái   → Brand.status
+  Ghi chú      → Brand.note
+
+Màn Dòng xe:
+  Mã           → VehicleModel.code   (DX-{id})
+  Hãng xe      → brand.name (join)
+  Dòng xe      → VehicleModel.name
+  Trạng thái   → VehicleModel.status
+  Ghi chú      → VehicleModel.note
+  Filter brand → search(..., brandId)  (deep-link từ brand view)
+
+────────────────────────────────────────────────────────────────────────────────
+6. FILE ĐÃ TẠO
+────────────────────────────────────────────────────────────────────────────────
+
+  entity/consignment/Brand.java
+  entity/consignment/VehicleModel.java
+  dto/catalog/BrandRequest.java
+  dto/catalog/BrandResponse.java
+  dto/catalog/VehicleModelRequest.java
+  dto/catalog/VehicleModelResponse.java
+  repository/BrandRepository.java
+  repository/VehicleModelRepository.java
+  service/BrandService.java
+  service/VehicleModelService.java
+  service/impl/BrandServiceImpl.java      ← generateCode → HX-{id}
+  service/impl/VehicleModelServiceImpl.java ← generateCode → DX-{id}
+
+Hibernate ddl-auto=update sẽ tự tạo bảng vehicle_brands / vehicle_models khi chạy app.
+
+================================================================================
+Hết PhanTich2.txt
+================================================================================

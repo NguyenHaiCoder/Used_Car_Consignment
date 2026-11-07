@@ -144,7 +144,13 @@
 .catalog-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .catalog-wrap .flash--error { border-color: #f3b9b9; background: #fdecec; color: #a11c1c; }
 .catalog-form .field-error,
-.steps-editor .field-error { display: block; font-size: 12px; font-weight: 600; color: var(--red, #d92d20); }
+.steps-editor .field-error { display: block; font-size: 12px; font-weight: 600; color: var(--red, #d92d20); margin-top: 4px; }
+.catalog-form input.is-invalid,
+.catalog-form select.is-invalid,
+.catalog-form textarea.is-invalid {
+  border-color: var(--red, #d92d20);
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, .12);
+}
 .catalog-empty {
   padding: 28px 16px; text-align: center; color: var(--ink-soft); font-weight: 600;
 }

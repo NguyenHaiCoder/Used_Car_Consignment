@@ -7,6 +7,7 @@ import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.ConsignmentService;
 import fu.he.training.fall2026.service.ConsignorService;
 import fu.he.training.fall2026.service.ValuationService;
+import fu.he.training.fall2026.service.VehicleModelService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,6 +43,7 @@ public class ConsignmentWebController {
     private final ConsignmentService consignmentService;
     private final ConsignorService consignorService;
     private final ValuationService valuationService;
+    private final VehicleModelService vehicleModelService;
 
     @GetMapping
     public String list(
@@ -73,7 +75,7 @@ public class ConsignmentWebController {
         model.addAttribute("form", form);
         model.addAttribute("consignors", consignorService.listAll());
         model.addAttribute("vehicles", consignmentService.listVehicles());
-        model.addAttribute("vehicleModels", CatalogUiData.activeModels());
+        model.addAttribute("vehicleModels", vehicleModelService.listActive());
         return CREATE_VIEW;
     }
 
@@ -93,7 +95,7 @@ public class ConsignmentWebController {
         model.addAttribute("form", consignmentService.formFor(id));
         model.addAttribute("consignors", consignorService.listAll());
         model.addAttribute("vehicles", consignmentService.listVehicles());
-        model.addAttribute("vehicleModels", CatalogUiData.activeModels());
+        model.addAttribute("vehicleModels", vehicleModelService.listActive());
         model.addAttribute("listingPriceText", valuationService.listingPriceText(consignment.getCode()));
         return EDIT_VIEW;
     }
@@ -121,7 +123,7 @@ public class ConsignmentWebController {
         }
         model.addAttribute("consignors", consignorService.listAll());
         model.addAttribute("vehicles", consignmentService.listVehicles());
-        model.addAttribute("vehicleModels", CatalogUiData.activeModels());
+        model.addAttribute("vehicleModels", vehicleModelService.listActive());
         return form.getId() == null ? CREATE_VIEW : EDIT_VIEW;
     }
 

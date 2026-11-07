@@ -11,7 +11,7 @@
     </div>
     <div class="csb-body">
       <div class="timeline">
-        <div class="tl-item" th:each="c, st : ${rows}" th:with="ok=${c.passed == 'true'}">
+        <div class="tl-item" th:each="c, st : ${rows}" th:with="ok=${c.passed == true or c.passed == 'true'}">
           <div class="tl-line-wrap">
             <div class="tl-dot" th:classappend="${ok} ? 'done'">
               <th:block th:if="${ok}"><svg th:replace="~{shell/icons :: icon('check')}"></svg></th:block>
@@ -33,7 +33,7 @@
     <h3><svg th:replace="~{shell/icons :: icon('handshake')}"></svg>Hợp đồng bán xe</h3>
     <dl class="inq-rows">
       <div><dt>Số hợp đồng</dt><dd th:text="${item.contractCode}">HĐ</dd></div>
-      <div><dt>Ngày ký</dt><dd th:text="${#temporals.format(#temporals.createDate(item.signedOn), 'dd/MM/yyyy')}">01/01/2026</dd></div>
+      <div><dt>Ngày ký</dt><dd th:text="${item.signedOn != null ? #temporals.format(item.signedOn, 'dd/MM/yyyy') : '—'}">01/01/2026</dd></div>
       <div><dt>Giá bán</dt><dd th:text="${#numbers.formatInteger(item.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
       <div><dt>Nhân viên bán</dt><dd th:text="${item.salesStaff}">NV</dd></div>
     </dl>

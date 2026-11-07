@@ -47,8 +47,9 @@
         <span class="select">
           <select id="tr-contract" name="contractId" required data-auto-submit>
             <option value="">Chọn hợp đồng</option>
-            <option th:each="c : ${candidates}" th:value="${c.id}" th:selected="${item != null and c.id == item.id}"
-                    th:text="${c.code + ' · ' + c.buyer + ' · ' + c.car + ' · ' + c.plate}">Hợp đồng</option>
+            <option th:each="c : ${candidates}" th:value="${c.salesContractId}"
+                    th:selected="${item != null and c.salesContractId == item.salesContractId}"
+                    th:text="${c.contractCode + ' · ' + c.buyer + ' · ' + c.car + ' · ' + c.plate}">Hợp đồng</option>
           </select>
         </span>
         <small class="deal-hint">Chỉ hiện hợp đồng đã ký, khách đã đặt cọc và chưa có hồ sơ sang tên.</small>
@@ -76,7 +77,7 @@
   </div>
 
   <form class="create-actions" method="post" th:if="${item != null}" th:action="@{/documents/transfers}">
-    <input type="hidden" name="contractId" th:value="${item.id}">
+    <input type="hidden" name="contractId" th:value="${item.salesContractId}">
     <a class="btn-c btn-c--ghost" th:href="@{/documents/transfers}">Hủy</a>
     <button class="btn-c btn-c--primary" type="submit">Tạo hồ sơ sang tên</button>
   </form>

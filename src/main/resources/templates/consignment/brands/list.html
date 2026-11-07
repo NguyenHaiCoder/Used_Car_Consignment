@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--/* UI-only: danh sách hãng xe. */-->
+<!--/* Danh sách hãng xe (BE). */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Quản lý hãng xe', 'Hệ thống Quản lý Ký gửi xe', 'brands',
                     null, ~{::link}, ~{::#brand-list})}">
@@ -35,6 +35,7 @@
   </div>
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
 
   <section class="kpis" aria-label="Thống kê hãng xe">
     <article th:replace="~{shell/ui :: kpi('tag', 'Tổng hãng', ${total})}"></article>
@@ -93,14 +94,14 @@
         </thead>
         <tbody>
           <tr th:each="b : ${page.content}">
-            <td th:text="${'HX-' + b.id}">HX-1</td>
+            <td><span class="code" th:text="${b.code}">HX-1</span></td>
             <td>
               <a class="code" th:href="@{/consignment/brands/{id}(id=${b.id})}" th:text="${b.name}">Hyundai</a>
             </td>
             <td th:text="${b.modelCount}">0</td>
             <td>
-              <span class="pill" th:classappend="${b.status == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
-                    th:text="${b.status == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
+              <span class="pill" th:classappend="${b.status.name() == 'ACTIVE'} ? 'pill--approved' : 'pill--closed'"
+                    th:text="${b.status.name() == 'ACTIVE'} ? 'Đang dùng' : 'Ngưng hoạt động'">Đang dùng</span>
             </td>
             <td>
               <div class="row-actions">
@@ -111,14 +112,14 @@
                   <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
                 </a>
                 <form method="post" th:action="@{/consignment/brands/{id}/deactivate(id=${b.id})}"
-                      th:if="${b.status == 'ACTIVE'}"
+                      th:if="${b.status.name() == 'ACTIVE'}"
                       onsubmit="return confirm('Ngưng hoạt động hãng xe này?');">
                   <button class="row-action is-danger" type="submit" title="Ngưng hoạt động">
                     <svg th:replace="~{shell/icons :: icon('trash')}"></svg>
                   </button>
                 </form>
                 <form method="post" th:action="@{/consignment/brands/{id}/activate(id=${b.id})}"
-                      th:if="${b.status != 'ACTIVE'}"
+                      th:if="${b.status.name() != 'ACTIVE'}"
                       onsubmit="return confirm('Kích hoạt lại hãng xe này?');">
                   <button class="row-action is-success" type="submit" title="Kích hoạt lại">
                     <svg th:replace="~{shell/icons :: icon('check')}"></svg>

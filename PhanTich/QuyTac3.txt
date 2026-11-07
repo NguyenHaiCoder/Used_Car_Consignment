@@ -1,0 +1,259 @@
+================================================================================
+QUY TẮC / SYNTAX CODE — theo commit của Quyên
+  Commit: b3f28add1e715f724ce8f3b639cfaa67fbdda0ef
+  Author: lequyen17 <halequyen1725@gmail.com>
+  Title : Feature/dev quyen (#3)
+  Phạm vi: Web Controller, Service, ServiceImpl, Repository, DTO
+           (mẫu Consignor / Consignment / Agreement / Manager)
+Mục đích file này: chuẩn khi gắn BE cho module Hồ sơ sang tên (Transfer)
+                   và các web controller Thymeleaf khác cùng style.
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+1. CẤU TRÚC PACKAGE & ĐẶT TÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  controller/web/{role}/XxxWebController.java
+    ví dụ hiện tại mock: controller.web.documents.TransferWebController
+    khi BE: giữ package documents, inject TransferService
+
+  service/TransferService.java                 ← interface
+  service/impl/TransferServiceImpl.java        ← implementation
+  repository/TransferCaseRepository.java       ← JpaRepository<TransferCase, Long>
+  dto/documents/ (hoặc dto/transfer/)
+    TransferCreateRequest / TransferCompleteRequest / TransferResponse
+
+  Entity sẵn: entity.consignment.TransferCase
+  Enum sẵn:   entity.enums.TransferStatus
+
+  Naming Quyên:
+  - *WebController (Thymeleaf, không REST)
+  - Service: search / get / create / formFor / … + method nghiệp vụ (submit, start…)
+  - Repository: search JPQL, findDetailById (join fetch), exists…
+  - View: list / create / detail (Transfer đã tách file — giữ nguyên HTML hiện có)
+
+────────────────────────────────────────────────────────────────────────────────
+2. WEB CONTROLLER — PATTERN QUYÊN
+────────────────────────────────────────────────────────────────────────────────
+
+2.1. Khai báo
+  @Controller
+  @RequestMapping("/documents/transfers")
+  @RequiredArgsConstructor          // inject final Service — KHÔNG new UiData tĩnh
+  public class TransferWebController {
+      private static final String BASE = "/documents/transfers";
+      private static final String LIST_VIEW = "documents/transfers/list";
+      private static final String CREATE_VIEW = "documents/transfers/create";
+      private static final String DETAIL_VIEW = "documents/transfers/detail";
+      private final TransferService transferService;
+  }
+
+2.2. List
+  @GetMapping
+  public String list(
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false) TransferStatus status,
+      @RequestParam(required = false) String staff,
+      @RequestParam(required = false) @DateTimeFormat(iso = DATE) LocalDate from,
+      @RequestParam(required = false) @DateTimeFormat(iso = DATE) LocalDate to,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(required = false) Integer size,
+      Model model) {
+      // Gọi service.search(...); counts = service.countByStatus();
+      // q null → ""; status null → "" cho Thymeleaf filter
+      return LIST_VIEW;
+  }
+  Quy tắc: không stream/filter Map trong Controller khi đã có BE.
+
+2.3. Create form + POST create
+  GET /new?contractId=  → candidates + preview DTO từ service
+  POST /                → @RequestParam / @Valid request
+      try { id = service.create(...); flash; redirect detail }
+      catch (BusinessException ex) { flashError / errors.reject; redirect form }
+
+2.4. Detail + action POST
+  Giống Quyên (submit / withdraw):
+    POST /{id}/start    → service.start(id, actorUserId/name)
+    POST /{id}/complete → @Valid complete form + MultipartFile
+                          service.complete(...); flash; redirect detail
+  Flash message tiếng Việt ngắn, kết thúc bằng dấu chấm.
+
+2.5. Lỗi
+  - Không tìm thấy: ResourceNotFoundException("Hồ sơ sang tên", id)
+  - Sai nghiệp vụ: BusinessException(message, HttpStatus.CONFLICT|BAD_REQUEST)
+  - Controller bắt BusinessException → flashError hoặc BindingResult.reject
+
+────────────────────────────────────────────────────────────────────────────────
+3. DTO
+────────────────────────────────────────────────────────────────────────────────
+
+  XxxRequest  : @Getter @Setter, field id (nếu create/update chung),
+                Bean Validation @NotBlank / @NotNull / @Size, message tiếng Việt
+  XxxResponse : @Value @Builder, immutable, chỉ field cần list/detail
+
+  Gợi ý Transfer:
+    TransferResponse     : id, code, contractCode, car, plate, buyer, phone,
+                           deadline, daysLeft, staff, status, salePrice, …
+    TransferCreateRequest: @NotNull Long salesContractId
+    TransferCompleteRequest: notes (@Size max 2000); file validate ở service
+
+────────────────────────────────────────────────────────────────────────────────
+4. SERVICE INTERFACE
+────────────────────────────────────────────────────────────────────────────────
+
+  public interface TransferService {
+      Page<TransferResponse> search(String q, TransferStatus status, String staff,
+                                    LocalDate from, LocalDate to,
+                                    Long amountMin, Long amountMax, int page, int size);
+      Map<TransferStatus, Long> countByStatus();
+      TransferResponse get(Long id);
+      List<TransferCandidateResponse> candidates();   // HĐ đủ điều kiện
+      TransferResponse preview(Long contractId);
+      Long create(Long salesContractId);
+      void start(Long id, String staffName);          // hoặc Long actorUserId
+      void complete(Long id, String notes, StoredFile evidence);
+      Optional<StoredFile> evidence(Long id);
+  }
+
+  - Interface mỏng, Javadoc @throws BusinessException khi nào
+  - Trả DTO / Page / Optional — không trả Entity ra Controller
+
+────────────────────────────────────────────────────────────────────────────────
+5. SERVICE IMPLEMENTATION — SYNTAX QUYÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  @Service
+  @RequiredArgsConstructor
+  public class TransferServiceImpl implements TransferService {
+
+      private final TransferCaseRepository transferCaseRepository;
+      // + SalesContractRepository / FileStorageService khi nối thật
+
+  5.1. Transaction
+      Đọc:  @Transactional(readOnly = true)
+      Ghi:  @Transactional
+
+  5.2. Search
+      String pattern = blank ? "%" : "%" + keyword.trim().toLowerCase() + "%";
+      return repo.search(pattern, status, …,
+              PageRequest.of(Math.max(page, 0), size, Sort.by(DESC, "id")))
+          .map(this::toDto);
+
+  5.3. get / load
+      Entity e = repo.findDetailById(id)
+          .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ sang tên", id));
+
+  5.4. create (bám ConsignmentServiceImpl generate code)
+      reject nếu đã có case / chưa đủ điều kiện (BusinessException CONFLICT)
+      TransferCase row = new TransferCase();
+      row.setCode(temporaryCode());          // TMP-… thỏa NOT NULL+UNIQUE
+      // set contract, status=PENDING, deadline=signedOn+30, …
+      transferCaseRepository.save(row);
+      row.setCode(generateCode(row.getId())); // ST-000208
+      return row.getId();
+
+      private static String generateCode(Long id) {
+          return String.format("ST-%06d", id);
+      }
+
+  5.5. start / complete — guard trạng thái (giống requireDraft của Quyên)
+      private static void requireStatus(TransferCase c, TransferStatus expected) {
+          if (c.getStatus() != expected) {
+              throw new BusinessException("…", HttpStatus.CONFLICT);
+          }
+      }
+      start:    require PENDING → IN_PROGRESS + set responsibleParty
+      complete: require IN_PROGRESS → validate file → save path → COMPLETED
+                + cập nhật mốc transferred trên SalesContract
+
+  5.6. Helper chuẩn Quyên
+      private static TransferResponse toDto(TransferCase c) { builder… }
+      private static String blankToNull(String v) { … }
+      private void rejectDuplicate / requireReady(…) { throw BusinessException }
+
+────────────────────────────────────────────────────────────────────────────────
+6. REPOSITORY — SYNTAX QUYÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  public interface TransferCaseRepository extends JpaRepository<TransferCase, Long> {
+
+      @Query("""
+          select t from TransferCase t
+          join fetch t.salesContract sc
+          where (:status is null or t.status = :status)
+            and (lower(t.code) like :pattern
+                 or lower(sc.code) like :pattern
+                 …)
+          """)
+      // + countQuery khi join fetch + Page
+      Page<TransferCase> search(@Param("pattern") String pattern,
+                                @Param("status") TransferStatus status,
+                                Pageable pageable);
+
+      @Query("select t from TransferCase t join fetch t.salesContract where t.id = :id")
+      Optional<TransferCase> findDetailById(@Param("id") Long id);
+
+      boolean existsBySalesContractId(Long salesContractId);
+
+      Optional<TransferCase> findBySalesContractId(Long salesContractId);
+
+      @Query("select t.status, count(t) from TransferCase t group by t.status")
+      List<Object[]> countByStatus();
+  }
+
+  Quy tắc:
+  - JPQL text block """ … """
+  - @Param rõ ràng; comment giải thích pattern LIKE
+  - Không để logic nghiệp vụ trong Repository
+
+────────────────────────────────────────────────────────────────────────────────
+7. ÁNH XẠ MOCK HIỆN TẠI → LAYER QUYÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  TransferWebController (Map + TransferUiData)
+    → inject TransferService; bỏ static UiData
+
+  TransferUiData.cases / bindList filter
+    → TransferService.search + countByStatus (+ CatalogPageSupport.size)
+
+  TransferUiData.create / canCreate / candidates
+    → service.create / candidates / preview
+
+  TransferUiData start/complete + Evidence map
+    → service.start / complete + FileStorageService + evidencePath
+
+  SalesDealUiData.transferChecks / saleMilestones / markTransferred
+    → khi có BE Sales: chuyển logic vào service domain tương ứng;
+      tạm thời có thể giữ helper check từ contract entity
+
+────────────────────────────────────────────────────────────────────────────────
+8. STYLE / SYNTAX NHỎ (quan sát commit Quyên)
+────────────────────────────────────────────────────────────────────────────────
+
+  - Import tường minh, không wildcard
+  - 4-space indent; { cùng dòng
+  - final field + @RequiredArgsConstructor
+  - static helper khi không cần state (toDto, generateCode, blankToNull, require…)
+  - Math.max(page, 0) khi PageRequest
+  - Flash tiếng Việt; comment English ngắn trên class/use-case
+  - Optional cho “có thể không có” (evidence, findLatest…)
+  - Map<Enum, Long> cho KPI countByStatus
+  - Controller không gọi Repository trực tiếp
+
+────────────────────────────────────────────────────────────────────────────────
+9. CHECKLIST ÁP DỤNG CHO HỒ SƠ SANG TÊN
+────────────────────────────────────────────────────────────────────────────────
+
+  [ ] TransferCaseRepository + JPQL search/filter deadline/staff/amount
+  [ ] TransferService + Impl (@Transactional, toDto, generateCode ST-%06d)
+  [ ] DTO Response/Request + @Valid trên complete/create nếu có form bean
+  [ ] TransferWebController @RequiredArgsConstructor, chỉ gọi Service
+  [ ] Upload evidence qua FileStorageService; xóa ConcurrentHashMap mock
+  [ ] start gán responsibleParty từ session
+  [ ] complete cập nhật SalesContract.transferred (entity thật)
+  [ ] ResourceNotFoundException / BusinessException đúng chỗ
+  [ ] Giữ HTML list/create/detail/parts hiện tại; đổi model Map → DTO field
+
+================================================================================
+Hết QuyTac3.txt
+================================================================================
