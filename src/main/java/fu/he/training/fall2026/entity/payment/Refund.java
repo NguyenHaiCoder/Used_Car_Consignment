@@ -16,6 +16,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -42,8 +43,20 @@ public class Refund extends BaseEntity {
     @Column(nullable = false, length = 40)
     private RefundStatus status;
 
+    @Nationalized
     @Column(length = 2000)
     private String reason;
+
+    @Nationalized
+    @Column(length = 40)
+    private String method;
+
+    @Column(length = 80)
+    private String referenceCode;
+
+    @Nationalized
+    @Column(length = 80)
+    private String processedByName;
 
     @Column(length = 500)
     private String evidencePath;

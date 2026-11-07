@@ -1,11 +1,18 @@
 package fu.he.training.fall2026.controller.web.finance;
 
-import fu.he.training.fall2026.controller.web.sales.SalesDealUiData;
-import fu.he.training.fall2026.exception.ResourceNotFoundException;
-import java.time.LocalDate;
-import java.util.Map;
+import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
+import fu.he.training.fall2026.dto.finance.DealFilterSupport;
+import fu.he.training.fall2026.dto.finance.PayoutRequest;
+import fu.he.training.fall2026.dto.finance.SettlementFilter;
+import fu.he.training.fall2026.dto.finance.SettlementView;
+import fu.he.training.fall2026.exception.BusinessException;
+import fu.he.training.fall2026.service.SettlementService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,71 +22,75 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Vũ Mạnh Cường: Quyết toán và Chi trả chủ xe của Nhân viên tài chính, chạy trên mock {@link FinanceUiData}, chưa ghi DB.
- * Nháp → Chờ duyệt → Đã duyệt → Đã chi. Quản lý từ chối thì quay về Nháp. Chỉ chi khi đã duyệt.
+ * Vũ Mạnh Cường: Quyết toán và Chi trả chủ xe — Controller → SettlementService → DB.
  */
 @Controller
 @RequestMapping("/finance/settlements")
+@RequiredArgsConstructor
 public class FinanceSettlementWebController {
 
     private static final String BASE = "/finance/settlements";
     private static final String LIST_VIEW = "finance/settlements/list";
     private static final String DETAIL_VIEW = "finance/settlements/detail";
 
+    private final SettlementService settlementService;
+
     @ModelAttribute
     public void dictionaries(Model model) {
-        model.addAttribute("statuses", FinanceUiData.SETTLEMENT_STATUSES);
+        model.addAttribute("statuses", settlementService.statusMeta());
     }
 
     @GetMapping
-    public String list(@RequestParam Map<String, String> params, Model model) {
-        SalesDealUiData.bindList(model, BASE, FinanceUiData.settlements(), "net", "created",
-                FinanceUiData.SETTLEMENT_STATUSES, params);
+    public String list(
+            @ModelAttribute("filter") SettlementFilter filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer size,
+            Model model) {
+        int pageSize = CatalogPageSupport.normalizeSize(size);
+        Page<SettlementView> result = CatalogPageSupport.lastPageIfBeyond(
+                settlementService.search(filter, false, page, pageSize),
+                last -> settlementService.search(filter, false, last, pageSize));
+        DealFilterSupport.bindListModel(model, BASE, filter, pageSize);
+        model.addAttribute("page", result);
+        model.addAttribute("counts", settlementService.countByStatus(false));
+        model.addAttribute("staffs", settlementService.listStaffNames());
         return LIST_VIEW;
     }
 
-    @GetMapping("/{id:\\d+}")
+    @GetMapping("/{id}")
     public String detail(@PathVariable long id, Model model) {
-        Map<String, Object> item = find(id);
+        SettlementView item = settlementService.get(id);
         model.addAttribute("item", item);
-        model.addAttribute("steps", FinanceUiData.settlementSteps(item));
+        model.addAttribute("steps", settlementService.steps(id));
+        model.addAttribute("form", new PayoutRequest());
         return DETAIL_VIEW;
     }
 
-    @PostMapping("/{id:\\d+}/submit")
+    @PostMapping("/{id}/submit")
     public String submit(@PathVariable long id, RedirectAttributes flash) {
-        Map<String, Object> item = find(id);
-        if (FinanceUiData.DRAFT.equals(item.get("status"))) {
-            item.put("status", FinanceUiData.PENDING_REVIEW);
-            item.put("rejectReason", "");
-            flash.addFlashAttribute("flashMessage", "Đã gửi Quản lý duyệt quyết toán " + item.get("code") + ".");
-        }
+        settlementService.submit(id);
+        flash.addFlashAttribute("flashMessage", "Đã gửi Quản lý duyệt quyết toán.");
         return "redirect:" + BASE + "/" + id;
     }
 
-    @PostMapping("/{id:\\d+}/payout")
+    @PostMapping("/{id}/payout")
     public String payout(
             @PathVariable long id,
-            @RequestParam(defaultValue = "") String reference,
+            @Valid @ModelAttribute("form") PayoutRequest form,
+            BindingResult errors,
             RedirectAttributes flash) {
-        Map<String, Object> item = find(id);
-        if (!FinanceUiData.APPROVED.equals(item.get("status"))) {
-            flash.addFlashAttribute("flashError", "Chỉ chi trả khi quyết toán đã được duyệt.");
+        if (errors.hasErrors()) {
+            flash.addFlashAttribute("flashError", errors.getAllErrors().get(0).getDefaultMessage());
             return "redirect:" + BASE + "/" + id;
         }
-        if (reference.isBlank()) {
-            flash.addFlashAttribute("flashError", "Vui lòng nhập mã tham chiếu chi trả.");
-            return "redirect:" + BASE + "/" + id;
+        try {
+            settlementService.payout(id, form);
+            SettlementView item = settlementService.get(id);
+            flash.addFlashAttribute("flashMessage",
+                    "Đã chi trả chủ xe, hồ sơ ký gửi " + item.getFile() + " hoàn thành.");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
         }
-        item.put("status", FinanceUiData.PAID_OUT);
-        item.put("payoutReference", reference.trim());
-        item.put("paidOn", LocalDate.now().toString());
-        SalesDealUiData.completeConsignment(String.valueOf(item.get("car")));
-        flash.addFlashAttribute("flashMessage", "Đã chi trả chủ xe, hồ sơ ký gửi " + item.get("file") + " hoàn thành.");
         return "redirect:" + BASE + "/" + id;
-    }
-
-    private static Map<String, Object> find(long id) {
-        return FinanceUiData.settlement(id).orElseThrow(() -> new ResourceNotFoundException("Quyết toán", id));
     }
 }

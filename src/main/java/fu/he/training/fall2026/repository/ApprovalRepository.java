@@ -47,4 +47,19 @@ public interface ApprovalRepository extends JpaRepository<Approval, Long> {
             @Param("type") ApprovalType type,
             @Param("targetType") String targetType,
             @Param("targetId") Long targetId);
+
+    @Query("""
+            select a from Approval a
+            left join fetch a.approvedBy
+            where a.type = :type
+              and a.targetType = :targetType
+              and a.targetId = :targetId
+              and a.status = :status
+            order by a.id desc
+            """)
+    List<Approval> findDecisions(
+            @Param("type") ApprovalType type,
+            @Param("targetType") String targetType,
+            @Param("targetId") Long targetId,
+            @Param("status") ApprovalStatus status);
 }

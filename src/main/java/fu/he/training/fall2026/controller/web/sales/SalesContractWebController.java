@@ -1,12 +1,15 @@
 package fu.he.training.fall2026.controller.web.sales;
 
+import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
+import fu.he.training.fall2026.service.PaymentService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,17 +22,19 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Đỗ Lan Anh: luồng Hợp đồng bán xe, chạy trên mock trong bộ nhớ ({@link SalesDealUiData}), chưa ghi DB.
- * Chỉ lập được từ phiếu đặt cọc còn hiệu lực (1-1), Sales làm tới bước ký.
- * Từ Thanh toán trở đi là luồng của Vũ Mạnh Cường, nút Thanh toán để sẵn chưa nối.
+ * Nút gửi yêu cầu thu gọi PaymentService (Cường) khi hợp đồng đã có trong DB.
  */
 @Controller
 @RequestMapping("/sales/contracts")
+@RequiredArgsConstructor
 public class SalesContractWebController {
 
     private static final String BASE = "/sales/contracts";
     private static final String LIST_VIEW = "sales/contracts/list";
     private static final String DOC_VIEW = "sales/contracts/create";
     private static final String SIGNATURE_PREFIX = "data:image/png;base64,";
+
+    private final PaymentService paymentService;
 
     @ModelAttribute
     public void dictionaries(Model model) {
@@ -103,9 +108,16 @@ public class SalesContractWebController {
         return finish(contract, flash);
     }
 
-    /** Vũ Mạnh Cường: Sales gửi yêu cầu thu, vì Sales không có quyền mở màn Tài chính. */
+    /** Vũ Mạnh Cường: Sales gửi yêu cầu thu — ưu tiên DB, fallback mock của Lan Anh. */
     @PostMapping("/{id}/payment-request")
     public String requestPayment(@PathVariable long id, RedirectAttributes flash) {
+        try {
+            paymentService.createRequest(id);
+            flash.addFlashAttribute("flashMessage", "Đã gửi yêu cầu thu tiền sang Tài chính.");
+            return "redirect:" + BASE + "/" + id;
+        } catch (ResourceNotFoundException | BusinessException ignored) {
+            // Hợp đồng mock chưa có trong DB — giữ luồng Lan Anh.
+        }
         Map<String, Object> contract = find(id);
         if (SalesDealUiData.SIGNED.equals(contract.get("status"))) {
             SalesDealUiData.requestPayment(contract);
@@ -167,7 +179,7 @@ public class SalesContractWebController {
         return DOC_VIEW;
     }
 
-    /** Ba mốc cuối do luồng khác cập nhật, đủ cả ba thì mới đóng sale. */
+    /** Ba mốc cuối do luồng khác cập nhật, đủ cả ba thì mới hoàn tất giao dịch. */
     private static List<Map<String, String>> steps(Map<String, Object> contract) {
         boolean signed = !String.valueOf(contract.get("signedOn")).isEmpty();
         List<Map<String, String>> steps = new ArrayList<>();

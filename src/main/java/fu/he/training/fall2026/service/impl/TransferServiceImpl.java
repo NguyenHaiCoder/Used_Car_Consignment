@@ -169,7 +169,7 @@ public class TransferServiceImpl implements TransferService {
                 .map(t -> t.getStatus() == TransferStatus.COMPLETED)
                 .orElse(false);
         boolean handedOver = handoverRepository.existsBySalesContractIdAndStatusIn(
-                salesContractId, List.of(HandoverStatus.COMPLETED, HandoverStatus.CLOSED));
+                salesContractId, List.of(HandoverStatus.COMPLETED, HandoverStatus.FINALIZED));
         return List.of(
                 check("Thanh toán", paid ? "Đã thanh toán đủ" : "Chưa thanh toán đủ", paid),
                 check("Sang tên", transferred ? "Đã sang tên" : "Chưa sang tên", transferred),

@@ -357,7 +357,7 @@
         <!--/* Vũ Mạnh Cường: hợp đồng đã ký mới gửi được; Sales không có quyền mở màn Tài chính nên chỉ gửi yêu cầu. */-->
         <button type="submit" class="btn-c btn-c--outline" formnovalidate
                 th:formaction="${contract.id != null} ? @{/sales/contracts/{id}/payment-request(id=${contract.id})}"
-                th:disabled="${contract.status != 'SIGNED'}"
+                th:disabled="${contract.status != 'SIGNED' or contract.paymentRequested}"
                 th:title="${contract.paymentRequested ? 'Đã gửi sang Tài chính' : 'Hợp đồng đã ký mới gửi được'}">
           <svg th:replace="~{shell/icons :: icon('coins')}"></svg>
           <th:block th:text="${contract.paymentRequested ? 'Đã gửi thu tiền' : 'Thanh toán'}">Thanh toán</th:block>

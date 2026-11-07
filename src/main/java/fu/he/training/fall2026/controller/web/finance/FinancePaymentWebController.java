@@ -1,12 +1,22 @@
 package fu.he.training.fall2026.controller.web.finance;
 
-import fu.he.training.fall2026.controller.web.sales.SalesDealUiData;
-import fu.he.training.fall2026.exception.ResourceNotFoundException;
+import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
+import fu.he.training.fall2026.dto.finance.DealFilterSupport;
+import fu.he.training.fall2026.dto.finance.PaymentDealRow;
+import fu.he.training.fall2026.dto.finance.PaymentFilter;
+import fu.he.training.fall2026.dto.finance.ReceiptRequest;
+import fu.he.training.fall2026.dto.finance.RefundRequest;
+import fu.he.training.fall2026.dto.finance.RefundView;
+import fu.he.training.fall2026.exception.BusinessException;
+import fu.he.training.fall2026.service.PaymentService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
 import jakarta.servlet.http.HttpSession;
-import java.util.Map;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,11 +26,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * Vũ Mạnh Cường: Giao dịch thanh toán và Hoàn cọc của Nhân viên tài chính, chạy trên mock {@link FinanceUiData}, chưa ghi DB.
- * Sales gửi yêu cầu thu từ hợp đồng đã ký, Finance ghi nhận tay đến khi đủ. Không làm payOS và webhook.
+ * Vũ Mạnh Cường: Giao dịch thanh toán và Hoàn cọc — Controller → PaymentService → DB.
  */
 @Controller
 @RequestMapping("/finance/payments")
+@RequiredArgsConstructor
 public class FinancePaymentWebController {
 
     private static final String BASE = "/finance/payments";
@@ -28,108 +38,89 @@ public class FinancePaymentWebController {
     private static final String DETAIL_VIEW = "finance/payments/detail";
     private static final String REFUND_VIEW = "finance/refunds/create";
 
+    private final PaymentService paymentService;
+
     @ModelAttribute
     public void dictionaries(Model model) {
-        model.addAttribute("statuses", FinanceUiData.PAYMENT_STATUSES);
-        model.addAttribute("methods", FinanceUiData.METHODS);
+        model.addAttribute("statuses", paymentService.paymentStatusMeta());
+        model.addAttribute("methods", PaymentService.METHODS);
     }
 
     @GetMapping
-    public String list(@RequestParam Map<String, String> params, Model model) {
-        SalesDealUiData.bindList(model, BASE, FinanceUiData.paymentRows(), "amount", "created",
-                FinanceUiData.PAYMENT_STATUSES, params);
+    public String list(
+            @ModelAttribute("filter") PaymentFilter filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer size,
+            Model model) {
+        int pageSize = CatalogPageSupport.normalizeSize(size);
+        Page<PaymentDealRow> result = CatalogPageSupport.lastPageIfBeyond(
+                paymentService.searchDeals(filter, page, pageSize),
+                last -> paymentService.searchDeals(filter, last, pageSize));
+        DealFilterSupport.bindListModel(model, BASE, filter, pageSize);
+        model.addAttribute("page", result);
+        model.addAttribute("counts", paymentService.countDealStatuses());
+        model.addAttribute("staffs", paymentService.listStaffNames());
         return LIST_VIEW;
     }
 
-    @GetMapping("/{id:\\d+}")
+    @GetMapping("/{id}")
     public String detail(@PathVariable long id, Model model) {
-        Map<String, Object> contract = findContract(id);
-        model.addAttribute("item", FinanceUiData.payment(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Giao dịch thanh toán", id)));
-        model.addAttribute("receipts", FinanceUiData.receiptsOf(contract));
-        model.addAttribute("milestones", SalesDealUiData.saleMilestones(contract));
+        PaymentDealRow item = paymentService.getPaymentDeal(id);
+        model.addAttribute("item", item);
+        model.addAttribute("receipts", paymentService.receiptsOf(id));
+        model.addAttribute("milestones", paymentService.saleMilestones(id));
+        model.addAttribute("form", new ReceiptRequest());
         return DETAIL_VIEW;
     }
 
-    @PostMapping("/{id:\\d+}/receipts")
+    @PostMapping("/{id}/receipts")
     public String addReceipt(
             @PathVariable long id,
-            @RequestParam(defaultValue = "") String amount,
-            @RequestParam(defaultValue = "") String method,
-            @RequestParam(defaultValue = "") String reference,
+            @Valid @ModelAttribute("form") ReceiptRequest form,
+            BindingResult errors,
             HttpSession session,
             RedirectAttributes flash) {
-        Map<String, Object> contract = findContract(id);
-        Map<String, Object> item = FinanceUiData.payment(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Giao dịch thanh toán", id));
-        Long value = SalesDealUiData.parseMoney(amount);
-        String error = checkReceipt(value, (Long) item.get("remaining"), method, reference.trim());
-        if (error != null) {
-            flash.addFlashAttribute("flashError", error);
+        if (errors.hasErrors()) {
+            flash.addFlashAttribute("flashError", errors.getAllErrors().get(0).getDefaultMessage());
             return "redirect:" + BASE + "/" + id;
         }
-        FinanceUiData.addReceipt(contract, value, method, reference.trim(), SessionAuthUtils.getFullName(session));
-        boolean paid = Boolean.TRUE.equals(contract.get("paid"));
-        flash.addFlashAttribute("flashMessage", paid
-                ? "Đã thu đủ hợp đồng " + contract.get("code") + "."
-                : "Đã ghi nhận khoản thu " + SalesDealUiData.money(value) + " ₫.");
+        try {
+            paymentService.recordReceipt(id, form, SessionAuthUtils.getFullName(session));
+            boolean paid = paymentService.isPaid(id);
+            flash.addFlashAttribute("flashMessage", paid
+                    ? "Đã thu đủ hợp đồng."
+                    : "Đã ghi nhận khoản thu.");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
+        }
         return "redirect:" + BASE + "/" + id;
     }
 
-    @GetMapping("/refunds/{id:\\d+}")
+    @GetMapping("/refunds/{id}")
     public String refundForm(@PathVariable long id, Model model) {
-        model.addAttribute("item", findRefund(id));
+        model.addAttribute("item", paymentService.getRefund(id));
+        model.addAttribute("form", new RefundRequest());
         return REFUND_VIEW;
     }
 
-    @PostMapping("/refunds/{id:\\d+}")
+    @PostMapping("/refunds/{id}")
     public String refund(
             @PathVariable long id,
-            @RequestParam(defaultValue = "") String method,
-            @RequestParam(defaultValue = "") String reference,
-            @RequestParam(defaultValue = "") String note,
+            @Valid @ModelAttribute("form") RefundRequest form,
+            BindingResult errors,
             HttpSession session,
             RedirectAttributes flash) {
-        Map<String, Object> item = findRefund(id);
-        if (FinanceUiData.REFUNDED.equals(item.get("status"))) {
-            flash.addFlashAttribute("flashError", "Phiếu này đã hoàn cọc.");
+        if (errors.hasErrors()) {
+            flash.addFlashAttribute("flashError", errors.getAllErrors().get(0).getDefaultMessage());
             return "redirect:" + BASE + "/refunds/" + id;
         }
-        String error = checkPaymentInfo(method, reference.trim());
-        if (error != null) {
-            flash.addFlashAttribute("flashError", error);
-            return "redirect:" + BASE + "/refunds/" + id;
+        try {
+            paymentService.processRefund(id, form, SessionAuthUtils.getFullName(session));
+            RefundView item = paymentService.getRefund(id);
+            flash.addFlashAttribute("flashMessage", "Đã ghi nhận hoàn cọc " + item.getCode() + ".");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
         }
-        FinanceUiData.addRefund(id, method, reference.trim(), note.trim(), SessionAuthUtils.getFullName(session));
-        flash.addFlashAttribute("flashMessage", "Đã ghi nhận hoàn cọc " + item.get("code") + ".");
         return "redirect:" + BASE + "/refunds/" + id;
-    }
-
-    private static String checkReceipt(Long amount, long remaining, String method, String reference) {
-        if (amount == null || amount <= 0) {
-            return "Vui lòng nhập số tiền thu.";
-        }
-        if (amount > remaining) {
-            return "Số tiền thu không được lớn hơn số còn lại.";
-        }
-        return checkPaymentInfo(method, reference);
-    }
-
-    private static String checkPaymentInfo(String method, String reference) {
-        if (!FinanceUiData.METHODS.contains(method)) {
-            return "Vui lòng chọn phương thức.";
-        }
-        if (reference.isEmpty()) {
-            return "Vui lòng nhập mã tham chiếu.";
-        }
-        return FinanceUiData.referenceUsed(reference) ? "Mã tham chiếu " + reference + " đã được dùng." : null;
-    }
-
-    private static Map<String, Object> findContract(long id) {
-        return SalesDealUiData.contract(id).orElseThrow(() -> new ResourceNotFoundException("Hợp đồng bán xe", id));
-    }
-
-    private static Map<String, Object> findRefund(long id) {
-        return FinanceUiData.refund(id).orElseThrow(() -> new ResourceNotFoundException("Khoản hoàn cọc", id));
     }
 }

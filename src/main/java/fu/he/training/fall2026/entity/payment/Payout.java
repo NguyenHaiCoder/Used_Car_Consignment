@@ -15,6 +15,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -37,9 +38,11 @@ public class Payout extends BaseEntity {
     @Column(nullable = false, length = 40)
     private PayoutStatus status;
 
+    @Nationalized
     @Column(length = 160)
     private String recipientName;
 
+    @Nationalized
     @Column(length = 120)
     private String bankName;
 

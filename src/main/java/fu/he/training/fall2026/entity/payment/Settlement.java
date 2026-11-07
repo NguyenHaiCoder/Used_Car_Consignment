@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -61,6 +62,7 @@ public class Settlement extends BaseEntity {
     @Column(precision = 18, scale = 2)
     private BigDecimal netPayoutAmount;
 
+    @Nationalized
     @Column(length = 2000)
     private String notes;
 }

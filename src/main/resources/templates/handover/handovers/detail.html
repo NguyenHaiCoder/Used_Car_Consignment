@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!--/* Vũ Mạnh Cường: màn Checklist bàn giao và Đóng sale. Chưa đủ điều kiện thì chỉ xem; sẵn sàng thì nhập checklist và ký hai bên;
-       bàn giao xong có biên nhận và nút Đóng sale. Giữ id contract-create để dùng lại phần ký tên của consignment-contracts.js. */-->
+<!--/* Vũ Mạnh Cường: màn Checklist bàn giao và hoàn tất giao dịch. Chưa đủ điều kiện thì chỉ xem; sẵn sàng thì nhập checklist và ký hai bên;
+       bàn giao xong có biên nhận và nút Hoàn tất giao dịch. Giữ id contract-create để dùng lại phần ký tên của consignment-contracts.js. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${item.code}, 'Bàn giao xe', 'handover-queue',
                     null, ~{::link}, ~{::#contract-create})}">
@@ -22,7 +22,7 @@
 <body>
 <div id="contract-create" class="inq-detail"
      th:with="s=${statuses.get(item.status)}, ready=${item.status == 'READY'},
-              done=${item.status == 'COMPLETED' or item.status == 'CLOSED'}">
+              done=${item.status == 'COMPLETED' or item.status == 'FINALIZED'}">
   <div class="contracts-header">
     <div class="contracts-header-left">
       <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
@@ -42,7 +42,7 @@
         <svg th:replace="~{shell/icons :: icon('file')}"></svg>Biên nhận
       </a>
       <form method="post" th:if="${item.status == 'COMPLETED'}" th:action="@{/handover/handovers/{id}/close(id=${item.id})}">
-        <button class="btn-c btn-c--primary" type="submit">Đóng sale</button>
+        <button class="btn-c btn-c--primary" type="submit">Hoàn tất giao dịch</button>
       </form>
     </div>
   </div>
@@ -148,7 +148,7 @@
     </div>
 
     <aside class="contracts-sidebar transfer-standard">
-      <div th:replace="~{documents/transfers/parts :: column('Mốc đóng sale', 'flow', ${milestones})}"></div>
+      <div th:replace="~{documents/transfers/parts :: column('Mốc hoàn tất', 'flow', ${milestones})}"></div>
     </aside>
   </div>
 </div>

@@ -31,7 +31,8 @@ public final class SalesDealUiData {
 
     static final String DRAFT = "DRAFT";
     static final String SIGNED = "SIGNED";
-    static final String CLOSED = "CLOSED";
+    /** Hợp đồng bán đã hoàn tất giao dịch (vẫn còn giá trị pháp lý). */
+    static final String COMPLETED = "COMPLETED";
 
     static final Map<String, Map<String, String>> HOLD_STATUSES = holdStatuses();
     static final Map<String, Map<String, String>> CONTRACT_STATUSES = contractStatuses();
@@ -58,9 +59,9 @@ public final class SalesDealUiData {
     private static final String LISTED = "LISTED";
     private static final String RESERVED = "RESERVED";
     private static final String SOLD = "SOLD";
-    private static final String COMPLETED = "COMPLETED";
+    private static final String CONSIGNMENT_COMPLETED = "COMPLETED";
     private static final Map<String, String> CONSIGNMENT_NAMES = SalesInquiryUiData.pairs(
-            LISTED, "Đang đăng bán", RESERVED, "Đã đặt cọc", SOLD, "Đã bán", COMPLETED, "Hoàn thành");
+            LISTED, "Đang đăng bán", RESERVED, "Đã đặt cọc", SOLD, "Đã bán", CONSIGNMENT_COMPLETED, "Hoàn thành");
 
     /** Trạng thái hồ sơ ký gửi của từng xe, chưa có thì coi là Đang đăng bán. Khi nối BE đọc Consignment.status. */
     private static final Map<String, String> CONSIGNMENT_STATUS = new ConcurrentHashMap<>();
@@ -163,6 +164,14 @@ public final class SalesDealUiData {
         contract(contractId).ifPresent(c -> c.put("transferred", true));
     }
 
+    /** Khớp theo mã HĐ khi id mock và id DB chưa trùng (cầu nối tạm Sales mock ↔ Sang tên BE). */
+    public static void markTransferredByCode(String code) {
+        if (code == null || code.isBlank()) {
+            return;
+        }
+        CONTRACTS.stream().filter(c -> code.equals(c.get("code"))).forEach(c -> c.put("transferred", true));
+    }
+
     /** Sales gửi yêu cầu thu: hợp đồng chuyển sang Đang thực hiện và hiện bên Tài chính. */
     static void requestPayment(Map<String, Object> contract) {
         contract.put("paymentRequested", true);
@@ -177,17 +186,17 @@ public final class SalesDealUiData {
         contract(contractId).ifPresent(c -> c.put("handedOver", true));
     }
 
-    /** Đủ ba mốc: hợp đồng đóng, hồ sơ ký gửi thành Đã bán. */
+    /** Đủ ba mốc: hợp đồng hoàn tất, hồ sơ ký gửi thành Đã bán. */
     public static void closeSale(long contractId) {
         contract(contractId).ifPresent(c -> {
-            c.put("status", CLOSED);
+            c.put("status", COMPLETED);
             CONSIGNMENT_STATUS.put(String.valueOf(c.get("car")), SOLD);
         });
     }
 
     /** Chi trả chủ xe xong thì hồ sơ ký gửi hoàn thành. */
     public static void completeConsignment(String car) {
-        CONSIGNMENT_STATUS.put(car, COMPLETED);
+        CONSIGNMENT_STATUS.put(car, CONSIGNMENT_COMPLETED);
     }
 
     /** Phiếu cọc đã chọn Hoàn cọc, Tài chính xử lý tiếp. */
@@ -448,10 +457,10 @@ public final class SalesDealUiData {
         contract(207, 111, ACTIVE, "2026-10-27T11:20", true, false, false);
         contract(206, 110, ACTIVE, "2026-10-26T14:10", true, true, false);
         contract(205, 109, ACTIVE, "2026-10-25T10:35", true, false, false);
-        contract(204, 106, CLOSED, "2026-10-21T09:30", true, true, true);
-        contract(203, 105, CLOSED, "2026-10-20T15:15", true, true, true);
+        contract(204, 106, COMPLETED, "2026-10-21T09:30", true, true, true);
+        contract(203, 105, COMPLETED, "2026-10-20T15:15", true, true, true);
         contract(202, 103, CANCELLED, "2026-10-18T10:40", false, false, false);
-        contract(201, 101, CLOSED, "2026-10-16T13:55", true, true, true);
+        contract(201, 101, COMPLETED, "2026-10-16T13:55", true, true, true);
     }
 
     private static void seedConsignmentStatus() {
@@ -460,7 +469,7 @@ public final class SalesDealUiData {
                 .forEach(r -> CONSIGNMENT_STATUS.put(String.valueOf(r.get("car")), RESERVED));
         CONTRACTS.forEach(c -> {
             String car = String.valueOf(c.get("car"));
-            if (CLOSED.equals(c.get("status"))) {
+            if (COMPLETED.equals(c.get("status"))) {
                 CONSIGNMENT_STATUS.put(car, SOLD);
             } else if (CANCELLED.equals(c.get("status"))) {
                 releaseCar(car);
@@ -533,7 +542,7 @@ public final class SalesDealUiData {
         map.put(DRAFT, status("Lưu nháp", "slate", "pencil", "draft"));
         map.put(SIGNED, status("Đã ký", "blue", "handshake", "signed"));
         map.put(ACTIVE, status("Đang thực hiện", "amber", "hourglass", "pending"));
-        map.put(CLOSED, status("Đã đóng sale", "green", "check", "listed"));
+        map.put(COMPLETED, status("Hoàn tất", "green", "check", "listed"));
         map.put(CANCELLED, status("Đã hủy", "red", "close", "sold"));
         return map;
     }

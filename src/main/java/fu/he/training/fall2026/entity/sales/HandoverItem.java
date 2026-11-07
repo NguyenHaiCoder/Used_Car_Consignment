@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -22,12 +23,14 @@ public class HandoverItem extends BaseEntity {
     @JoinColumn(name = "handover_id", nullable = false)
     private Handover handover;
 
+    @Nationalized
     @Column(nullable = false, length = 160)
     private String itemName;
 
     @Column(nullable = false)
     private boolean present;
 
+    @Nationalized
     @Column(length = 1000)
     private String notes;
 }

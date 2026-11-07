@@ -16,6 +16,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -34,6 +35,7 @@ public class PaymentRequest extends BaseEntity {
     @Column(precision = 18, scale = 2, nullable = false)
     private BigDecimal amount;
 
+    @Nationalized
     @Column(length = 40)
     private String purpose;
 

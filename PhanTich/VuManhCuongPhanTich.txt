@@ -1,0 +1,328 @@
+================================================================================
+PHÂN TÍCH NGHIỆP VỤ MÀN HÌNH — TÀI CHÍNH, QUYẾT TOÁN, BÀN GIAO (VŨ MẠNH CƯỜNG)
+Dự án: Used_Car_Consignment (project-group-1-fe)
+Ngày: 2026-11-07
+Vai trò: FINANCE, HANDOVER, MANAGER (riêng màn duyệt quyết toán)
+Home sau login:
+  finance@garagepro.example   → /finance/payments
+  handover@garagepro.example  → /handover/handovers
+  manager@garagepro.example   → /manager/approvals (menu có Duyệt quyết toán)
+Bảo mật: /finance/** → FINANCE, /handover/** → HANDOVER, /manager/** → MANAGER
+Hiện trạng (2026-11-07): ĐÃ NỐI DB. Finance, Bàn giao, Duyệt quyết toán chạy qua Service + Repository.
+  PaymentService, SettlementService, HandoverService (+ Impl). Đã xóa FinanceUiData, HandoverUiData.
+  Đã kiểm thử đủ luồng trên bản sao DB (kho tệp giả lập), trừ đoạn Sales ở dưới.
+
+>>> CÒN THIẾU, PHẢI CHỜ SALES NỐI DB (Đỗ Lan Anh):
+    - Màn Sales vẫn chạy mock SalesDealUiData (hợp đồng 201-213), DB có hợp đồng 2-10, hai bên không thông nhau.
+      Nút Thanh toán trên hợp đồng mock chỉ đổi mock, Finance không thấy gì.
+      PaymentService.createRequest đã test đúng khi gọi với hợp đồng DB.
+    - Chưa ai ghi Reservation.depositDecision ngoài seed: Sales nối DB thì ghi REFUND hoặc KEEP lúc hủy cọc.
+    - Chưa có code thật đưa hợp đồng ký gửi sang ACTIVE (chỉ seed). Hồ sơ không có hợp đồng ACTIVE thì đóng sale báo lỗi, đúng luật 6.3.
+================================================================================
+
+
+0. QUYẾT ĐỊNH NGHIỆP VỤ ĐÃ CHỐT (không tự đổi)
+--------------------------------------------------------------------------------
+1. Tiền cọc là khoản thu đầu tiên. Dòng đầu danh sách khoản thu luôn là "Tiền cọc",
+   Finance chỉ thu phần còn lại.
+2. Quyết toán chỉ mở SAU KHI ĐÓNG SALE, tự tạo ở trạng thái Nháp.
+3. Bàn giao xe bắt buộc đã THU ĐỦ TIỀN và đã SANG TÊN XONG. Thiếu một trong hai là chặn.
+4. Tiền chủ xe nhận = giá bán − hoa hồng − phí cố định, theo hợp đồng ký gửi.
+   Hoa hồng = giá bán × commissionRate%. Phí cố định = fixedFee.
+   Không có chi phí, khoản giữ lại hay ô nhập tay. Số tiền tự tính, không ai sửa được.
+5. Luồng đi thẳng, không có trạng thái vướng mắc (không dùng BLOCKED).
+6. Làm 10 màn thay vì 17 màn (bảng ánh xạ ở mục 7).
+7. Không làm payOS, webhook, QR. Finance ghi nhận tay.
+
+
+1. MENU SIDEBAR (common/sidebar.html)
+--------------------------------------------------------------------------------
+| Vai trò  | Label                | URL                  | active key          |
+|----------|----------------------|----------------------|---------------------|
+| FINANCE  | Giao dịch thanh toán | /finance/payments    | finance-payments    |
+| FINANCE  | Quyết toán & chi trả | /finance/settlements | finance-settlements |
+| HANDOVER | Hàng đợi bàn giao    | /handover/handovers  | handover-queue      |
+| MANAGER  | Duyệt quyết toán     | /manager/settlements | manager-settlements |
+
+Manager có 2 kiểu trang:
+  - Trang cũ (dashboard, approvals, audit, reports): menu lấy từ model "navigation",
+    do AdminUiModelService.appNavigation dựng (đã thêm mục Duyệt quyết toán).
+  - Trang mới: không có "navigation", sidebar dùng khối riêng của MANAGER.
+
+
+2. LUỒNG TỔNG (HAPPY PATH)
+--------------------------------------------------------------------------------
+  Sales ký hợp đồng (SIGNED)
+    → Sales bấm Thanh toán: tạo yêu cầu thu, hợp đồng thành ACTIVE
+    → Finance ghi nhận tới khi đủ: mốc Thanh toán xong
+    → Hồ sơ tạo hồ sơ sang tên và hoàn tất: mốc Sang tên xong (Khang)
+    → Bàn giao: Chờ điều kiện tự thành Sẵn sàng → nhập checklist, ký 2 bên → Đã bàn giao
+    → Đóng sale: hợp đồng CLOSED, hồ sơ ký gửi SOLD, quyết toán tự mở (Nháp)
+    → Finance gửi duyệt → Manager duyệt → Finance chi trả
+    → Hồ sơ ký gửi COMPLETED
+
+Nhánh hủy cọc:
+  Phiếu cọc hủy hoặc hết hạn, Sales chọn Hoàn cọc → hiện dòng "Cần hoàn cọc" ở Finance
+  → Finance ghi nhận hoàn. Chọn Giữ cọc thì không vào Finance.
+
+Nhánh Manager trả lại: quyết toán về Nháp kèm lý do, Finance gửi lại.
+
+
+3. GIAO DỊCH THANH TOÁN (/finance/payments) — màn 64, 63, 65, 66
+--------------------------------------------------------------------------------
+Controller : FinancePaymentWebController
+Service    : PaymentService
+Templates  : finance/payments/{list,detail}.html, finance/refunds/create.html
+CSS/JS     : finance-deals.css, finance-deals.js, sales-deals.js (định dạng tiền)
+
+3.1 Routes
+GET  /finance/payments                     danh sách
+GET  /finance/payments/{id}                chi tiết, {id} = id hợp đồng
+POST /finance/payments/{id}/receipts       ghi nhận khoản thu
+GET  /finance/payments/refunds/{id}        màn hoàn cọc, {id} = id phiếu cọc
+POST /finance/payments/refunds/{id}        ghi nhận hoàn cọc
+
+3.2 Dòng nào hiện trong danh sách
+  - Hợp đồng đã gửi yêu cầu thu (paymentRequested = true), mã TT-{id 6 số}
+  - Phiếu cọc có quyết định REFUND, mã HC-{id 6 số}
+  Hợp đồng SIGNED chưa bấm Thanh toán thì KHÔNG hiện.
+  Phiếu cọc chọn KEEP thì KHÔNG hiện.
+
+3.3 Trạng thái
+| Key UI         | Nhãn         | Điều kiện                 | Khi làm thật              |
+|----------------|--------------|---------------------------|---------------------------|
+| PARTIAL        | Còn phải thu | đã thu < giá bán          | PaymentRequest PARTIAL    |
+| PAID           | Đã thu đủ    | đã thu = giá bán          | PaymentRequest PAID       |
+| REFUND_PENDING | Cần hoàn cọc | có REFUND, chưa hoàn      | Refund PENDING            |
+| REFUNDED       | Đã hoàn cọc  | đã ghi nhận hoàn          | Refund PROCESSED          |
+Vì cọc được tính ngay nên không có trạng thái "chưa thu đồng nào".
+
+3.4 Danh sách
+KPI 4 thẻ theo trạng thái, bấm thẻ thì lọc và bỏ các bộ lọc khác.
+Toolbar: q, nhân viên, khoảng ngày tạo, Lọc nâng cao theo số tiền (triệu đồng), Làm mới.
+Tìm theo: mã, hợp đồng/phiếu, mã hồ sơ, xe, biển số, khách, SĐT.
+Cột: Mã | Hợp đồng, phiếu | Xe | Khách | Số tiền | Còn lại | Người phụ trách | Trạng thái | Thao tác.
+Dòng hoàn cọc hiện "—" ở cột Còn lại. Icon mắt mở chi tiết đúng loại.
+
+3.5 Chi tiết thanh toán
+4 thẻ: Hợp đồng, Giá bán, Đã thu, Còn lại.
+Bảng khoản đã thu: Khoản, Số tiền, Phương thức, Mã tham chiếu, Ngày, Người ghi.
+Dòng đầu: "Tiền cọc", phương thức "Đặt cọc", mã tham chiếu là mã phiếu cọc.
+Cột phải: Mốc đóng sale (Thanh toán, Sang tên, Bàn giao xe).
+Nút Ghi nhận khoản thu chỉ hiện khi còn phải thu, mở hộp thoại:
+  Số tiền* (mặc định bằng số còn lại), Phương thức* (Chuyển khoản, Tiền mặt, Quẹt thẻ),
+  Mã tham chiếu*.
+
+3.6 Luật ghi nhận khoản thu
+  - Số tiền > 0 và không vượt số còn lại
+  - Mã tham chiếu bắt buộc, không trùng (không phân biệt hoa thường),
+    kiểm tra trên cả khoản thu và hoàn cọc
+  - Được thu nhiều lần
+  - Thu đủ thì đánh dấu paid = true trên hợp đồng
+Thông báo:
+  "Số tiền thu không được lớn hơn số còn lại."
+  "Mã tham chiếu X đã được dùng."
+
+3.7 Hoàn cọc
+Hiển thị: Mã phiếu, khách, xe, lý do (trống thì "Hết hạn giữ xe"), Số tiền hoàn.
+Số tiền = đúng tiền cọc, không sửa.
+Nhập: Phương thức*, Mã tham chiếu*, Ghi chú.
+Xong thì khóa, hiện ngày hoàn, phương thức, mã tham chiếu, người ghi.
+Không sửa khoản thu cũ.
+
+
+4. QUYẾT TOÁN VÀ CHI TRẢ (/finance/settlements) — màn 68, 67, 76, 77
+--------------------------------------------------------------------------------
+Controller : FinanceSettlementWebController
+Service    : SettlementService
+Templates  : finance/settlements/{list,detail}.html, finance/settlement-parts.html
+
+4.1 Routes
+GET  /finance/settlements                  danh sách
+GET  /finance/settlements/{id}             chi tiết, {id} = id hợp đồng
+POST /finance/settlements/{id}/submit      gửi Manager duyệt
+POST /finance/settlements/{id}/payout      chi trả
+
+4.2 Trạng thái (enum SettlementStatus)
+DRAFT           Nháp        tự mở khi đóng sale; hoặc Manager trả lại
+PENDING_REVIEW  Chờ duyệt   Finance đã gửi
+APPROVED        Đã duyệt    Manager đã duyệt, được chi
+PAID_OUT        Đã chi      Finance đã chi
+
+Enum có REJECTED nhưng UI không dùng: trả lại thì về DRAFT và giữ lý do.
+
+4.3 Bảng tính
+Giá bán                                 salePrice
+Hoa hồng theo hợp đồng ký gửi (1,5%)    − salePrice × rate / 100
+Phí cố định                             − fixedFee
+Chủ xe nhận                             = net
+Ví dụ: 585.000.000 − 8.775.000 − 0 = 576.225.000
+
+Chủ xe nhận tiền: tên, ngân hàng, số tài khoản đã che, hợp đồng, xe.
+Cột phải Tiến độ quyết toán: Đóng sale, Lập quyết toán, Gửi Quản lý duyệt, Quản lý duyệt, Chi trả.
+Bị trả lại thì hiện "Quản lý đã trả lại: {lý do}", gửi lại thì xóa lý do.
+
+4.4 Nút
+DRAFT:    Gửi Quản lý duyệt
+APPROVED: Chi trả chủ xe → hộp thoại nhập Mã tham chiếu* → PAID_OUT
+PAID_OUT: hiện Lệnh chi (PC-{id}), mã tham chiếu, ngày chi
+Luật: chỉ chi khi APPROVED. Sai thì báo "Chỉ chi trả khi quyết toán đã được duyệt."
+
+
+5. DUYỆT QUYẾT TOÁN (/manager/settlements) — màn 70, 69
+--------------------------------------------------------------------------------
+Controller : ManagerSettlementWebController
+Service    : SettlementService (dùng chung với Finance)
+Templates  : manager/settlements/{list,detail}.html, finance/settlement-parts.html
+
+GET  /manager/settlements
+GET  /manager/settlements/{id}
+POST /manager/settlements/{id}/decide      decision=APPROVED | REJECTED, reason
+
+Không thấy bản nháp: danh sách ẩn, mở trực tiếp ra 404.
+KPI 3 thẻ: Chờ duyệt, Đã duyệt, Đã chi.
+Manager không sửa số tiền, chỉ Duyệt hoặc Trả lại.
+Trả lại bắt buộc có lý do (hộp thoại), xong quay về danh sách.
+Quyết toán đã xử lý thì báo "Quyết toán này đã được xử lý."
+
+
+6. BÀN GIAO XE (/handover/handovers) — màn 72, 74, 75, 73
+--------------------------------------------------------------------------------
+Controller : HandoverWebController
+Service    : HandoverService
+Templates  : handover/handovers/{list,detail,receipt}.html
+JS         : consignment-contracts.js (ký tên), sales-deals.js (gửi chữ ký, in)
+
+6.1 Routes
+GET  /handover/handovers                   danh sách
+GET  /handover/handovers/{id}              checklist, {id} = id hợp đồng
+POST /handover/handovers/{id}/confirm      xác nhận bàn giao
+POST /handover/handovers/{id}/close        đóng sale
+GET  /handover/handovers/{id}/receipt      biên nhận để in
+
+6.2 Trạng thái (suy từ hợp đồng, không nhập tay)
+| Key       | Nhãn          | Điều kiện                                   |
+|-----------|---------------|---------------------------------------------|
+| PENDING   | Chờ điều kiện | chưa thu đủ hoặc chưa sang tên              |
+| READY     | Sẵn sàng      | paid = true và transferred = true           |
+| COMPLETED | Đã bàn giao   | handedOver = true                           |
+| CLOSED    | Đã đóng sale  | hợp đồng CLOSED                             |
+Mỗi hợp đồng đã ký chưa hủy có một dòng, mã BG-{id 6 số}.
+Không dùng HandoverStatus.BLOCKED.
+
+6.3 Checklist
+PENDING: chỉ xem, nói rõ thiếu gì ("Cần thu đủ tiền và sang tên xong.").
+READY: Số km* (mặc định từ hợp đồng), Số chìa khóa*, giấy tờ và phụ kiện giao kèm
+  (Đăng ký xe mới, Sổ bảo hiểm, Sổ bảo dưỡng, Lốp dự phòng, Bộ dụng cụ), Ghi chú,
+  chữ ký nhân viên* và khách*.
+COMPLETED: hiện kết quả, nút Biên nhận, Đóng sale.
+CLOSED: hiện kết quả, nút Biên nhận.
+
+6.4 Luật
+  - Chỉ xác nhận khi READY, kể cả gửi thẳng lên server.
+    Sai thì báo "Chỉ bàn giao khi đã thu đủ tiền và sang tên xong."
+  - Chìa khóa từ 1 trở lên. Thiếu chữ ký thì báo "Cần đủ chữ ký của nhân viên và khách nhận xe."
+  - Chỉ đóng sale khi COMPLETED.
+  - Chưa bàn giao thì không có biên nhận.
+
+6.5 Đóng sale (làm cùng một lúc)
+  - Hợp đồng → CLOSED
+  - Hồ sơ ký gửi → SOLD
+  - Quyết toán tự mở ở trạng thái Nháp
+
+
+7. ÁNH XẠ 17 MÀN → 10 MÀN
+--------------------------------------------------------------------------------
+| STT | Màn trên bảng phân công | Xử lý                                    |
+|-----|-------------------------|------------------------------------------|
+| 64  | Giao dịch thanh toán    | Giữ: finance/payments/list               |
+| 63  | Đối soát giao dịch      | Giữ: finance/payments/detail             |
+| 65  | Ghi nhận khoản thu      | Gộp: hộp thoại trong màn 63              |
+| 66  | Ghi nhận hoàn tiền      | Giữ: finance/refunds/create              |
+| 68  | Quyết toán (list)       | Giữ: finance/settlements/list            |
+| 67  | Quyết toán QT           | Giữ: finance/settlements/detail          |
+| 70  | Manager list            | Giữ: manager/settlements/list            |
+| 69  | Manager review          | Giữ: manager/settlements/detail          |
+| 76  | Chi trả chủ xe          | Gộp: nút trong màn 67                    |
+| 77  | Lệnh chi                | Gộp: thẻ Đã chi trong màn 67             |
+| 72  | Hàng đợi bàn giao       | Giữ: handover/handovers/list             |
+| 74  | Checklist bàn giao      | Giữ: handover/handovers/detail           |
+| 75  | Biên nhận               | Giữ: handover/handovers/receipt          |
+| 73  | Đóng sale               | Gộp: nút trong màn 74                    |
+| 71  | Hàng đợi phía Finance   | Bỏ: mốc đã hiện ở màn thanh toán         |
+| 78  | Tổng quan tài chính     | Bỏ: vào thẳng danh sách                  |
+| 79  | Tổng quan bàn giao      | Bỏ: vào thẳng danh sách                  |
+
+Stub cũ không dùng, chưa xóa:
+  finance/dashboard.html, finance/handovers/list.html, finance/receipts/create.html,
+  finance/payouts/{list,detail}.html, handover/dashboard.html, handover/handovers/close.html
+
+
+8. KẾT NỐI VỚI CÁC LUỒNG KHÁC
+--------------------------------------------------------------------------------
+| Từ            | Sang         | Điểm nối                                        |
+|---------------|--------------|-------------------------------------------------|
+| Lan Anh       | Finance      | Nút Thanh toán trên hợp đồng SIGNED             |
+|               |              | POST /sales/contracts/{id}/payment-request      |
+|               |              | Sales không có quyền mở màn Tài chính           |
+| Lan Anh       | Finance      | Hủy cọc chọn REFUND → dòng Cần hoàn cọc         |
+| Finance       | Khang, Cường | Thu đủ → mốc Thanh toán, bàn giao có thể Sẵn sàng|
+| Khang         | Cường        | TransferCase COMPLETED → HandoverService đọc → Sẵn sàng |
+| Bàn giao      | Lan Anh      | Đóng sale → hợp đồng CLOSED, mốc Bàn giao xong  |
+| Bàn giao      | Quyên        | Đóng sale → Consignment SOLD                    |
+| Bàn giao      | Finance      | Đóng sale → Settlement DRAFT                    |
+| Quyên         | Finance      | Hoa hồng, phí, tài khoản chủ xe                 |
+| Finance       | Quyên        | Chi trả xong → Consignment COMPLETED            |
+| Manager       | Finance      | Duyệt hoặc trả lại quyết toán                   |
+
+Luật liên quan của người khác, không được phá:
+  - Rút ký gửi bị chặn khi xe còn phiếu cọc ACTIVE hoặc hợp đồng chưa hủy
+    (ConsignmentServiceImpl.buyerHoldOf).
+  - Tạo hồ sơ sang tên cần 4 điều kiện (SalesDealUiData.transferChecks).
+    Hoàn tất sang tên KHÔNG chặn theo thanh toán.
+
+
+9. DỮ LIỆU MẪU ĐỂ DEMO (FinanceHandoverSampleDataLoader, chỉ chạy khi chưa có PaymentRequest)
+--------------------------------------------------------------------------------
+| Hợp đồng | Trạng thái | Thu đủ | Sang tên    | Bàn giao      | Quyết toán          |
+|----------|------------|--------|-------------|---------------|---------------------|
+| 5        | ACTIVE     | có     | xong        | Sẵn sàng      | —                   |
+| 6        | CLOSED     | có     | xong        | Đã đóng sale  | QT-000001 Đã duyệt  |
+| 7        | CLOSED     | có     | xong        | Đã đóng sale  | QT-000002 Chờ duyệt |
+| 8        | CLOSED     | có     | xong        | Đã đóng sale  | QT-000003 Đã chi    |
+| 2, 3, 4  | ACTIVE     | mới cọc| chưa xong   | Chờ điều kiện | —                   |
+| 9, 10    | ACTIVE     | mới cọc| chưa có hồ sơ| Chờ điều kiện| —                   |
+
+Hoàn cọc mẫu: một phiếu Hoàn cọc (hiện ở Finance), một phiếu Giữ cọc (không hiện).
+Demo nhanh: handover@ bàn giao HĐ 5 → Đóng sale → finance@ gửi duyệt → manager@ duyệt → finance@ chi trả.
+Bàn giao và hoàn tất sang tên cần key Cloudinary trong .env, thiếu key thì báo lỗi và không ghi gì.
+
+
+10. CHƯA LÀM
+--------------------------------------------------------------------------------
+  - Ba mục "phải chờ Sales" ở đầu file.
+  - Không có audit log, không có tải chứng từ khoản thu, ảnh tình trạng xe.
+  - Không có payOS, webhook.
+  - Hủy hợp đồng chưa làm (đã chốt để sau).
+
+
+11. FILE INDEX (bản UI)
+--------------------------------------------------------------------------------
+controller/web/finance/FinancePaymentWebController.java   
+controller/web/finance/FinanceSettlementWebController.java
+controller/web/manager/ManagerSettlementWebController.java
+controller/web/handover/HandoverWebController.java        
+entity/payment/{PaymentRequest,Payment,Refund,Settlement,Payout}.java
+entity/sales/{Handover,HandoverItem}.java
+templates/finance/payments/{list,detail}.html
+templates/finance/refunds/create.html
+templates/finance/settlements/{list,detail}.html
+templates/finance/settlement-parts.html
+templates/manager/settlements/{list,detail}.html
+templates/handover/handovers/{list,detail,receipt}.html
+static/css/app/finance-deals.css
+static/js/app/finance-deals.js
+Dùng chung, không phải của Cường: sales/deal-parts.html, documents/transfers/parts.html,
+  inspector-news.css/js, sales-deals.css/js, consignment-contracts.css/js
+
+HẾT — VuManhCuongPhanTich.txt

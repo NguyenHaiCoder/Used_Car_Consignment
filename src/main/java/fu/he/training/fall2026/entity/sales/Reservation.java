@@ -64,4 +64,8 @@ public class Reservation extends BaseEntity {
 
     @Column(length = 2000)
     private String cancelReason;
+
+    /** Vũ Mạnh Cường / Đỗ Lan Anh: REFUND = hoàn cọc, KEEP = giữ cọc. */
+    @Column(length = 20)
+    private String depositDecision;
 }

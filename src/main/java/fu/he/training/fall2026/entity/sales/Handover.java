@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.entity.sales;
 
+import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.common.BaseEntity;
 import fu.he.training.fall2026.entity.enums.HandoverStatus;
 import jakarta.persistence.Column;
@@ -8,12 +9,14 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -37,6 +40,7 @@ public class Handover extends BaseEntity {
 
     private Integer keyCount;
 
+    @Nationalized
     @Column(length = 2000)
     private String accessories;
 
@@ -50,6 +54,14 @@ public class Handover extends BaseEntity {
     private String staffSignaturePath;
 
     private Instant handedOverAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "handed_over_by_user_id")
+    private User handedOverBy;
+
+    @Nationalized
+    @Column(length = 2000)
+    private String notes;
 
     @Column(nullable = false)
     private boolean receiptIssued;

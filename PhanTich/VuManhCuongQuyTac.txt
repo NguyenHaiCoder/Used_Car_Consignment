@@ -1,0 +1,528 @@
+================================================================================
+QUY TẮC NGHIỆP VỤ & SYNTAX CODE — VŨ MẠNH CƯỜNG (TÀI CHÍNH, QUYẾT TOÁN, BÀN GIAO)
+Ngày: 2026-11-07
+Đọc cùng: VuManhCuongPhanTich.txt (routes, trạng thái, nút, thông báo)
+Mẫu code thật để bám theo:
+  controller/web/inspector/VehicleTypeCatalogWebController.java
+  service/VehicleTypeService.java, service/impl/VehicleTypeServiceImpl.java
+  repository/VehicleTypeRepository.java, repository/ConsignmentRepository.java
+  dto/inspection/VehicleTypeRequest.java, VehicleTypeResponse.java
+
+HIỆN TRẠNG 2026-11-07: đã nối DB xong phần của Cường, *UiData của Cường đã xóa.
+Phần còn lại phụ thuộc Sales, xem đầu VuManhCuongPhanTich.txt.
+Bài học khi sửa entity (đã từng gây lỗi thật):
+  - String chứa tiếng Việt phải có @Nationalized. Thiếu thì cột là varchar, dấu thành '?',
+    so sánh chuỗi sai âm thầm (từng làm tiền cọc bị cộng hai lần).
+  - ddl-auto update KHÔNG đổi nullable, không đổi kiểu cột, không sửa ràng buộc cũ.
+    Sửa schema trên DB có sẵn thì thêm vào config/FinanceSchemaPatchRunner.java (Flyway không chạy).
+  - Mã nghiệp vụ sinh theo id của chính dòng đó, seed cũng vậy. Trộn id khác sẽ trùng mã, lỗi 500.
+  - Ngày đưa ra template phải là giờ địa phương không có đuôi Z, #temporals.createDateTime không đọc được Instant.
+
+Mục đích: khi nối DB cho /finance, /handover, /manager/settlements thì bám đúng
+  Controller → Service → ServiceImpl → Repository → DTO → Entity.
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ QUY TẮC SỐ 1: LÀM THẬT LÀ PHẢI XÓA BỎ TOÀN BỘ MOCK DATA.                     ║
+║ Bản UI để mock trong package controller chỉ để dựng màn hình.                ║
+║ Làm thật thì không cần mock nữa: không giữ song song, không comment lại,     ║
+║ không để phương án dự phòng. Xem mục 11.                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+LÀM UI: mock để trong package controller, không tạo service, repository.
+LÀM THẬT: không còn class *UiData nào của Cường, controller chỉ gọi service.
+================================================================================
+
+
+1. CẤU TRÚC PACKAGE / ĐẶT TÊN
+--------------------------------------------------------------------------------
+fu.he.training.fall2026
+├── controller.web.finance/    FinancePaymentWebController, FinanceSettlementWebController
+├── controller.web.manager/    ManagerSettlementWebController
+├── controller.web.handover/   HandoverWebController
+├── service/                   PaymentService, RefundService, SettlementService, HandoverService
+├── service/impl/              *ServiceImpl + @Service
+├── repository/                *Repository
+├── dto.finance/               Request, Response, Filter
+├── dto.handover/              Request, Response
+├── entity.payment/, entity.sales/, entity.enums/
+└── exception/                 BusinessException, ResourceNotFoundException
+
+| Loại       | Pattern                  | Ví dụ                       |
+|------------|--------------------------|-----------------------------|
+| Controller | {Khu vực}{Việc}WebController | FinancePaymentWebController |
+| Service    | {Entity}Service / Impl   | SettlementService           |
+| Repository | {Entity}Repository       | SettlementRepository        |
+| DTO form   | {Việc}Request            | ReceiptRequest              |
+| DTO đọc    | {Entity}Response         | SettlementResponse          |
+| DTO lọc    | {Entity}Filter           | PaymentFilter               |
+
+View name = đường dẫn template, giữ nguyên các template hiện có.
+Mã nghiệp vụ:
+  TT-000123 thanh toán   HC-000123 hoàn cọc    QT-000123 quyết toán
+  PC-000123 lệnh chi     BG-000123 bàn giao
+  Tạo code: lưu với "TMP-" + UUID rồi set lại theo id (mẫu ở ConsignmentServiceImpl.createDraft).
+
+
+2. CONTROLLER
+--------------------------------------------------------------------------------
+@Controller
+@RequestMapping("/finance/settlements")
+@RequiredArgsConstructor
+public class FinanceSettlementWebController {
+
+    private static final String BASE = "/finance/settlements";
+    private static final String LIST_VIEW = "finance/settlements/list";
+    private static final String DETAIL_VIEW = "finance/settlements/detail";
+
+    private final SettlementService settlementService;
+
+    @GetMapping
+    public String list(
+            @ModelAttribute("filter") SettlementFilter filter,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) Integer size,
+            Model model) {
+        int pageSize = CatalogPageSupport.normalizeSize(size);
+        Page<SettlementResponse> result = CatalogPageSupport.lastPageIfBeyond(
+                settlementService.search(filter, page, pageSize),
+                last -> settlementService.search(filter, last, pageSize));
+        model.addAttribute("page", result);
+        model.addAttribute("counts", settlementService.countByStatus());
+        model.addAttribute("size", pageSize);
+        return LIST_VIEW;
+    }
+
+    @PostMapping("/{id:\\d+}/payout")
+    public String payout(
+            @PathVariable Long id,
+            @Valid @ModelAttribute PayoutRequest form,
+            BindingResult errors,
+            RedirectAttributes flash) {
+        if (errors.hasErrors()) {
+            flash.addFlashAttribute("flashError", errors.getFieldError().getDefaultMessage());
+            return "redirect:" + BASE + "/" + id;
+        }
+        try {
+            settlementService.payout(id, form, currentUserId());
+            flash.addFlashAttribute("flashMessage", "Đã chi trả chủ xe.");
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
+        }
+        return "redirect:" + BASE + "/" + id;
+    }
+}
+
+Quy tắc:
+- Giữ /{id:\\d+} để URL sai định dạng ra 404, không ra 500.
+- Không viết nghiệp vụ trong controller. Controller chỉ nhận form, gọi service, gắn flash.
+- Không bind entity lên form, luôn dùng *Request.
+- Sau POST luôn redirect (PRG). Flash: flashMessage, flashError.
+- Người thao tác lấy từ SessionAuthUtils.getUserId(session), không nhận từ form.
+- Model list giữ tên: page, counts, q, status, staff, dateFrom, dateTo, amountMin, amountMax,
+  size, staffs, base, statuses. sales/deal-parts.html đang đọc các tên này.
+
+
+3. SERVICE + IMPL
+--------------------------------------------------------------------------------
+public interface SettlementService {
+
+    Page<SettlementResponse> search(SettlementFilter filter, int page, int size);
+
+    Map<SettlementStatus, Long> countByStatus();
+
+    SettlementResponse get(Long id);
+
+    /** @throws BusinessException when the settlement is not a draft */
+    void submit(Long id, Long actorUserId);
+
+    /** @throws BusinessException when the settlement is not waiting for review */
+    void decide(Long id, SettlementDecisionRequest form, Long actorUserId);
+
+    /** @throws BusinessException when the settlement is not approved */
+    void payout(Long id, PayoutRequest form, Long actorUserId);
+}
+
+@Service
+@RequiredArgsConstructor
+public class SettlementServiceImpl implements SettlementService {
+
+    private final SettlementRepository settlementRepository;
+    private final PayoutRepository payoutRepository;
+    private final AuditService auditService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public SettlementResponse get(Long id) {
+        return settlementRepository.findDetailById(id)
+                .map(SettlementServiceImpl::toDto)
+                .orElseThrow(() -> new ResourceNotFoundException("Quyết toán", id));
+    }
+
+    private Settlement load(Long id) {
+        return settlementRepository.findDetailById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Quyết toán", id));
+    }
+
+    private static SettlementResponse toDto(Settlement s) {
+        return SettlementResponse.builder().id(s.getId()).code(s.getCode()).build();
+    }
+}
+
+Quy tắc:
+- Đọc: @Transactional(readOnly = true). Ghi: @Transactional.
+- Không thấy: ResourceNotFoundException("Tên tiếng Việt", id).
+- Sai luật: BusinessException("... tiếng Việt ...", HttpStatus.CONFLICT).
+- Mọi luật phải nằm ở Service. Giao diện ẩn nút chỉ là phụ, gửi thẳng POST vẫn phải bị chặn.
+- Tiền luôn là BigDecimal, không dùng long, double.
+- Thao tác đổi nhiều bảng phải trong cùng một @Transactional.
+- Ghi audit: auditService.record(actor, "PAYOUT_SETTLEMENT", "Settlement", id, code).
+
+
+4. REPOSITORY
+--------------------------------------------------------------------------------
+public interface SettlementRepository extends JpaRepository<Settlement, Long> {
+
+    @Query(value = """
+            select s from Settlement s
+              join fetch s.salesContract c
+              join fetch c.reservation r
+              join fetch r.vehicle v
+            where (:status is null or s.status = :status)
+              and (lower(s.code) like :pattern
+                   or lower(c.code) like :pattern
+                   or lower(v.vin) like :pattern)
+            """,
+            countQuery = """
+            select count(s) from Settlement s
+              join s.salesContract c
+              join c.reservation r
+              join r.vehicle v
+            where (:status is null or s.status = :status)
+              and (lower(s.code) like :pattern
+                   or lower(c.code) like :pattern
+                   or lower(v.vin) like :pattern)
+            """)
+    Page<Settlement> search(@Param("pattern") String pattern,
+                            @Param("status") SettlementStatus status,
+                            Pageable pageable);
+
+    @Query("""
+            select s from Settlement s
+              join fetch s.salesContract c
+              join fetch s.consignmentAgreement a
+            where s.id = :id
+            """)
+    Optional<Settlement> findDetailById(@Param("id") Long id);
+
+    @Query("select s.status, count(s) from Settlement s group by s.status")
+    List<Object[]> countByStatus();
+}
+
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+
+    @Query("select coalesce(sum(p.amount), 0) from Payment p where p.salesContract.id = :contractId")
+    BigDecimal sumCollected(@Param("contractId") Long contractId);
+
+    boolean existsByReferenceCodeIgnoreCase(String referenceCode);
+}
+
+- join fetch cho quan hệ hiện lên UI. countQuery KHÔNG fetch.
+- Lọc nhiều điều kiện dùng Filter object và JPQL như SaleNewsServiceImpl.
+
+
+5. DTO
+--------------------------------------------------------------------------------
+@Getter
+@Setter
+public class ReceiptRequest {
+    @NotNull(message = "Vui lòng nhập số tiền thu.")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Số tiền thu phải lớn hơn 0.")
+    private BigDecimal amount;
+
+    @NotBlank(message = "Vui lòng chọn phương thức.")
+    private String method;
+
+    @NotBlank(message = "Vui lòng nhập mã tham chiếu.")
+    @Size(max = 80, message = "Mã tham chiếu tối đa 80 ký tự.")
+    private String reference;
+}
+
+@Value
+@Builder
+public class SettlementResponse {
+    Long id;
+    String code;
+    String contractCode;
+    String ownerName;
+    BigDecimal salePrice;
+    BigDecimal commission;
+    BigDecimal fee;
+    BigDecimal net;
+    SettlementStatus status;
+}
+
+Ô tiền trên form đang hiện dạng 76.000.000. Khi bind BigDecimal phải bỏ dấu chấm
+trước, hoặc nhận String rồi đổi ở controller.
+
+Template đang đọc Map: item.net, item.buyer... Khi đổi sang Response giữ đúng tên
+thuộc tính thì không phải sửa template. Bảng đổi tên:
+| Template      | Response nên đặt  | Lấy từ                                    |
+|---------------|-------------------|-------------------------------------------|
+| salePrice     | salePrice         | Settlement.baseAmount                     |
+| commission    | commission        | Settlement.commissionAmount               |
+| fee           | fee               | Settlement.feeAmount                      |
+| net           | net               | Settlement.netPayoutAmount                |
+| owner         | owner             | Consignor.fullName                        |
+| bank          | bank              | Consignor.bank                            |
+| account       | account           | che Consignor.accountNumber còn 4 số cuối |
+| staff         | staff             | Reservation.assignedTo.fullName           |
+| car           | car               | Vehicle.getDisplayLabel()                 |
+| plate         | plate             | Vehicle.licensePlate                      |
+| file          | file              | Consignment.code                          |
+| odo           | odo               | Handover.odometerKm                       |
+| keys          | keys              | Handover.keyCount                         |
+| items         | items             | HandoverItem có present = true            |
+| handedOn      | handedOn          | Handover.handedOverAt                     |
+
+
+6. LUẬT NGHIỆP VỤ PHẢI CODE TRONG SERVICE
+--------------------------------------------------------------------------------
+6.1 PaymentService
+createRequest(contractId):
+  - Hợp đồng phải SIGNED
+  - Tạo PaymentRequest(amount = remainingAmount, purpose = "Thanh toán hợp đồng",
+    status = PARTIAL), đổi hợp đồng thành ACTIVE
+
+recordReceipt(contractId, form, actor):
+  remaining = salePrice − paymentRepository.sumCollected(contractId)
+  - amount <= remaining, sai: "Số tiền thu không được lớn hơn số còn lại."
+  - existsByReferenceCodeIgnoreCase(reference), trùng: "Mã tham chiếu X đã được dùng."
+  - Lưu Payment(amount, method, referenceCode, payerName = buyer, paidAt, status = PAID)
+  - Nếu sumCollected == salePrice thì PaymentRequest.status = PAID
+  - Thu đủ KHÔNG tự đổi Handover, Handover đọc từ tổng tiền
+
+Tiền cọc là khoản thu đầu tiên: tạo Payment lúc tạo Reservation, xem mục 8.
+
+6.2 RefundService
+Điều kiện tạo: Reservation CANCELLED hoặc EXPIRED và quyết định là Hoàn cọc.
+  - Refund(payment = Payment của cọc, reservation, amount = depositAmount)
+  - status PENDING → PROCESSED, ghi processedAt
+  - KHÔNG sửa Payment cũ
+  - Giữ cọc thì không tạo Refund
+  - Mỗi Reservation tối đa một Refund
+
+6.3 SettlementService
+openFor(contract), gọi bên trong closeSale:
+  agreement = hợp đồng ký gửi ACTIVE của hồ sơ
+  base = salePrice
+  commission = base × commissionRate / 100, làm tròn 2 số lẻ HALF_UP
+  fee = fixedFee, null thì 0
+  net = base − commission − fee
+  status = DRAFT
+  approvedCostAmount, refundHeldAmount, depositHeldAmount để 0
+
+BigDecimal commission = base.multiply(agreement.getCommissionRate())
+        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+- Không có agreement ACTIVE: báo lỗi, KHÔNG dùng mặc định 1,5%
+- Số tiền chỉ tính một lần, không có form sửa
+
+submit: DRAFT → PENDING_REVIEW, xóa lý do trả lại
+decide:
+  - Chỉ PENDING_REVIEW
+  - APPROVED: ghi người duyệt
+  - REJECTED: bắt buộc lý do, status về DRAFT, lưu lý do vào Settlement.notes
+  - Lưu lịch sử bằng Approval(type = SETTLEMENT, targetType = "Settlement", targetId)
+payout:
+  - Chỉ APPROVED, sai: "Chỉ chi trả khi quyết toán đã được duyệt."
+  - Tạo Payout(amount = net, recipientName, bankName, accountNumberMasked,
+    referenceCode, status = COMPLETED, paidAt)
+  - Settlement PAID_OUT, Consignment COMPLETED
+Manager không được xem DRAFT: search lọc status <> DRAFT, get trả 404.
+
+6.4 HandoverService
+Trạng thái tính khi đọc:
+  paid = sumCollected >= salePrice
+  transferred = TransferCase.status == COMPLETED
+  CLOSED nếu hợp đồng CLOSED; COMPLETED nếu Handover đã xong;
+  READY nếu paid && transferred; còn lại PENDING
+
+confirm(contractId, form, actor):
+  - Kiểm tra lại paid && transferred ngay trong service
+    Sai: "Chỉ bàn giao khi đã thu đủ tiền và sang tên xong."
+  - Tạo Handover và HandoverItem
+  - Chữ ký: fileStorageService.uploadImage rồi lưu path, KHÔNG lưu base64 vào DB
+  - status = COMPLETED, handedOverAt = now, receiptIssued = true
+
+closeSale(contractId, actor), MỘT @Transactional:
+  - Handover phải COMPLETED, kiểm tra lại đủ 3 mốc
+  - SalesContract.status = CLOSED, saleClosed = true
+  - Handover.status = CLOSED, saleCloseChecked = true
+  - Consignment.status = SOLD
+  - settlementService.openFor(contract)
+
+
+7. ENUM
+--------------------------------------------------------------------------------
+| Enum             | Dùng                                | Không dùng         |
+|------------------|-------------------------------------|--------------------|
+| PaymentStatus    | PENDING, PARTIAL, PAID, REFUNDED    | PROCESSING, FAILED |
+| RefundStatus     | PENDING, PROCESSED                  | APPROVED, REJECTED |
+| SettlementStatus | DRAFT, PENDING_REVIEW, APPROVED,    | REJECTED           |
+|                  | PAID_OUT                            |                    |
+| PayoutStatus     | COMPLETED                           | PENDING, PROCESSING|
+|                  |                                     | FAILED             |
+| HandoverStatus   | PENDING, READY, COMPLETED, CLOSED   | BLOCKED            |
+| ContractStatus   | SIGNED → ACTIVE → CLOSED            | CANCELLED chưa làm |
+| ConsignmentStatus| RESERVED → SOLD → COMPLETED         |                    |
+
+Không xóa giá trị enum không dùng: nằm trong CDM và cột DB.
+
+
+8. ENTITY PHẢI SỬA TRƯỚC KHI CODE
+--------------------------------------------------------------------------------
+Sửa entity là vào DB dev ngay (ddl-auto: update, Flyway không chạy). Thông báo nhóm trước.
+
+8.1 VƯỚNG LỚN: cọc thu trước khi có hợp đồng
+  Payment.salesContract đang nullable = false
+  Refund.payment đang nullable = false
+  Khách đặt cọc rồi hủy khi chưa có hợp đồng thì không tạo được Payment, Refund.
+Cách sửa:
+  - Thêm Payment.reservation (ManyToOne, nullable)
+  - Đổi Payment.salesContract thành optional = true, nullable = true
+  - Payment cọc tạo lúc tạo Reservation, gắn reservation
+  - Lập hợp đồng thì set salesContract cho Payment cọc đó
+  - sumCollected tính theo salesContract nên cọc được cộng vào
+
+8.2 Trường còn thiếu
+| Entity       | Thêm                   | Lý do                               |
+|--------------|------------------------|-------------------------------------|
+| Reservation  | depositDecision        | Hoàn cọc hay Giữ cọc (Lan Anh)      |
+| Handover     | handedOverBy (User)    | Người giao xe                       |
+| Handover     | notes                  | Ghi chú bàn giao                    |
+| Settlement   | Không thêm             | Lý do dùng notes, duyệt dùng Approval|
+
+Hoa hồng: ConsignmentAgreement.commissionRate, fixedFee đã có.
+Tài khoản chủ xe: Consignor.bank, accountNumber, accountName đã có.
+Tìm Consignment từ xe: chưa có hàm theo vehicle, thêm vào ConsignmentRepository.
+
+8.3 Điều kiện đầu vào
+  Lan Anh phải nối DB xong Reservation, SalesContract.
+  Khang phải nối DB xong TransferCase.
+  Chưa có thì Cường chưa nối được: mọi entity của Cường cần SalesContract thật.
+
+
+9. THYMELEAF, CSS, JS
+--------------------------------------------------------------------------------
+Giữ nguyên toàn bộ template, chỉ đổi nguồn dữ liệu.
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{shell/layout :: page('Tab', 'Heading', 'menu-active',
+                    null, ~{::link}, ~{::#root-id})}">
+
+Bẫy đã gặp:
+- th:replace chạy TRƯỚC th:if trên cùng một thẻ. Muốn có điều kiện thì bọc:
+    <th:block th:if="${ok}"><svg th:replace="~{shell/icons :: icon('check')}"></svg></th:block>
+- map[var] với tên trần là key chữ. Dùng map.get(var).
+- Danh sách phải vừa một màn hình, bảng cuộn trong khung, pager luôn thấy.
+- Comment: <!--/* Vũ Mạnh Cường: ... */-->   CSS, JS: /* Vũ Mạnh Cường: ... */
+- Màn ký tên giữ id contract-create và form id contract-form.
+  consignment-contracts.js, sales-deals.js dựa vào 2 id này.
+
+
+10. COMMENT / AUTHOR TAG
+--------------------------------------------------------------------------------
+Class, method: /** Vũ Mạnh Cường: ... */
+Chỉ ghi luật nghiệp vụ và hạn chế, không lặp lại tên method.
+Thông báo cho người dùng luôn tiếng Việt.
+Không commit .env, không in key Cloudinary hay mật khẩu DB.
+
+
+11. XÓA MOCK KHI LÀM THẬT (BẮT BUỘC)
+--------------------------------------------------------------------------------
+Thứ tự: viết Entity → Repository → DTO → Service → sửa Controller → XÓA MOCK → test.
+Chưa hoàn thành bước XÓA MOCK thì chưa được coi là xong.
+
+11.1 Xóa hẳn file
+  [ ] controller/web/finance/FinanceUiData.java
+  [ ] controller/web/handover/HandoverUiData.java
+
+11.2 Xóa trong controller
+  [ ] FinancePaymentWebController: mọi FinanceUiData.*, Map<String, Object>,
+      FinanceUiData.METHODS (đổi sang enum hoặc hằng), nhãn trạng thái
+  [ ] FinanceSettlementWebController: mọi FinanceUiData.*, Map
+  [ ] ManagerSettlementWebController: mọi FinanceUiData.*, Map
+  [ ] HandoverWebController: mọi HandoverUiData.*, FinanceUiData.openSettlement,
+      SalesDealUiData.closeSale
+  [ ] Không còn @RequestParam Map<String, String>, đổi sang *Request, *Filter
+  [ ] Không còn gọi SalesDealUiData.bindList, parseMoney, parseId, money
+  [ ] Không còn id = id hợp đồng: dùng id thật của Settlement, Handover, Payment
+
+11.3 Xóa ở phần mock của Sales (phối hợp Lan Anh)
+  [ ] SalesDealUiData: requestPayment, markPaid, markHandedOver, closeSale,
+      completeConsignment, refundableDeposits, saleMilestones
+  [ ] Các khóa mock paymentRequested, paid, transferred, handedOver trên hợp đồng
+  [ ] TransferWebController dùng SalesDealUiData.saleMilestones → đổi sang service thật
+  [ ] Dữ liệu mẫu trong seedContracts, seedReservations
+
+11.4 Xóa trong tài liệu và comment
+  [ ] Comment "mock", "chưa ghi DB" trên controller và template
+  [ ] Dòng đề cập FinanceUiData, HandoverUiData
+  [ ] Stub không dùng: finance/dashboard.html, finance/handovers/list.html,
+      finance/receipts/create.html, finance/payouts/*.html, handover/dashboard.html,
+      handover/handovers/close.html
+
+11.5 Kiểm tra đã sạch mock (phải ra 0 kết quả)
+  grep -rn "UiData" src/main/java/fu/he/training/fall2026/controller/web/finance
+  grep -rn "UiData" src/main/java/fu/he/training/fall2026/controller/web/handover
+  grep -n  "UiData" src/main/java/fu/he/training/fall2026/controller/web/manager/ManagerSettlementWebController.java
+  grep -rln "FinanceUiData\|HandoverUiData" src/main
+
+  Khởi động lại app: dữ liệu vẫn còn. Mất dữ liệu nghĩa là còn mock.
+  DB trống thì màn phải trống, không được còn dòng mẫu.
+
+Không được:
+  - Giữ *UiData "để demo", không comment code mock lại
+  - Không thêm cờ bật tắt mock
+  - Không đổ dữ liệu mock vào DB ở code chính. Cần dữ liệu demo thì viết data loader riêng
+    như AgreementSampleDataLoader và báo nhóm
+
+
+12. THỨ TỰ LÀM
+--------------------------------------------------------------------------------
+1. Kiểm tra Lan Anh, Khang đã nối DB xong
+2. Sửa entity (mục 8), báo nhóm
+3. PaymentService → FinancePaymentWebController
+4. RefundService
+5. HandoverService → HandoverWebController
+6. SettlementService → FinanceSettlementWebController, ManagerSettlementWebController
+7. Nối closeSale gọi SettlementService
+8. Xóa mock (mục 11)
+9. Chạy test và luồng end to end (mục 13)
+
+
+13. KIỂM TRA CUỐI
+--------------------------------------------------------------------------------
+Luồng thật đủ 5 tài khoản:
+  [ ] Hợp đồng SIGNED, bấm Thanh toán, Finance thấy dòng mới
+  [ ] Dòng đầu là Tiền cọc, Còn lại = giá bán − cọc
+  [ ] Thu vượt số còn lại bị từ chối
+  [ ] Trùng mã tham chiếu bị từ chối, không phân biệt hoa thường
+  [ ] Thu nhiều lần đến đủ, chuyển Đã thu đủ
+  [ ] Thu đủ nhưng chưa sang tên: POST confirm bị từ chối
+  [ ] Sang tên xong nhưng chưa thu đủ: POST confirm bị từ chối
+  [ ] Đủ cả hai: Sẵn sàng, thiếu chữ ký bị từ chối, đủ thì Đã bàn giao
+  [ ] Chưa bàn giao: không có biên nhận, không đóng sale được
+  [ ] Đóng sale: contract CLOSED, consignment SOLD, settlement DRAFT cùng lúc
+  [ ] Lỗi giữa chừng khi đóng sale thì không đổi gì (transaction)
+  [ ] Chủ xe nhận = giá bán − hoa hồng − phí, đúng theo agreement của hồ sơ
+  [ ] Chi trả khi chưa duyệt bị từ chối
+  [ ] Manager không thấy nháp, trả lại phải có lý do
+  [ ] Chi trả xong consignment COMPLETED
+  [ ] Hủy cọc chọn Hoàn: có dòng Cần hoàn. Chọn Giữ: không có
+  [ ] Hoàn cọc không sửa Payment cũ
+  [ ] Đổi role: mỗi role không mở được màn của role khác
+  [ ] URL sai định dạng ra 404
+  [ ] Khởi động lại app, dữ liệu vẫn còn
+
+
+HẾT — VuManhCuongQuyTac.txt
