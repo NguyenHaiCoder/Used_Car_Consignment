@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -24,6 +25,7 @@ import lombok.Setter;
 public class Consignment extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 40)
+    @Nationalized
     private String code;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
@@ -44,22 +46,27 @@ public class Consignment extends BaseEntity {
     private LocalDate intakeDate;
 
     @Column(length = 2000)
+    @Nationalized
     private String termNotes;
 
     @Column(length = 160)
+    @Nationalized
     private String custodyLocation;
 
     @Column(nullable = false)
     private boolean ownerConsent;
 
     @Column(length = 2000)
+    @Nationalized
     private String withdrawReason;
 
     private LocalDate withdrawReturnDate;
 
     @Column(length = 2000)
+    @Nationalized
     private String withdrawCondition;
 
     @Column(length = 500)
+    @Nationalized
     private String withdrawEvidencePath;
 }

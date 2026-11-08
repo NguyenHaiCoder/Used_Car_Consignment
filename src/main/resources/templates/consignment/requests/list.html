@@ -29,18 +29,7 @@
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
 
-  <div class="card toolbar toolbar--search">
-    <select id="status-filter" aria-label="Lọc theo trạng thái">
-      <option value="">Tất cả trạng thái</option>
-      <option th:each="name : ${statusNames.values()}" th:text="${name}">Lưu nháp</option>
-    </select>
-    <!--/* Chờ BE: chưa có endpoint export. */-->
-    <button class="btn" type="button" disabled title="Chưa có chức năng export">
-      <svg th:replace="~{shell/icons :: icon('download')}"></svg>Export
-    </button>
-  </div>
-
-  <div class="workflow-grid">
+  <div class="workflow-grid workflow-grid--single">
     <section class="card records">
       <header class="card-head">
         <svg th:replace="~{shell/icons :: icon('list')}"></svg>
@@ -134,32 +123,12 @@
       </div>
     </section>
 
-    <div class="side-stack">
-      <section class="card">
-        <header class="card-head">
-          <svg th:replace="~{shell/icons :: icon('info')}"></svg><h3>Rule notes</h3>
-        </header>
-        <ul class="rules">
-          <li>Hồ sơ phải đủ thông tin xe, giấy tờ và kiểm định trước khi gửi duyệt.</li>
-          <li>Chỉ tài khoản có quyền phê duyệt mới được duyệt/từ chối.</li>
-          <li>Hồ sơ đã duyệt có thể rút ký gửi trước khi đăng bán.</li>
-          <li>Hồ sơ đóng ký gửi không thể chỉnh sửa, chỉ xem thông tin.</li>
-        </ul>
-      </section>
-
-      <section class="card">
-        <header class="card-head">
-          <svg th:replace="~{shell/icons :: icon('flow')}"></svg><h3>Luồng thao tác</h3>
-        </header>
-        <ol class="flow">
-          <li><svg th:replace="~{shell/icons :: icon('file')}"></svg>Lưu nháp</li>
-          <li><svg th:replace="~{shell/icons :: icon('send')}"></svg>Gửi duyệt</li>
-          <li><svg th:replace="~{shell/icons :: icon('hourglass')}"></svg>Chờ phê duyệt</li>
-          <li><svg th:replace="~{shell/icons :: icon('wrench')}"></svg>Đã duyệt</li>
-        </ol>
-      </section>
-    </div>
   </div>
+
+  <select id="status-filter" aria-label="Lọc theo trạng thái">
+    <option value="">Tất cả trạng thái</option>
+    <option th:each="name : ${statusNames.values()}" th:text="${name}">Lưu nháp</option>
+  </select>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net/1.13.6/jquery.dataTables.min.js"></script>

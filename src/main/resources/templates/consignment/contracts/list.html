@@ -47,7 +47,7 @@
     </select>
   </div>
 
-  <div class="workflow-grid">
+  <div class="workflow-grid workflow-grid--single">
     <section class="card records">
       <header class="card-head">
         <svg th:replace="~{shell/icons :: icon('list')}"></svg>
@@ -73,16 +73,14 @@
             <tr th:each="a : ${contracts}"
                 th:with="s=${a.status.name()},
                          expired=${a.expired},
-                         hasRate=${a.commissionRate != null and a.commissionRate.signum() > 0},
-                         hasFee=${a.fixedFee != null and a.fixedFee.signum() > 0}">
+                         hasRate=${a.commissionRate != null and a.commissionRate.signum() > 0}">
               <td>
                 <a class="code" th:href="@{/consignment/contracts/new(consignmentId=${a.consignmentId})}" th:text="${a.code}">HDKG-1</a>
               </td>
               <td><a class="code" th:href="@{/consignments/{id}(id=${a.consignmentId})}" th:text="${a.consignmentCode}">KG-1</a></td>
               <td th:text="${a.consignorName}">Chủ xe</td>
               <td class="num" th:text="${a.priceFloor != null ? #numbers.formatDecimal(a.priceFloor, 0, 'POINT', 0, 'COMMA') + ' đ' : '—'}">—</td>
-              <td class="num" th:text="${hasRate ? a.commissionRate.stripTrailingZeros().toPlainString().replace('.', ',') + '%'
-                                        : (hasFee ? #numbers.formatDecimal(a.fixedFee, 0, 'POINT', 0, 'COMMA') + ' đ' : '—')}">—</td>
+              <td class="num" th:text="${hasRate ? a.commissionRate.stripTrailingZeros().toPlainString().replace('.', ',') + '%': '—'}">—</td>
               <td class="contract-term"
                   th:text="${a.validTo != null ? #temporals.format(a.validTo, 'dd/MM/yyyy') : '—'}">—</td>
               <td>
@@ -122,19 +120,6 @@
       </div>
     </section>
 
-    <aside class="side-stack" aria-label="Quy tắc hợp đồng">
-      <section class="csb-card">
-        <header class="csb-head">
-          <svg th:replace="~{shell/icons :: icon('info')}"></svg>
-          <h4>Quy tắc hợp đồng</h4>
-        </header>
-        <ul class="rules contract-rules">
-          <li>Chỉ lưu nháp mới được sửa và gửi duyệt.</li>
-          <li>Gửi duyệt xong nội dung bị khóa để chờ ký.</li>
-          <li>Chọn hoa hồng theo % hoặc phí cố định, không dùng cả hai.</li>
-        </ul>
-      </section>
-    </aside>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

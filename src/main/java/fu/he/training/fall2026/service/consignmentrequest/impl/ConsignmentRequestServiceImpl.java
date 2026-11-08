@@ -64,6 +64,9 @@ public class ConsignmentRequestServiceImpl implements ConsignmentRequestService 
     public Long create(ConsignmentCreateRequest form) {
         // Chủ xe và xe luôn đi cùng hồ sơ: tạo mới cả ba trong một lần lưu.
         VehicleModelResponse model = vehicleModelService.get(form.getVehicleModelId());
+        if (vehicleRepository.existsByVinIgnoreCase(form.getVin().trim())) {
+            throw new BusinessException("Số khung (VIN) này đã tồn tại trong hệ thống.", HttpStatus.CONFLICT);
+        }
 
         Consignor consignor = new Consignor();
         consignor.setFullName(form.getConsignorName().trim());
@@ -117,6 +120,9 @@ public class ConsignmentRequestServiceImpl implements ConsignmentRequestService 
             throw new BusinessException("Chỉ hồ sơ DRAFT mới được sửa hoặc gửi duyệt.", HttpStatus.CONFLICT);
         }
         VehicleModelResponse model = vehicleModelService.get(form.getVehicleModelId());
+        if (vehicleRepository.existsByVinIgnoreCaseAndIdNot(form.getVin().trim(), consignment.getVehicle().getId())) {
+            throw new BusinessException("Số khung (VIN) này đã tồn tại trong hệ thống.", HttpStatus.CONFLICT);
+        }
 
         Consignor consignor = consignment.getConsignor();
         consignor.setFullName(form.getConsignorName().trim());

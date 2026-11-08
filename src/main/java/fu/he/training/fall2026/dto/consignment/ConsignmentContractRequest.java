@@ -3,6 +3,7 @@ package fu.he.training.fall2026.dto.consignment;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -25,23 +26,23 @@ public class ConsignmentContractRequest {
     @NotNull(message = "Thiếu hồ sơ ký gửi.")
     private Long consignmentId;
 
-    /** Hoa hồng theo % giá bán; nhập một trong hai: hoa hồng % hoặc phí cố định. */
-    @DecimalMin(value = "0.0", message = "Hoa hồng không được âm.")
+    /** Hoa hồng theo % giá bán thực tế (nhóm chỉ xử lý theo %, không còn phí cố định). */
+    @NotNull(message = "Vui lòng nhập hoa hồng theo %.")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Hoa hồng phải lớn hơn 0.")
     @DecimalMax(value = "100.0", message = "Hoa hồng phải từ 0 đến 100%.")
     private BigDecimal commissionRate;
-
-    @DecimalMin(value = "0.0", message = "Phí cố định không được âm.")
-    private BigDecimal fixedFee;
 
     @NotNull(message = "Vui lòng nhập giá sàn của chủ xe.")
     @DecimalMin(value = "0.0", inclusive = false, message = "Giá sàn phải lớn hơn 0.")
     private BigDecimal priceFloor;
 
     @NotNull(message = "Vui lòng chọn ngày bắt đầu hiệu lực.")
+    @FutureOrPresent(message = "Ngày bắt đầu không được ở quá khứ.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate validFrom;
 
     @NotNull(message = "Vui lòng chọn ngày kết thúc hiệu lực.")
+    @FutureOrPresent(message = "Ngày kết thúc không được ở quá khứ.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate validTo;
 
@@ -60,17 +61,9 @@ public class ConsignmentContractRequest {
     /** Bản hợp đồng đã ký (PDF, Word, Excel hoặc ảnh JPG/PNG). Không chọn tệp thì giữ nguyên tệp đã lưu. */
     private MultipartFile signatureEvidence;
 
-    /** BR-03: nhập hoa hồng % hoặc phí cố định, đúng một trong hai. Lỗi hiện ở ô hoa hồng. */
-    @AssertTrue(message = "Nhập hoa hồng theo % hoặc phí cố định (chỉ một trong hai).")
-    public boolean isCommissionChosen() {
-        boolean hasRate = commissionRate != null && commissionRate.signum() > 0;
-        boolean hasFee = fixedFee != null && fixedFee.signum() > 0;
-        return hasRate != hasFee;
-    }
-
-    /** Thời hạn hợp lệ: ngày kết thúc bằng hoặc sau ngày bắt đầu. Lỗi hiện ở ô ngày kết thúc. */
-    @AssertTrue(message = "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.")
+    /** Thời hạn hợp lệ: ngày kết thúc phải sau ngày bắt đầu. Lỗi hiện ở ô ngày kết thúc. */
+    @AssertTrue(message = "Ngày kết thúc phải sau ngày bắt đầu.")
     public boolean isPeriodValid() {
-        return validFrom == null || validTo == null || !validTo.isBefore(validFrom);
+        return validFrom == null || validTo == null || validTo.isAfter(validFrom);
     }
 }

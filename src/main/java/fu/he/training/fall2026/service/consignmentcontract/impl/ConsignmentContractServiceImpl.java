@@ -57,7 +57,6 @@ public class ConsignmentContractServiceImpl implements ConsignmentContractServic
         agreement.setConsignment(consignment);
         agreement.setStatus(AgreementStatus.DRAFT);
         agreement.setCommissionRate(form.getCommissionRate());
-        agreement.setFixedFee(form.getFixedFee());
         agreement.setPriceFloor(form.getPriceFloor());
         agreement.setValidFrom(form.getValidFrom());
         agreement.setValidTo(form.getValidTo());
@@ -78,7 +77,6 @@ public class ConsignmentContractServiceImpl implements ConsignmentContractServic
             throw new BusinessException("Chỉ hợp đồng lưu nháp mới được sửa hoặc gửi duyệt.", HttpStatus.CONFLICT);
         }
         agreement.setCommissionRate(form.getCommissionRate());
-        agreement.setFixedFee(form.getFixedFee());
         agreement.setPriceFloor(form.getPriceFloor());
         agreement.setValidFrom(form.getValidFrom());
         agreement.setValidTo(form.getValidTo());

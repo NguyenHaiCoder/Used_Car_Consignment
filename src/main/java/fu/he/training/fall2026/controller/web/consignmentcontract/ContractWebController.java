@@ -72,7 +72,6 @@ public class ContractWebController {
             // Đã có hợp đồng: điền theo hợp đồng đó.
             form.setId(agreement.getId());
             form.setCommissionRate(agreement.getCommissionRate());
-            form.setFixedFee(agreement.getFixedFee());
             form.setPriceFloor(agreement.getPriceFloor());
             form.setValidFrom(agreement.getValidFrom());
             form.setValidTo(agreement.getValidTo());

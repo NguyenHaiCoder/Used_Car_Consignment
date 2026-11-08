@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.dto.consignment;
 
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
@@ -20,6 +21,8 @@ public class WithdrawRequest {
     @Size(max = 2000, message = "Lý do tối đa 2000 ký tự.")
     private String reason;
 
+    @NotNull(message = "Vui lòng chọn ngày dự kiến trả xe.")
+    @FutureOrPresent(message = "Ngày dự kiến trả xe không được ở quá khứ.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate returnDate;
 
