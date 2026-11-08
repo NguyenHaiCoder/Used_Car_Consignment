@@ -167,7 +167,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .findFirst()
                 .orElseThrow(() -> new BusinessException("Không tìm thấy hồ sơ ký gửi của xe.", HttpStatus.CONFLICT));
         ConsignmentAgreement agreement = agreementRepository
-                .findFirstByConsignmentIdOrderByVersionNoDesc(consignment.getId())
+                .findByConsignmentId(consignment.getId())
                 .filter(a -> a.getStatus() == AgreementStatus.ACTIVE)
                 .orElseThrow(() -> new BusinessException(
                         "Chưa có hợp đồng ký gửi ACTIVE để tính hoa hồng quyết toán.", HttpStatus.CONFLICT));

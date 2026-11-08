@@ -28,7 +28,7 @@ public class AgreementSampleDataLoader implements ApplicationRunner {
             AgreementStatus.DRAFT,
             AgreementStatus.PENDING_SIGNATURE,
             AgreementStatus.ACTIVE,
-            AgreementStatus.EXPIRED,
+            AgreementStatus.ACTIVE,
             AgreementStatus.TERMINATED
     };
 
@@ -51,14 +51,14 @@ public class AgreementSampleDataLoader implements ApplicationRunner {
             AgreementStatus status = DEMO_FLOW[index % DEMO_FLOW.length];
             ConsignmentAgreement agreement = new ConsignmentAgreement();
             agreement.setCode("HDKG-" + String.format("%06d", consignment.getId()));
-            agreement.setVersionNo(1);
             agreement.setConsignment(consignment);
             agreement.setStatus(status);
             agreement.setCommissionRate(new BigDecimal("1.5000"));
             agreement.setFixedFee(BigDecimal.ZERO);
             agreement.setPriceFloor(new BigDecimal("700000000"));
             agreement.setValidFrom(today.minusDays(10));
-            agreement.setValidTo(today.plusDays(status == AgreementStatus.EXPIRED ? -1 : 50));
+            // vị trí thứ 4 trong chu kỳ là ACTIVE đã quá ngày kết thúc → hiện "Hết hạn"
+            agreement.setValidTo(index % DEMO_FLOW.length == 3 ? today.minusDays(1) : today.plusDays(50));
             agreement.setCustodyTerms("Bên B quản lý, trưng bày và chào bán xe trong thời hạn ký gửi.");
             agreement.setTerminationTerms("Chấm dứt trước hạn theo thỏa thuận hai bên hoặc vi phạm điều khoản.");
             agreement.setPayoutTerms("Thanh toán cho chủ xe sau khi giao dịch bán thành công, trừ hoa hồng.");

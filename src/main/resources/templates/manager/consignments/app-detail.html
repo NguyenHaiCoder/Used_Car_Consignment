@@ -29,8 +29,8 @@
     <dl class="facts-grid">
       <div><dt>Mã hồ sơ</dt><dd th:text="${consignment.code}"></dd></div>
       <div><dt>Chủ xe pháp lý</dt><dd th:text="${consignment.consignorName}"></dd></div>
-      <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + (consignment.vehicle.year != null ? ' · ' + consignment.vehicle.year : '')}"></dd></div>
-      <div><dt>VIN</dt><dd th:text="${consignment.vehicle.vin}"></dd></div>
+      <div><dt>Xe</dt><dd th:text="${consignment.displayLabel + (consignment.year != null ? ' · ' + consignment.year : '')}"></dd></div>
+      <div><dt>VIN</dt><dd th:text="${consignment.vin}"></dd></div>
       <div><dt>Giá kỳ vọng</dt><dd th:text="${consignment.expectedPrice != null ? #numbers.formatDecimal(consignment.expectedPrice, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}"></dd></div>
       <div><dt>Ngày tiếp nhận</dt><dd th:text="${consignment.intakeDate != null ? #temporals.format(consignment.intakeDate, 'dd/MM/yyyy') : '—'}"></dd></div>
       <div><dt>Yêu cầu / điều khoản</dt><dd th:text="${consignment.termNotes ?: '—'}"></dd></div>
@@ -44,7 +44,7 @@
     </div>
     <p class="field-hint" style="padding:var(--space-4) var(--space-6)" th:if="${agreement == null}">Chưa có hợp đồng.</p>
     <dl class="facts-grid" th:if="${agreement != null}">
-      <div><dt>Mã, phiên bản</dt><dd th:text="${agreement.code + ' · v' + agreement.versionNo}"></dd></div>
+      <div><dt>Mã hợp đồng</dt><dd th:text="${agreement.code}"></dd></div>
       <div><dt>Hoa hồng</dt>
         <dd th:text="${agreement.commissionRate != null and agreement.commissionRate.signum() > 0
               ? #numbers.formatDecimal(agreement.commissionRate, 1, 'POINT', 2, 'COMMA') + ' % giá bán'
