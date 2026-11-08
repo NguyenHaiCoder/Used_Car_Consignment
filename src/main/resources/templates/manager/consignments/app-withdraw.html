@@ -26,7 +26,7 @@
     </div>
     <dl class="facts-grid">
       <div><dt>Chủ xe</dt><dd th:text="${consignment.consignorName}"></dd></div>
-      <div><dt>Xe</dt><dd th:text="${consignment.vehicle.displayLabel + ' · ' + consignment.vehicle.vin}"></dd></div>
+      <div><dt>Xe</dt><dd th:text="${consignment.displayLabel + ' · ' + consignment.vin}"></dd></div>
     </dl>
   </section>
 

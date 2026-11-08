@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.dto.consignment;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -10,19 +11,21 @@ import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.multipart.MultipartFile;
 
+/** Form tạo / sửa bản thảo hợp đồng ký gửi. */
 @Getter
 @Setter
-public class AgreementRequest {
+public class ConsignmentContractRequest {
 
-    /** Hidden field: empty when creating, the agreement id when editing the draft. */
+    /** Ẩn: trống khi tạo, id hợp đồng khi sửa bản thảo. */
     private Long id;
 
-    /** Hidden field: the consignment this agreement belongs to. */
+    /** Ẩn: hồ sơ ký gửi mà hợp đồng thuộc về. */
     @NotNull(message = "Thiếu hồ sơ ký gửi.")
     private Long consignmentId;
 
-    /** Commission as a percentage of the sale price; fill this or {@code fixedFee}, not both. */
+    /** Hoa hồng theo % giá bán; nhập một trong hai: hoa hồng % hoặc phí cố định. */
     @DecimalMin(value = "0.0", message = "Hoa hồng không được âm.")
     @DecimalMax(value = "100.0", message = "Hoa hồng phải từ 0 đến 100%.")
     private BigDecimal commissionRate;
@@ -54,6 +57,20 @@ public class AgreementRequest {
     @Size(max = 4000, message = "Tối đa 4000 ký tự.")
     private String payoutTerms;
 
-    @Size(max = 500, message = "Tối đa 500 ký tự.")
-    private String signatureEvidencePath;
+    /** Bản hợp đồng đã ký (PDF, Word, Excel hoặc ảnh JPG/PNG). Không chọn tệp thì giữ nguyên tệp đã lưu. */
+    private MultipartFile signatureEvidence;
+
+    /** BR-03: nhập hoa hồng % hoặc phí cố định, đúng một trong hai. Lỗi hiện ở ô hoa hồng. */
+    @AssertTrue(message = "Nhập hoa hồng theo % hoặc phí cố định (chỉ một trong hai).")
+    public boolean isCommissionChosen() {
+        boolean hasRate = commissionRate != null && commissionRate.signum() > 0;
+        boolean hasFee = fixedFee != null && fixedFee.signum() > 0;
+        return hasRate != hasFee;
+    }
+
+    /** Thời hạn hợp lệ: ngày kết thúc bằng hoặc sau ngày bắt đầu. Lỗi hiện ở ô ngày kết thúc. */
+    @AssertTrue(message = "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.")
+    public boolean isPeriodValid() {
+        return validFrom == null || validTo == null || !validTo.isBefore(validFrom);
+    }
 }

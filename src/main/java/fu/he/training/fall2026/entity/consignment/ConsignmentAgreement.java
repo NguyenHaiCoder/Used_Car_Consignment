@@ -6,9 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,11 +25,8 @@ public class ConsignmentAgreement extends BaseEntity {
     @Column(nullable = false, length = 40)
     private String code;
 
-    @Column(nullable = false)
-    private int versionNo;
-
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "consignment_id", nullable = false)
+    @OneToOne(optional = false)
+    @JoinColumn(name = "consignment_id", nullable = false, unique = true)
     private Consignment consignment;
 
     @Enumerated(EnumType.STRING)

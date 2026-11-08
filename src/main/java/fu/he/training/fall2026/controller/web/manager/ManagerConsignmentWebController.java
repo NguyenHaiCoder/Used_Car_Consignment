@@ -2,8 +2,9 @@ package fu.he.training.fall2026.controller.web.manager;
 
 import fu.he.training.fall2026.dto.consignment.ConsignmentResponse;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
-import fu.he.training.fall2026.service.ConsignmentAgreementService;
+import fu.he.training.fall2026.service.consignmentcontract.ConsignmentContractService;
 import fu.he.training.fall2026.service.ConsignmentService;
+import fu.he.training.fall2026.service.consignmentrequest.ConsignmentRequestService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,7 +25,8 @@ public class ManagerConsignmentWebController {
     private static final int PAGE_SIZE = 10;
 
     private final ConsignmentService consignmentService;
-    private final ConsignmentAgreementService agreementService;
+    private final ConsignmentRequestService consignmentRequestService;
+    private final ConsignmentContractService contractService;
 
     /** The shared sidebar reads this list for roles without their own menu; the manager has none here. */
     @ModelAttribute("navigation")
@@ -48,16 +50,16 @@ public class ManagerConsignmentWebController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("consignment", consignmentService.get(id));
-        model.addAttribute("agreement", agreementService.findLatest(id).orElse(null));
+        model.addAttribute("consignment", consignmentRequestService.get(id));
+        model.addAttribute("agreement", contractService.findByConsignment(id).orElse(null));
         model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));
         return "manager/consignments/app-detail";
     }
 
     @GetMapping("/{id}/withdraw")
     public String withdraw(@PathVariable Long id, Model model) {
-        var checks = consignmentService.withdrawChecks(id);
-        model.addAttribute("consignment", consignmentService.get(id));
+        var checks = consignmentRequestService.withdrawChecks(id);
+        model.addAttribute("consignment", consignmentRequestService.get(id));
         // the last check is "no pending request", which only matters to the requester
         model.addAttribute("checks", checks.subList(0, checks.size() - 1));
         model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));

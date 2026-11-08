@@ -1,29 +1,22 @@
 <!DOCTYPE html>
-<!--/* Hà Lệ Quyên: danh sách hợp đồng ký gửi, cùng kiểu giao diện với màn tạo hợp đồng (contracts/create.html).
-       Luồng: DRAFT → PENDING_SIGNATURE → ACTIVE → EXPIRED/TERMINATED.
-       Model: page, counts, total, q, status. Phần "Chờ BE" xem ghi chú bên dưới. */-->
+<!--/* Hà Lệ Quyên: danh sách hợp đồng ký gửi — DataTables tìm kiếm / sắp xếp / phân trang ở trình duyệt.
+       Luồng: DRAFT → PENDING_SIGNATURE → ACTIVE → TERMINATED. "Hết hạn" suy ra từ ngày hết hạn (validTo), không phải trạng thái.
+       Model: contracts (toàn bộ hợp đồng), flashMessage. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Hợp đồng ký gửi', 'Hệ thống Quản lý Ký gửi xe', 'contracts',
                     null, ~{::link}, ~{::#contracts-list})}">
 <head>
   <title>Hợp đồng ký gửi</title>
   <th:block th:fragment="link">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-dt/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
     <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
   </th:block>
 </head>
 <body>
 <div id="contracts-list" class="workflow"
-     th:with="statusNames=${ {'DRAFT':'Bản thảo','PENDING_SIGNATURE':'Chờ ký','ACTIVE':'Hiệu lực','EXPIRED':'Hết hạn','TERMINATED':'Chấm dứt'} },
-              statusNotes=${ {'DRAFT':'Khởi tạo bản thảo','PENDING_SIGNATURE':'Thương lượng điều khoản','ACTIVE':'Đã ký, manager đã duyệt','EXPIRED':'Hết thời hạn hợp đồng','TERMINATED':'Hủy trước thời hạn'} },
-              statusHints=${ {'DRAFT':'Khởi tạo bản thảo hợp đồng','PENDING_SIGNATURE':'Chờ ký, thương lượng, sửa đổi điều khoản','ACTIVE':'Đã ký kết thành công, có hiệu lực pháp lý, manager đã duyệt','EXPIRED':'Hết thời hạn hợp đồng','TERMINATED':'Chấm dứt trước thời hạn / Hủy hợp đồng'} },
-              statusIcons=${ {'DRAFT':'file','PENDING_SIGNATURE':'hourglass','ACTIVE':'shield-check','EXPIRED':'clock','TERMINATED':'box'} },
-              statusTones=${ {'DRAFT':'draft','PENDING_SIGNATURE':'pending','ACTIVE':'approved','EXPIRED':'closed','TERMINATED':'closed'} },
-              draftCount=${#aggregates.sum(counts.entrySet().?[key.name() == 'DRAFT'].![value])},
-              pendingCount=${#aggregates.sum(counts.entrySet().?[key.name() == 'PENDING_SIGNATURE'].![value])},
-              activeCount=${#aggregates.sum(counts.entrySet().?[key.name() == 'ACTIVE'].![value])},
-              endedCount=${#aggregates.sum(counts.entrySet().?[key.name() matches 'EXPIRED|TERMINATED'].![value])},
-              today=${#temporals.createToday()}">
+     th:with="statusNames=${ {'DRAFT':'Lưu nháp','PENDING_SIGNATURE':'Chờ ký','ACTIVE':'Hiệu lực','TERMINATED':'Chấm dứt'} },
+              statusTones=${ {'DRAFT':'draft','PENDING_SIGNATURE':'pending','ACTIVE':'approved','TERMINATED':'closed'} }">
 
   <div class="contracts-header">
     <div class="contracts-header-left">
@@ -38,112 +31,73 @@
       </div>
     </div>
     <div class="contracts-header-actions">
-      <a class="btn-c btn-c--primary" th:href="@{/consignment/contracts/new}">
-        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Tạo hợp đồng
+      <a class="btn-c btn-c--primary" th:href="@{/consignments}">
+        <svg th:replace="~{shell/icons :: icon('plus')}"></svg>Chọn hồ sơ để soạn hợp đồng
       </a>
     </div>
   </div>
 
-  <section class="kpis" aria-label="Thống kê hợp đồng">
-    <article th:replace="~{shell/ui :: kpi('handshake', 'Tổng hợp đồng', ${total})}"></article>
-    <article th:replace="~{shell/ui :: kpi('file', 'Bản thảo', ${draftCount})}"></article>
-    <article th:replace="~{shell/ui :: kpi('hourglass', 'Chờ ký', ${pendingCount})}"></article>
-    <article th:replace="~{shell/ui :: kpi('shield-check', 'Hiệu lực', ${activeCount})}"></article>
-    <article th:replace="~{shell/ui :: kpi('box', 'Đã kết thúc', ${endedCount})}"></article>
-  </section>
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
 
-  <form class="card toolbar" method="get" th:action="@{/consignment/contracts}">
-    <input type="hidden" name="status" th:if="${status != null}" th:value="${status}">
-    <input type="hidden" name="size" th:value="${size}">
-    <label class="search">
-      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
-      <input type="search" name="q" th:value="${q}" aria-label="Tìm hợp đồng"
-             placeholder="Tìm theo mã hợp đồng, mã hồ sơ...">
-    </label>
-    <details class="filter-dropdown">
-      <summary class="filter-dropdown-trigger" aria-label="Lọc theo trạng thái">
-        <svg th:replace="~{shell/icons :: icon('shield')}"></svg>
-        <span th:text="${status != null ? statusNames[status.name()] : 'Trạng thái'}">Trạng thái</span>
-        <span class="filter-dropdown-caret" aria-hidden="true">
-          <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
-        </span>
-      </summary>
-      <div class="filter-dropdown-menu" role="listbox" aria-label="Trạng thái hợp đồng">
-        <a class="filter-dropdown-item" role="option"
-           th:classappend="${status == null} ? 'is-active'"
-           th:href="@{/consignment/contracts(q=${q},size=${size})}"
-           th:attr="aria-selected=${status == null}">Tất cả trạng thái</a>
-        <a class="filter-dropdown-item" role="option" th:each="entry : ${counts}"
-           th:classappend="${entry.key == status} ? 'is-active'"
-           th:href="@{/consignment/contracts(q=${q},status=${entry.key},size=${size})}"
-           th:attr="aria-selected=${entry.key == status}, title=${statusHints[entry.key.name()]}"
-           th:text="${statusNames[entry.key.name()] + ' (' + entry.value + ')'}">Bản thảo</a>
-      </div>
-    </details>
-  </form>
+  <div class="card toolbar toolbar--search" th:unless="${contracts.isEmpty()}">
+    <select id="status-filter" aria-label="Lọc theo trạng thái">
+      <option value="">Tất cả trạng thái</option>
+      <option th:each="name : ${statusNames.values()}" th:text="${name}">Lưu nháp</option>
+      <option>Hết hạn</option>
+    </select>
+  </div>
 
   <div class="workflow-grid">
     <section class="card records">
       <header class="card-head">
         <svg th:replace="~{shell/icons :: icon('list')}"></svg>
-        <h3 th:text="${'Danh sách hợp đồng (' + page.totalElements + ' bản ghi)'}">Danh sách hợp đồng</h3>
+        <h3 th:text="${'Danh sách hợp đồng (' + contracts.size() + ' bản ghi)'}">Danh sách hợp đồng</h3>
       </header>
 
-      <div class="table-wrap" th:unless="${page.empty}">
-        <table class="table">
+      <div class="table-wrap" th:unless="${contracts.isEmpty()}">
+        <table class="table" id="contract-table">
           <caption class="sr-only">Danh sách hợp đồng ký gửi</caption>
           <thead>
             <tr>
               <th scope="col">Số hợp đồng</th>
               <th scope="col">Mã hồ sơ</th>
-              <!--/* Chờ BE: cột Chủ xe và Xe cần repository search() fetch thêm consignment.consignor
-                     và consignment.vehicle; hiện đọc ở đây sẽ lỗi lazy vì open-in-view đang tắt. */-->
+              <th scope="col">Chủ xe</th>
               <th scope="col" class="num">Giá sàn</th>
               <th scope="col" class="num">Hoa hồng</th>
-              <th scope="col">Thời hạn ký gửi</th>
-              <th scope="col">Còn lại</th>
+              <th scope="col">Ngày hết hạn</th>
               <th scope="col">Trạng thái</th>
               <th scope="col">Hành động</th>
             </tr>
           </thead>
           <tbody>
-            <tr th:each="a : ${page.content}"
+            <tr th:each="a : ${contracts}"
                 th:with="s=${a.status.name()},
+                         expired=${a.expired},
                          hasRate=${a.commissionRate != null and a.commissionRate.signum() > 0},
-                         hasFee=${a.fixedFee != null and a.fixedFee.signum() > 0},
-                         daysLeft=${a.validTo != null ? a.validTo.toEpochDay() - today.toEpochDay() : null}">
+                         hasFee=${a.fixedFee != null and a.fixedFee.signum() > 0}">
               <td>
-                <a class="code" th:href="@{/consignment/contracts/{id}(id=${a.id})}" th:text="${a.code}">HDKG-1</a>
-                <small class="contract-version" th:text="${'Phiên bản ' + a.versionNo}">Phiên bản 1</small>
+                <a class="code" th:href="@{/consignment/contracts/new(consignmentId=${a.consignmentId})}" th:text="${a.code}">HDKG-1</a>
               </td>
-              <td><a class="code" th:href="@{/consignments/{id}(id=${a.consignment.id})}" th:text="${a.consignment.code}">KG-1</a></td>
+              <td><a class="code" th:href="@{/consignments/{id}(id=${a.consignmentId})}" th:text="${a.consignmentCode}">KG-1</a></td>
+              <td th:text="${a.consignorName}">Chủ xe</td>
               <td class="num" th:text="${a.priceFloor != null ? #numbers.formatDecimal(a.priceFloor, 0, 'POINT', 0, 'COMMA') + ' đ' : '—'}">—</td>
               <td class="num" th:text="${hasRate ? a.commissionRate.stripTrailingZeros().toPlainString().replace('.', ',') + '%'
                                         : (hasFee ? #numbers.formatDecimal(a.fixedFee, 0, 'POINT', 0, 'COMMA') + ' đ' : '—')}">—</td>
               <td class="contract-term"
-                  th:text="${(a.validFrom != null ? #temporals.format(a.validFrom, 'dd/MM/yyyy') : '—')
-                             + ' → '
-                             + (a.validTo != null ? #temporals.format(a.validTo, 'dd/MM/yyyy') : '—')}">—</td>
+                  th:text="${a.validTo != null ? #temporals.format(a.validTo, 'dd/MM/yyyy') : '—'}">—</td>
               <td>
-                <!--/* Chỉ hợp đồng đang hiệu lực mới cần đếm ngày còn lại. */-->
-                <span class="days-left" th:if="${s == 'ACTIVE' and daysLeft != null}"
-                      th:classappend="${daysLeft < 0 ? 'days-left--over' : (daysLeft <= 7 ? 'days-left--soon' : '')}"
-                      th:text="${daysLeft < 0 ? 'Quá hạn' : daysLeft + ' ngày'}">47 ngày</span>
-                <span class="muted" th:unless="${s == 'ACTIVE' and daysLeft != null}">—</span>
-              </td>
-              <td>
-                <span class="pill" th:classappend="${'pill--' + statusTones[a.status.name()]}"
-                      th:title="${statusHints[a.status.name()]}" th:text="${statusNames[a.status.name()]}">Bản thảo</span>
+                <span class="pill" th:classappend="${'pill--' + (expired ? 'closed' : statusTones.get(s))}"
+                      th:text="${expired ? 'Hết hạn' : statusNames.get(s)}">Lưu nháp</span>
               </td>
               <td>
                 <div class="row-actions">
-                  <a class="row-action" th:href="@{/consignment/contracts/{id}(id=${a.id})}"
+                  <a class="row-action" th:href="@{/consignment/contracts/new(consignmentId=${a.consignmentId})}"
                      th:attr="aria-label=${'Xem ' + a.code}" title="Xem hợp đồng">
                     <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
                   </a>
                   <form th:if="${s == 'DRAFT'}" class="row-action-form" method="post"
                         th:action="@{/consignment/contracts/submit}">
-                    <input type="hidden" name="consignmentId" th:value="${a.consignment.id}">
+                    <input type="hidden" name="consignmentId" th:value="${a.consignmentId}">
                     <button class="row-action" type="submit"
                             th:attr="aria-label=${'Gửi duyệt ' + a.code}" title="Gửi duyệt">
                       <svg th:replace="~{shell/icons :: icon('send')}"></svg>
@@ -151,7 +105,7 @@
                   </form>
                   <span class="row-action is-off" th:unless="${s == 'DRAFT'}" aria-disabled="true"
                         th:attr="aria-label=${'Không gửi duyệt được ' + a.code}"
-                        title="Chỉ bản thảo mới gửi duyệt được">
+                        title="Chỉ lưu nháp mới gửi duyệt được">
                     <svg th:replace="~{shell/icons :: icon('send')}"></svg>
                   </span>
                 </div>
@@ -161,100 +115,61 @@
         </table>
       </div>
 
-      <div class="empty" th:if="${page.empty}">
+      <div class="empty" th:if="${contracts.isEmpty()}">
         <svg th:replace="~{shell/icons :: icon('search')}"></svg>
-        <h4>Không có hợp đồng phù hợp</h4>
-        <p>Thử đổi từ khóa, bỏ bộ lọc hoặc tạo hợp đồng mới.</p>
+        <h4>Chưa có hợp đồng nào</h4>
+        <p>Vào danh sách hồ sơ ký gửi và bấm biểu tượng hợp đồng để soạn hợp đồng mới.</p>
       </div>
-
-      <!--/* Thanh phân trang luôn hiện, nút hết trang chỉ mờ đi để khung table không đổi kích thước. */-->
-      <nav class="pager" aria-label="Phân trang"
-           th:with="last=${page.totalPages > 0 ? page.totalPages - 1 : 0},
-                    from=${page.number > 2 ? page.number - 2 : 0},
-                    to=${page.number + 2 < last ? page.number + 2 : last},
-                    first=${page.number * page.size + 1}">
-        <span th:text="${page.empty ? 'Không có bản ghi' : 'Hiển thị ' + first + '–' + (first + page.numberOfElements - 1) + ' / ' + page.totalElements + ' hợp đồng'}">Hiển thị</span>
-        <div class="pager-side">
-          <div class="pager-meta">
-            <span class="pager-size-label">Hiển thị</span>
-            <details class="filter-dropdown pager-size-dropdown">
-              <summary class="filter-dropdown-trigger" aria-label="Số dòng mỗi trang">
-                <span th:text="${size}">10</span>
-                <span class="filter-dropdown-caret" aria-hidden="true">
-                  <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
-                </span>
-              </summary>
-              <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
-                <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
-                   th:classappend="${n == size} ? 'is-active'"
-                   th:href="@{/consignment/contracts(q=${q},status=${status},page=0,size=${n})}"
-                   th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
-              </div>
-            </details>
-          </div>
-          <div class="pager-links">
-            <a class="page-link" th:if="${page.hasPrevious()}" aria-label="Trang trước"
-               th:href="@{/consignment/contracts(q=${q},status=${status},page=${page.number - 1},size=${size})}">‹</a>
-            <span class="page-link is-off" th:unless="${page.hasPrevious()}" aria-hidden="true">‹</span>
-            <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
-               th:classappend="${n == page.number} ? 'is-active'"
-               th:attr="aria-current=${n == page.number ? 'page' : null}"
-               th:href="@{/consignment/contracts(q=${q},status=${status},page=${n},size=${size})}"
-               th:text="${n + 1}">1</a>
-            <a class="page-link" th:if="${page.hasNext()}" aria-label="Trang sau"
-               th:href="@{/consignment/contracts(q=${q},status=${status},page=${page.number + 1},size=${size})}">›</a>
-            <span class="page-link is-off" th:unless="${page.hasNext()}" aria-hidden="true">›</span>
-          </div>
-        </div>
-      </nav>
     </section>
 
-    <aside class="side-stack" aria-label="Trạng thái và quy tắc hợp đồng">
-      <section class="csb-card">
-        <header class="csb-head">
-          <svg th:replace="~{shell/icons :: icon('flow')}"></svg>
-          <h4>Luồng trạng thái</h4>
-          <a class="csb-reset" th:if="${status != null}" th:href="@{/consignment/contracts(q=${q},size=${size})}">Bỏ lọc</a>
-        </header>
-        <div class="csb-body">
-          <!--/* counts giữ đúng thứ tự enum: 3 bước đầu nối tiếp nhau, 3 mục sau là các kiểu kết thúc nên không nối. */-->
-          <ol class="timeline status-flow">
-            <li th:each="entry, step : ${counts}"
-                th:with="current=${entry.key == status}">
-              <a class="tl-item" th:classappend="${current} ? 'is-current'"
-                 th:attr="aria-current=${current ? 'true' : null}"
-                 th:href="@{/consignment/contracts(q=${q},status=${entry.key},size=${size})}">
-                <span class="tl-line-wrap">
-                  <span class="tl-dot" th:classappend="${current} ? 'current'">
-                    <svg th:replace="~{shell/icons :: icon(${statusIcons[entry.key.name()]})}"></svg>
-                  </span>
-                  <span class="tl-connector" th:if="${step.index < 2}"></span>
-                </span>
-                <span class="tl-text">
-                  <strong th:text="${statusNames[entry.key.name()]}">Bản thảo</strong>
-                  <small th:text="${statusNotes[entry.key.name()]}">Khởi tạo bản thảo</small>
-                </span>
-                <b class="tl-count" th:text="${entry.value}">0</b>
-              </a>
-            </li>
-          </ol>
-        </div>
-      </section>
-
+    <aside class="side-stack" aria-label="Quy tắc hợp đồng">
       <section class="csb-card">
         <header class="csb-head">
           <svg th:replace="~{shell/icons :: icon('info')}"></svg>
           <h4>Quy tắc hợp đồng</h4>
         </header>
         <ul class="rules contract-rules">
-          <li>Chỉ bản thảo mới được gửi duyệt.</li>
+          <li>Chỉ lưu nháp mới được sửa và gửi duyệt.</li>
           <li>Gửi duyệt xong nội dung bị khóa để chờ ký.</li>
-          <li>Luồng chỉnh sửa hợp đồng hiện chưa mở (out of scope).</li>
           <li>Chọn hoa hồng theo % hoặc phí cố định, không dùng cả hai.</li>
         </ul>
       </section>
     </aside>
   </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net/1.13.6/jquery.dataTables.min.js"></script>
+  <script>
+    /* Chưa có hợp đồng → không có bảng, bỏ qua để ô lọc không bị prependTo làm biến mất. */
+    if (jQuery('#contract-table').length) {
+    var table = jQuery('#contract-table').DataTable({
+      order: [],                                                /* giữ thứ tự server trả về (mới nhất trước) */
+      columnDefs: [
+        { orderable: false, searchable: false, targets: [7] }  /* hành động */
+      ],
+      language: {
+        search: 'Tìm kiếm:',
+        lengthMenu: 'Hiển thị _MENU_ dòng',
+        info: 'Hiển thị _START_–_END_ / _TOTAL_ hợp đồng',
+        infoEmpty: 'Không có bản ghi',
+        infoFiltered: '(lọc từ _MAX_ hợp đồng)',
+        zeroRecords: 'Không có hợp đồng phù hợp',
+        paginate: { first: '«', previous: '‹', next: '›', last: '»' }
+      }
+    });
+
+    /* Đưa ô chọn trạng thái vào cạnh ô "Tìm kiếm" của DataTables. */
+    jQuery('#status-filter').css('margin-right', '8px').prependTo('.dataTables_filter');
+    jQuery('.toolbar--search').remove();
+
+    /* Chọn trạng thái → lọc cột 6 (Trạng thái), khớp chính xác nhãn. */
+    jQuery('#status-filter').on('change', function () {
+      var v = this.value;  /* nhãn tiếng Việt, không có ký tự regex đặc biệt */
+      table.column(6).search(v ? '^' + v + '$' : '', true, false).draw();
+    });
+    }
+  </script>
+
 </div>
 </body>
 </html>

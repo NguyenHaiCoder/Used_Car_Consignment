@@ -1,65 +1,10 @@
-/* Hà Lệ Quyên: checklist bắt buộc — đủ hết mới ✓ xanh; thiếu 1 trường → ✕ đỏ. */
+/* Hà Lệ Quyên: form tạo/sửa hồ sơ ký gửi — đồng bộ hãng theo dòng xe, ngày ↔ số ngày hạn ký gửi, xóa ảnh. */
 (() => {
   'use strict';
 
   const root = document.getElementById('create-consignment')
       || document.getElementById('edit-consignment');
   if (!root) return;
-
-  const ICON_DONE = '<path d="M20 6 9 17l-5-5"/>';
-  const ICON_FAIL = '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>';
-
-  function requiredFields(section) {
-    return Array.from(section.querySelectorAll('.field')).filter((field) =>
-      field.querySelector('label .req')
-    );
-  }
-
-  function fieldComplete(field) {
-    const accessories = field.querySelector('.accessories-row');
-    if (accessories) {
-      return accessories.querySelectorAll('input[type="checkbox"]:checked').length > 0;
-    }
-
-    const photos = field.querySelector('.photo-grid');
-    if (photos) {
-      return photos.querySelectorAll('.photo-slot').length > 0;
-    }
-
-    const dateNatives = field.querySelectorAll('.date-range-native');
-    if (dateNatives.length) {
-      return Array.from(dateNatives).every((el) => String(el.value ?? '').trim() !== '');
-    }
-
-    const controls = field.querySelectorAll(
-      'input:not([type="checkbox"]):not([type="hidden"]):not([readonly]):not(.date-range-display), select, textarea'
-    );
-    if (!controls.length) return true;
-    return Array.from(controls).every((el) => String(el.value ?? '').trim() !== '');
-  }
-
-  function sectionComplete(key) {
-    const section = root.querySelector(`[data-check-section="${key}"]`);
-    if (!section) return false;
-    const fields = requiredFields(section);
-    if (!fields.length) return false;
-    return fields.every(fieldComplete);
-  }
-
-  function setItemState(item, ok) {
-    item.classList.toggle('is-done', ok);
-    item.classList.toggle('is-fail', !ok);
-    item.classList.remove('is-pending');
-    const svg = item.querySelector('svg.ic');
-    if (svg) svg.innerHTML = ok ? ICON_DONE : ICON_FAIL;
-  }
-
-  function refreshChecklist() {
-    root.querySelectorAll('[data-create-checklist] [data-check]').forEach((item) => {
-      const key = item.getAttribute('data-check');
-      setItemState(item, sectionComplete(key));
-    });
-  }
 
   function syncBrandFromModel() {
     const modelSelect = root.querySelector('#vehicle-model');
@@ -75,7 +20,6 @@
   if (modelSelect) {
     modelSelect.addEventListener('change', () => {
       syncBrandFromModel();
-      refreshChecklist();
     });
     syncBrandFromModel();
   }
@@ -137,27 +81,18 @@
     wrap.querySelectorAll('[data-term-from], [data-term-to]').forEach((el) => {
       el.addEventListener('change', () => {
         syncTermDaysFromRange(wrap);
-        refreshChecklist();
       });
     });
     wrap.querySelector('[data-term-days-input]')?.addEventListener('input', () => {
       syncTermToFromDays(wrap);
-      refreshChecklist();
     });
   });
-
-  root.addEventListener('input', refreshChecklist);
-  root.addEventListener('change', refreshChecklist);
 
   root.addEventListener('click', (event) => {
     const remove = event.target.closest('.photo-remove');
     if (!remove || !root.contains(remove)) return;
     const slot = remove.closest('.photo-slot');
-    if (slot) {
-      slot.remove();
-      refreshChecklist();
-    }
+    if (slot) slot.remove();
   });
 
-  refreshChecklist();
 })();

@@ -4,6 +4,5 @@ public enum AgreementStatus {
     DRAFT,
     PENDING_SIGNATURE,
     ACTIVE,
-    EXPIRED,
     TERMINATED
 }

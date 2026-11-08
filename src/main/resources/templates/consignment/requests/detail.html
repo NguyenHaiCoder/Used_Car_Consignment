@@ -32,8 +32,6 @@
      th:with="s=${consignment.status.name()},
               statusNames=${ {'DRAFT':'Lưu nháp','SUBMITTED':'Chờ phê duyệt','ACTIVE':'Đã duyệt','INSPECTION_RECEIVED':'Đang kiểm định','INSPECTED':'Đã kiểm định','LISTED':'Đang đăng bán','RESERVED':'Đã đặt cọc','SOLD':'Đã bán','COMPLETED':'Hoàn thành','WITHDRAW_REQUESTED':'Đang yêu cầu rút ký gửi','WITHDRAWN':'Đã rút ký gửi','CLOSED':'Đã đóng ký gửi'} },
               statusTones=${ {'DRAFT':'draft','SUBMITTED':'pending','ACTIVE':'approved','INSPECTION_RECEIVED':'pending','INSPECTED':'approved','LISTED':'approved','RESERVED':'approved','SOLD':'approved','COMPLETED':'closed','WITHDRAW_REQUESTED':'pending','WITHDRAWN':'withdrawn','CLOSED':'closed'} },
-              withdrawNames=${ {'PENDING':'Chờ duyệt','APPROVED':'Đã duyệt','REJECTED':'Từ chối','NEED_MORE_INFO':'Cần bổ sung'} },
-              withdrawTones=${ {'PENDING':'pending','APPROVED':'approved','REJECTED':'closed','NEED_MORE_INFO':'pending'} },
               open=${s != 'SOLD' and s != 'COMPLETED' and s != 'WITHDRAW_REQUESTED' and s != 'WITHDRAWN' and s != 'CLOSED'}">
 
   <div class="contracts-header">
@@ -71,9 +69,9 @@
       <div class="meta-row"><span class="mk">Mã hồ sơ</span><span class="mv code" th:text="${consignment.code}">KG-1</span></div>
       <div class="meta-row"><span class="mk">Chủ xe</span><span class="mv" th:text="${consignment.consignorName}">Chủ xe</span></div>
       <div class="meta-row"><span class="mk">Xe</span>
-        <span class="mv" th:text="${consignment.vehicle.displayLabel + (consignment.vehicle.year != null ? ' · ' + consignment.vehicle.year : '')}">Xe</span>
+        <span class="mv" th:text="${consignment.displayLabel + (consignment.year != null ? ' · ' + consignment.year : '')}">Xe</span>
       </div>
-      <div class="meta-row"><span class="mk">VIN</span><span class="mv" th:text="${consignment.vehicle.vin}">VIN</span></div>
+      <div class="meta-row"><span class="mk">VIN</span><span class="mv" th:text="${consignment.vin}">VIN</span></div>
     </div>
     <div class="detail-actions" th:if="${s == 'DRAFT'}">
       <form method="post" th:action="@{/consignments/submit}">
@@ -92,16 +90,16 @@
         <h4>A. Thông tin chủ xe</h4>
       </header>
       <div class="csb-body">
-        <div class="meta-row"><span class="mk">Họ tên</span><span class="mv" th:text="${consignor.fullName}">Chủ xe</span></div>
-        <div class="meta-row"><span class="mk">Số điện thoại</span><span class="mv" th:text="${consignor.phone}">—</span></div>
-        <div class="meta-row"><span class="mk">CCCD</span><span class="mv" th:text="${consignor.idNumber}">—</span></div>
-        <div class="meta-row"><span class="mk">Email</span><span class="mv" th:text="${consignor.email ?: '—'}">—</span></div>
-        <div class="meta-row"><span class="mk">Địa chỉ</span><span class="mv" th:text="${consignor.address ?: '—'}">—</span></div>
-        <div class="meta-row"><span class="mk">Ngân hàng</span><span class="mv" th:text="${consignor.bank}">—</span></div>
-        <div class="meta-row"><span class="mk">Số tài khoản</span><span class="mv" th:text="${consignor.accountNumber}">—</span></div>
-        <div class="meta-row"><span class="mk">Chủ tài khoản</span><span class="mv" th:text="${consignor.accountName}">—</span></div>
+        <div class="meta-row"><span class="mk">Họ tên</span><span class="mv" th:text="${consignment.consignorName}">Chủ xe</span></div>
+        <div class="meta-row"><span class="mk">Số điện thoại</span><span class="mv" th:text="${consignment.phone}">—</span></div>
+        <div class="meta-row"><span class="mk">CCCD</span><span class="mv" th:text="${consignment.idNumber}">—</span></div>
+        <div class="meta-row"><span class="mk">Email</span><span class="mv" th:text="${consignment.email ?: '—'}">—</span></div>
+        <div class="meta-row"><span class="mk">Địa chỉ</span><span class="mv" th:text="${consignment.address ?: '—'}">—</span></div>
+        <div class="meta-row"><span class="mk">Ngân hàng</span><span class="mv" th:text="${consignment.bank}">—</span></div>
+        <div class="meta-row"><span class="mk">Số tài khoản</span><span class="mv" th:text="${consignment.accountNumber}">—</span></div>
+        <div class="meta-row"><span class="mk">Chủ tài khoản</span><span class="mv" th:text="${consignment.accountName}">—</span></div>
         <div class="meta-row"><span class="mk">Đồng ý lưu thông tin</span>
-          <span class="mv" th:text="${consignor.consentStored ? 'Đã xác nhận' : 'Chưa xác nhận'}">Đã xác nhận</span>
+          <span class="mv" th:text="${consignment.consentStored ? 'Đã xác nhận' : 'Chưa xác nhận'}">Đã xác nhận</span>
         </div>
       </div>
     </section>
@@ -112,15 +110,15 @@
         <h4>B. Thông tin xe</h4>
       </header>
       <div class="csb-body"
-           th:with="v=${consignment.vehicle},
+           th:with="v=${consignment},
                     makeText=${v.make ?: #strings.substringBefore(v.displayLabel + ' ', ' ')},
                     modelText=${v.model ?: v.displayLabel},
                     colorText=${v.color ?: 'Xanh dương'},
                     odoText=${v.odometerKm != null ? #numbers.formatInteger(v.odometerKm, 1, 'POINT') + ' km' : '38.650 km'},
                     engineText=${v.engineNumber ?: 'G4NLMN123456'},
-                    chassisText=${v.chassisNumber ?: v.vin}">
+                    chassisText=${v.vin}">
         <p class="section-note">Thông tin xe gắn với hồ sơ lúc tạo / tiếp nhận.</p>
-        <div class="meta-row"><span class="mk">Biển số</span><span class="mv">51H-678.90</span></div>
+        <div class="meta-row"><span class="mk">Biển số</span><span class="mv" th:text="${v.licensePlate ?: '—'}">—</span></div>
         <div class="meta-row"><span class="mk">Dòng xe</span><span class="mv" th:text="${modelText}">Xe</span></div>
         <div class="meta-row"><span class="mk">Hãng xe</span><span class="mv" th:text="${makeText}">Hãng</span></div>
         <div class="meta-row"><span class="mk">Năm sản xuất</span>
@@ -159,7 +157,7 @@
     <section class="csb-card">
       <header class="csb-head">
         <svg th:replace="~{shell/icons :: icon('handshake')}"></svg>
-        <h4>D. Thỏa thuận ký gửi</h4>
+        <h4>D. Thông tin ký gửi</h4>
       </header>
       <div class="csb-body">
         <div class="meta-row"><span class="mk">Giá mong muốn</span>
@@ -169,9 +167,6 @@
           <span class="mv"
                th:text="${listingPriceText != null and !#strings.isEmpty(listingPriceText) ? listingPriceText + ' ₫' : '—'}">—</span>
         </div>
-        <div class="meta-row"><span class="mk">Hoa hồng</span><span class="mv">1,5 %</span></div>
-        <div class="meta-row"><span class="mk">Thời hạn ký gửi</span><span class="mv">15/01/2025 → 15/03/2025</span></div>
-        <div class="meta-row"><span class="mk">Số ngày ký gửi</span><span class="mv">60 ngày</span></div>
         <div class="meta-row"><span class="mk">Điều khoản / ghi chú</span>
           <span class="mv" th:text="${consignment.termNotes ?: '—'}">—</span>
         </div>
@@ -182,29 +177,6 @@
     </section>
   </div>
 
-  <section class="csb-card" th:if="${withdrawRequest != null}">
-    <header class="csb-head">
-      <svg th:replace="~{shell/icons :: icon('undo')}"></svg>
-      <h4>Yêu cầu rút hồ sơ</h4>
-      <span class="pill"
-            th:with="ws=${withdrawRequest.status != null ? withdrawRequest.status.name() : 'PENDING'}"
-            th:classappend="${'pill--' + (withdrawTones[ws] ?: 'pending')}"
-            th:text="${withdrawNames[ws] ?: 'Chờ duyệt'}">Chờ duyệt</span>
-    </header>
-    <div class="csb-body">
-      <div class="meta-row"><span class="mk">Lý do</span><span class="mv" th:text="${withdrawRequest.reason}">—</span></div>
-      <div class="meta-row"><span class="mk">Người gửi</span><span class="mv" th:text="${withdrawRequest.requestedByName}">—</span></div>
-      <div class="meta-row"><span class="mk">Thời điểm gửi</span>
-        <span class="mv" th:text="${#temporals.format(withdrawRequest.createdAt, 'dd/MM/yyyy HH:mm')}">—</span>
-      </div>
-      <div class="meta-row"><span class="mk">Ngày dự kiến trả xe</span>
-        <span class="mv" th:text="${withdrawRequest.returnDate != null ? #temporals.format(withdrawRequest.returnDate, 'dd/MM/yyyy') : '—'}">—</span>
-      </div>
-    </div>
-    <div class="detail-actions">
-      <a class="btn-c btn-c--outline" th:href="@{/consignments/{id}/withdraw(id=${consignment.id})}">Xem yêu cầu rút</a>
-    </div>
-  </section>
 </div>
 </body>
 </html>
