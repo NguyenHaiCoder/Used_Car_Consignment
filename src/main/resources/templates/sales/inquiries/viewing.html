@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<!--/* Đỗ Lan Anh: Màn Đặt lịch xem xe và Đổi lịch xem xe. Có biến viewing là đang đổi lịch.
-       Đổi xong lịch quay về Đã đặt, Sales phải xác nhận lại với khách. */-->
+<!--/* Đỗ Lan Anh: Màn Đặt lịch xem xe và Đổi lịch xem xe. Có biến viewing là đang đổi lịch. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${viewing != null ? 'Đổi lịch xem xe' : 'Đặt lịch xem xe'}, 'Kinh doanh', 'sales-inquiries',
                     null, ~{::link}, ~{::#inquiry-viewing})}">
@@ -33,9 +32,11 @@
     </div>
   </div>
 
-  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
+  <form class="inq-form" method="post" th:action="@{${action}}" th:object="${form}" novalidate>
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}"
+       th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+    <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
 
-  <form class="inq-form" method="post" th:action="@{${action}}">
     <div class="inq-viewing-grid">
       <section class="section-card">
         <div class="section-head">
@@ -46,55 +47,59 @@
           <div class="form-row form-row--2">
             <div class="field">
               <label for="v-date-display">Ngày hẹn <span class="req">*</span></label>
-              <!--/* shell.js hiện dd/mm/yyyy và mở lịch; ô native giữ giá trị yyyy-MM-dd để gửi đi */-->
               <div class="date-range" data-date-range lang="vi-VN">
                 <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
                 <label class="date-range-field">
                   <span class="sr-only">Ngày hẹn</span>
                   <input class="date-range-display" id="v-date-display" type="text" inputmode="numeric" maxlength="10"
                          placeholder="dd/mm/yyyy" autocomplete="off">
-                  <input class="date-range-native" type="date" name="date" required lang="vi-VN"
-                         th:min="${today}" th:value="${form['date']}" tabindex="-1" aria-hidden="true">
+                  <input class="date-range-native" type="date" th:field="*{date}" lang="vi-VN"
+                         th:min="${today}" tabindex="-1" aria-hidden="true"
+                         th:classappend="${#fields.hasErrors('date')} ? 'is-invalid'">
                 </label>
               </div>
+              <span class="field-error" th:if="${#fields.hasErrors('date')}" th:errors="*{date}"></span>
             </div>
             <div class="field">
               <label for="v-time">Giờ bắt đầu <span class="req">*</span></label>
-              <span class="select">
-                <select id="v-time" name="time" required>
-                  <option th:each="s : ${slots}" th:value="${s}" th:text="${s}" th:selected="${s == form['time']}">09:00</option>
+              <span class="select" th:classappend="${#fields.hasErrors('time')} ? 'is-invalid'">
+                <select id="v-time" th:field="*{time}">
+                  <option th:each="s : ${slots}" th:value="${s}" th:text="${s}">09:00</option>
                 </select>
               </span>
+              <span class="field-error" th:if="${#fields.hasErrors('time')}" th:errors="*{time}"></span>
             </div>
             <div class="field">
               <label for="v-minutes">Thời lượng</label>
               <span class="select">
-                <select id="v-minutes" name="minutes">
-                  <option th:each="d : ${durations}" th:value="${d}" th:text="${d + ' phút'}"
-                          th:selected="${d.toString() == form['minutes']}">45 phút</option>
+                <select id="v-minutes" th:field="*{minutes}">
+                  <option th:each="d : ${durations}" th:value="${d}" th:text="${d + ' phút'}">45 phút</option>
                 </select>
               </span>
+              <span class="field-error" th:if="${#fields.hasErrors('minutes')}" th:errors="*{minutes}"></span>
             </div>
             <div class="field">
               <label for="v-place">Địa điểm <span class="req">*</span></label>
-              <span class="select">
-                <select id="v-place" name="place" required>
-                  <option th:each="p : ${places}" th:value="${p}" th:text="${p}" th:selected="${p == form['place']}">Showroom</option>
+              <span class="select" th:classappend="${#fields.hasErrors('place')} ? 'is-invalid'">
+                <select id="v-place" th:field="*{place}">
+                  <option th:each="p : ${places}" th:value="${p}" th:text="${p}">Showroom</option>
                 </select>
               </span>
+              <span class="field-error" th:if="${#fields.hasErrors('place')}" th:errors="*{place}"></span>
             </div>
           </div>
           <fieldset class="inq-need inq-need--2">
             <legend>Loại lịch <span class="req">*</span></legend>
             <label th:each="t : ${viewingTypes}">
-              <input type="radio" name="type" th:value="${t.key}" th:checked="${t.key == form['type']}" required>
+              <input type="radio" th:field="*{type}" th:value="${t.key}">
               <span th:text="${t.value}">Loại</span>
             </label>
+            <span class="field-error" th:if="${#fields.hasErrors('type')}" th:errors="*{type}"></span>
           </fieldset>
           <div class="field">
             <label for="v-note">Ghi chú lịch</label>
-            <textarea class="field-textarea" id="v-note" name="viewingNote" rows="3" maxlength="1000"
-                      th:text="${form['viewingNote'] ?: form['note']}" placeholder="Ví dụ: khách đi cùng gia đình"></textarea>
+            <textarea class="field-textarea" id="v-note" th:field="*{note}" rows="3" maxlength="1000"
+                      placeholder="Ví dụ: khách đi cùng gia đình"></textarea>
           </div>
         </div>
       </section>

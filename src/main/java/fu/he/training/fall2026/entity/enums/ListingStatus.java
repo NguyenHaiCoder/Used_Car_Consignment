@@ -5,6 +5,8 @@ public enum ListingStatus {
     READY,
     LISTED,
     PAUSED,
+    /** Đã có phiếu đặt cọc: vẫn hiện trên trang bán xe, không nhận liên hệ. */
+    RESERVED,
     SOLD,
     STOPPED
 }

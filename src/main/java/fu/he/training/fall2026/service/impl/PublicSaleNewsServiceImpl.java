@@ -24,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
 
+    /** Trang bán xe vẫn hiện xe đã đặt cọc; trang chủ chỉ lấy tin đang mở liên hệ. */
+    private static final List<ListingStatus> ON_SALE = List.of(ListingStatus.LISTED, ListingStatus.RESERVED);
+
     private static final int PAGE_SIZE = 6;
     private static final int FEATURED_SIZE = 6;
     private static final BigDecimal MILLION = BigDecimal.valueOf(1_000_000);
@@ -68,7 +71,7 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
     @Override
     @Transactional(readOnly = true)
     public List<String> listBrands() {
-        return newsRepository.findBrands(ListingStatus.LISTED);
+        return newsRepository.findBrands(ON_SALE);
     }
 
     @Override
@@ -89,8 +92,8 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
     }
 
     private Page<VehicleSaleNews> search(String pattern, String brand, Long[] budget, Pageable pageable) {
-        return newsRepository.searchPublic(
-                pattern, ListingStatus.LISTED, brand, millions(budget[0]), millions(budget[1]), pageable);
+        return newsRepository.searchPublicIn(
+                pattern, ON_SALE, brand, millions(budget[0]), millions(budget[1]), pageable);
     }
 
     private PublicListingCardResponse toDto(VehicleSaleNews n) {
@@ -105,6 +108,7 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
                 .odometerKm(vehicle.getOdometerKm())
                 .fuelType(vehicle.getFuelType())
                 .coverUrl(photos.isEmpty() ? null : photos.get(0))
+                .status(n.getStatus().name())
                 .build();
     }
 

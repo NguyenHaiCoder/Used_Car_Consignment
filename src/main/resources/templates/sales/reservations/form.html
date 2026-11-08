@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<!--/* Đỗ Lan Anh: màn Tạo và Sửa phiếu đặt cọc giữ xe. Có biến item là đang sửa, khi đó xe và khách không đổi được.
-       Xe chọn từ hồ sơ ký gửi: chọn xong trang tải lại để chỉ hiện khách đang tư vấn đúng xe đó.
-       Xe đã có người đặt cọc hoặc đã có hợp đồng không nằm trong danh sách. */-->
+<!--/* Đỗ Lan Anh: màn Tạo và Sửa phiếu đặt cọc giữ xe. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${item != null ? 'Sửa phiếu đặt cọc' : 'Tạo phiếu đặt cọc'}, 'Kinh doanh', 'sales-reservations',
                     null, ~{::link}, ~{::#deal-form})}">
@@ -33,8 +31,6 @@
     </div>
   </div>
 
-  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
-
   <form class="section-card" method="get" th:action="@{/sales/reservations/new}" th:unless="${editing}">
     <div class="section-head">
       <svg th:replace="~{shell/icons :: icon('car')}"></svg>
@@ -44,20 +40,26 @@
       <div class="field">
         <label for="deal-car">Chọn xe <span class="req">*</span></label>
         <span class="select">
-          <select id="deal-car" name="car" required data-auto-submit>
+          <select id="deal-car" name="car" data-auto-submit>
             <option value="">Chọn theo mã hồ sơ, xe hoặc biển số</option>
-            <option th:each="c : ${cars}" th:value="${c.key}" th:selected="${c.key == carTitle}"
-                    th:text="${c.value['file'] + ' · ' + c.key + ' · ' + c.value['plate']}">Xe</option>
+            <option th:each="c : ${cars}" th:value="${c.key}" th:selected="${c.key == form.car}"
+                    th:text="${c.value['file'] + ' · ' + c.value['title'] + ' · ' + c.value['plate']}">Xe</option>
           </select>
         </span>
-        <small class="deal-hint">Chỉ hiện xe còn bán được, chưa có khách đặt cọc.</small>
+        <small class="deal-hint">Chỉ hiện hồ sơ đang đăng bán, chưa đặt cọc.</small>
       </div>
     </div>
   </form>
 
-  <form class="inq-form" method="post" th:if="${picked != null}"
+  <form class="inq-form" method="post" th:if="${picked != null}" th:object="${form}" novalidate
         th:action="${editing} ? @{/sales/reservations/{id}(id=${item.id})} : @{/sales/reservations}">
-    <input type="hidden" name="car" th:value="${carTitle}" th:unless="${editing}">
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}"
+       th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+    <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
+
+    <input type="hidden" th:field="*{car}">
+    <input type="hidden" th:field="*{inquiryId}" th:if="${editing}">
+    <input type="hidden" th:field="*{consent}" th:if="${editing}">
     <div class="inq-viewing-grid">
       <div class="inq-form">
         <section class="section-card">
@@ -73,18 +75,20 @@
             <th:block th:unless="${editing}">
               <div class="field" th:unless="${#lists.isEmpty(buyers)}">
                 <label for="deal-buyer">Khách đang tư vấn xe này <span class="req">*</span></label>
-                <span class="select">
-                  <select id="deal-buyer" name="inquiryId" required>
+                <span class="select" th:classappend="${#fields.hasErrors('inquiryId')} ? 'is-invalid'">
+                  <select id="deal-buyer" th:field="*{inquiryId}">
                     <option value="">Chọn khách hàng</option>
-                    <option th:each="b : ${buyers}" th:value="${b.id}" th:selected="${b.id.toString() == form['inquiryId']}"
+                    <option th:each="b : ${buyers}" th:value="${b.id}"
                             th:text="${b.buyer + ' · ' + b.phone + ' · ' + b.code}">Khách</option>
                   </select>
                 </span>
+                <span class="field-error" th:if="${#fields.hasErrors('inquiryId')}" th:errors="*{inquiryId}"></span>
               </div>
               <p class="muted" th:if="${#lists.isEmpty(buyers)}">
                 Xe này chưa có khách đang tư vấn.
-                <a class="deal-link" th:href="@{/sales/inquiries/new(car=${carTitle})}">Tạo tư vấn</a> trước rồi quay lại đặt cọc.
+                <a class="deal-link" th:href="@{/sales/inquiries/new(car=${form.car})}">Tạo tư vấn</a> trước rồi quay lại đặt cọc.
               </p>
+              <span class="field-error" th:if="${#fields.hasErrors('car')}" th:errors="*{car}"></span>
             </th:block>
           </div>
         </section>
@@ -99,9 +103,11 @@
               <div class="field">
                 <label for="deal-deposit">Tiền cọc (₫) <span class="req">*</span></label>
                 <div class="field-input">
-                  <input id="deal-deposit" name="deposit" inputmode="numeric" maxlength="17" required data-money
-                         th:value="${form['deposit']}" placeholder="Ví dụ: 50.000.000">
+                  <input id="deal-deposit" th:field="*{deposit}" inputmode="numeric" maxlength="17" data-money
+                         placeholder="Ví dụ: 50.000.000"
+                         th:classappend="${#fields.hasErrors('deposit')} ? 'is-invalid'">
                 </div>
+                <span class="field-error" th:if="${#fields.hasErrors('deposit')}" th:errors="*{deposit}"></span>
               </div>
               <div class="field">
                 <label for="deal-hold">Hạn giữ xe <span class="req">*</span></label>
@@ -110,21 +116,25 @@
                   <label class="date-range-field">
                     <input class="date-range-display" id="deal-hold" type="text" inputmode="numeric" maxlength="10"
                            placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Hạn giữ xe">
-                    <input class="date-range-native" type="date" name="holdUntil" required lang="vi-VN"
-                           th:min="${today}" th:value="${form['holdUntil']}" tabindex="-1" aria-hidden="true">
+                    <input class="date-range-native" type="date" th:field="*{holdUntil}" lang="vi-VN"
+                           th:min="${today}" tabindex="-1" aria-hidden="true"
+                           th:classappend="${#fields.hasErrors('holdUntil')} ? 'is-invalid'">
                   </label>
                 </div>
+                <span class="field-error" th:if="${#fields.hasErrors('holdUntil')}" th:errors="*{holdUntil}"></span>
               </div>
             </div>
             <div class="field">
               <label for="deal-terms">Điều khoản giữ xe</label>
-              <textarea class="field-textarea" id="deal-terms" name="terms" rows="4" maxlength="2000"
-                        th:text="${form['terms']}"></textarea>
+              <textarea class="field-textarea" id="deal-terms" th:field="*{terms}" rows="4" maxlength="2000"></textarea>
             </div>
             <label class="check-item" th:unless="${editing}">
-              <input type="checkbox" name="consent" required th:checked="${form['consent'] != null}">
+              <!--/* consent là String nên th:field cần value; "on" là giá trị trình duyệt gửi khi tick. */-->
+              <input type="checkbox" th:field="*{consent}" value="on">
               Khách đã đồng ý lưu thông tin và các điều khoản giữ xe <span class="req">*</span>
             </label>
+            <span class="field-error" th:unless="${editing}" th:if="${#fields.hasErrors('consentAccepted')}"
+                  th:errors="*{consentAccepted}"></span>
           </div>
         </section>
       </div>

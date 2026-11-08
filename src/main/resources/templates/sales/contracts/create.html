@@ -43,7 +43,6 @@
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
   <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
-  <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
 
   <!--/* Vào từ nút Tạo mới: phải chọn phiếu đặt cọc còn hiệu lực trước */-->
   <section class="csb-card deal-pick" th:if="${contract == null}">
@@ -54,7 +53,7 @@
     <form class="csb-body" method="get" th:action="@{/sales/contracts/new}" th:unless="${#lists.isEmpty(reservations)}">
       <label for="deal-reservation">Phiếu đặt cọc còn hiệu lực <span class="req">*</span></label>
       <span class="select">
-        <select id="deal-reservation" name="reservationId" required data-auto-submit>
+        <select id="deal-reservation" name="reservationId" data-auto-submit>
           <option value="">Chọn phiếu đặt cọc</option>
           <option th:each="r : ${reservations}" th:value="${r.id}"
                   th:text="${r.code + ' · ' + r.buyer + ' · ' + r.car + ' · ' + r.plate}">Phiếu</option>
@@ -68,10 +67,13 @@
     </div>
   </section>
 
-  <form class="contracts-wrap" id="contract-form" method="post" th:if="${contract != null}"
+  <form class="contracts-wrap" id="contract-form" method="post" th:if="${contract != null}" th:object="${form}" novalidate
         th:action="${contract.id != null} ? @{/sales/contracts/{id}(id=${contract.id})} : @{/sales/contracts}"
         th:with="created=${#temporals.createDateTime(contract.created)}">
     <input type="hidden" name="reservationId" th:value="${contract.reservationId}">
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}"
+       th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+    <p class="flash flash--error" th:if="${formError}" th:text="${formError}" role="alert"></p>
 
     <div class="contracts-layout">
       <div class="contract-doc">
@@ -122,13 +124,19 @@
                 <div class="contract-row deal-row"><span class="cl">SĐT:</span>
                   <span class="cv" th:text="${contract.phone}">SĐT</span></div>
                 <div class="contract-row deal-row"><span class="cl">Số CCCD:</span>
-                  <span class="cv"><input class="inline-field" name="buyerIdNumber" maxlength="12" inputmode="numeric"
-                    aria-label="Số CCCD người mua" th:value="${contract.buyerIdNumber}" th:readonly="${!editable}"
-                    placeholder="12 số"></span></div>
+                  <span class="cv">
+                    <input class="inline-field" th:field="*{buyerIdNumber}" maxlength="12" inputmode="numeric"
+                           aria-label="Số CCCD người mua" th:readonly="${!editable}" placeholder="12 số"
+                           th:classappend="${#fields.hasErrors('buyerIdNumber')} ? 'is-invalid'">
+                    <span class="field-error" th:if="${#fields.hasErrors('buyerIdNumber')}" th:errors="*{buyerIdNumber}"></span>
+                  </span></div>
                 <div class="contract-row deal-row"><span class="cl">Địa chỉ:</span>
-                  <span class="cv"><input class="inline-field" name="buyerAddress" maxlength="500"
-                    aria-label="Địa chỉ người mua" th:value="${contract.buyerAddress}" th:readonly="${!editable}"
-                    placeholder="Địa chỉ thường trú"></span></div>
+                  <span class="cv">
+                    <input class="inline-field" th:field="*{buyerAddress}" maxlength="500"
+                           aria-label="Địa chỉ người mua" th:readonly="${!editable}" placeholder="Địa chỉ thường trú"
+                           th:classappend="${#fields.hasErrors('buyerAddress')} ? 'is-invalid'">
+                    <span class="field-error" th:if="${#fields.hasErrors('buyerAddress')}" th:errors="*{buyerAddress}"></span>
+                  </span></div>
               </div>
             </div>
           </div>
@@ -165,10 +173,12 @@
               <div class="terms-inline-field">
                 <label for="deal-sale-price">Giá bán <span class="req">*</span></label>
                 <div class="field-row">
-                  <input id="deal-sale-price" name="salePrice" inputmode="numeric" maxlength="17" data-money required
-                         th:value="${#numbers.formatInteger(contract.salePrice, 1, 'POINT')}" th:readonly="${!editable}">
+                  <input id="deal-sale-price" th:field="*{salePrice}" inputmode="numeric" maxlength="17" data-money
+                         th:readonly="${!editable}"
+                         th:classappend="${#fields.hasErrors('salePrice')} ? 'is-invalid'">
                   <span>VNĐ</span>
                 </div>
+                <span class="field-error" th:if="${#fields.hasErrors('salePrice')}" th:errors="*{salePrice}"></span>
               </div>
               <div class="terms-inline-field">
                 <label for="deal-deposit-value">Tiền cọc đã đặt</label>
@@ -208,8 +218,8 @@
         <div class="article">
           <div class="article-heading"><svg th:replace="~{shell/icons :: icon('coins')}"></svg>Điều 4. Điều khoản thanh toán</div>
           <div class="article-body">
-            <textarea class="terms-textarea" name="paymentTerms" rows="4" maxlength="2000" aria-label="Điều khoản thanh toán"
-                      th:readonly="${!editable}" th:text="${contract.paymentTerms}"></textarea>
+            <textarea class="terms-textarea" th:field="*{paymentTerms}" rows="4" maxlength="2000"
+                      aria-label="Điều khoản thanh toán" th:readonly="${!editable}"></textarea>
           </div>
         </div>
         <hr class="contract-divider">
@@ -217,8 +227,8 @@
         <div class="article">
           <div class="article-heading"><svg th:replace="~{shell/icons :: icon('car')}"></svg>Điều 5. Bàn giao xe và sang tên</div>
           <div class="article-body">
-            <textarea class="terms-textarea" name="handoverTerms" rows="4" maxlength="2000" aria-label="Điều khoản bàn giao và sang tên"
-                      th:readonly="${!editable}" th:text="${contract.handoverTerms}"></textarea>
+            <textarea class="terms-textarea" th:field="*{handoverTerms}" rows="4" maxlength="2000"
+                      aria-label="Điều khoản bàn giao và sang tên" th:readonly="${!editable}"></textarea>
           </div>
         </div>
         <hr class="contract-divider">
@@ -226,8 +236,8 @@
         <div class="article">
           <div class="article-heading"><svg th:replace="~{shell/icons :: icon('close')}"></svg>Điều 6. Chấm dứt hợp đồng</div>
           <div class="article-body">
-            <textarea class="terms-textarea" name="terminationTerms" rows="4" maxlength="2000" aria-label="Điều khoản chấm dứt hợp đồng"
-                      th:readonly="${!editable}" th:text="${contract.terminationTerms}"></textarea>
+            <textarea class="terms-textarea" th:field="*{terminationTerms}" rows="4" maxlength="2000"
+                      aria-label="Điều khoản chấm dứt hợp đồng" th:readonly="${!editable}"></textarea>
           </div>
         </div>
         <hr class="contract-divider">
@@ -248,7 +258,7 @@
             <div class="sig-role">Bên bán (Bên A)</div>
             <div class="sig-note">(Ký, ghi rõ họ tên &amp; đóng dấu)</div>
             <th:block th:if="${editable}">
-              <input type="hidden" name="sellerSignature" data-sig-input="party-a">
+              <input type="hidden" th:field="*{sellerSignature}" data-sig-input="party-a">
               <div class="sig-pad" data-sig="party-a">
                 <canvas class="sig-canvas" aria-label="Ký tên bên bán"></canvas>
                 <span class="sig-placeholder">Chạm để ký tên</span>
@@ -266,7 +276,7 @@
             <div class="sig-role">Bên mua (Bên B)</div>
             <div class="sig-note">(Ký và ghi rõ họ tên)</div>
             <th:block th:if="${editable}">
-              <input type="hidden" name="buyerSignature" data-sig-input="party-b">
+              <input type="hidden" th:field="*{buyerSignature}" data-sig-input="party-b">
               <div class="sig-pad" data-sig="party-b">
                 <canvas class="sig-canvas" aria-label="Ký tên bên mua"></canvas>
                 <span class="sig-placeholder">Chạm để ký tên</span>

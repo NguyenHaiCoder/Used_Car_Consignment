@@ -22,6 +22,31 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             """)
     Optional<Reservation> findDetailById(@Param("id") Long id);
 
+    @Query("""
+            select r from Reservation r
+              join fetch r.inquiry i
+              join fetch r.vehicle v
+              left join fetch r.assignedTo
+            where r.status = fu.he.training.fall2026.entity.enums.ReservationStatus.ACTIVE
+            order by r.id desc
+            """)
+    List<Reservation> findAllActive();
+
+    @Query("""
+            select r from Reservation r
+              join fetch r.inquiry i
+              join fetch r.vehicle v
+              left join fetch r.assignedTo u
+            order by r.id desc
+            """)
+    List<Reservation> findAllDetail();
+
+    boolean existsByVehicleIdAndStatus(Long vehicleId, fu.he.training.fall2026.entity.enums.ReservationStatus status);
+
+    Optional<Reservation> findFirstByInquiryIdOrderByIdDesc(Long inquiryId);
+
+    boolean existsByInquiryIdAndStatus(Long inquiryId, fu.he.training.fall2026.entity.enums.ReservationStatus status);
+
     /** Phiếu hủy/hết hạn đã chọn Hoàn cọc — Tài chính xử lý. */
     @Query("""
             select r from Reservation r

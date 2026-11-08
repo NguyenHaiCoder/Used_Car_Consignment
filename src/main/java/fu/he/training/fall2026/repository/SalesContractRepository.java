@@ -31,6 +31,28 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
             join fetch sc.reservation r
             join fetch r.inquiry i
             join fetch r.vehicle
+            left join fetch r.assignedTo
+            where r.id = :reservationId
+            """)
+    Optional<SalesContract> findByReservationId(@Param("reservationId") Long reservationId);
+
+    @Query("""
+            select sc from SalesContract sc
+            join fetch sc.reservation r
+            join fetch r.inquiry i
+            join fetch r.vehicle
+            left join fetch r.assignedTo
+            order by sc.id desc
+            """)
+    List<SalesContract> findAllDetail();
+
+    boolean existsByReservationId(Long reservationId);
+
+    @Query("""
+            select sc from SalesContract sc
+            join fetch sc.reservation r
+            join fetch r.inquiry i
+            join fetch r.vehicle
             left join fetch i.assignedTo
             left join fetch r.assignedTo
             where sc.signedOn is not null

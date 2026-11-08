@@ -21,7 +21,7 @@
 
 /* Thanh lọc */
 #inquiry-list .inq-toolbar {
-  grid-template-columns: minmax(170px, 1fr) 150px 150px 204px 134px auto;
+  grid-template-columns: minmax(170px, 1fr) 150px 150px 204px auto;
   align-items: end; gap: 8px; padding: 8px 10px;
 }
 #inquiry-list .inq-toolbar .search { grid-column: auto; }
@@ -32,45 +32,68 @@
 #inquiry-list .inq-toolbar .select { min-height: var(--toolbar-h); }
 #inquiry-list .inq-toolbar .date-range { border: 1px solid var(--line); }
 #inquiry-list .date-range-display { font-size: 12px; }
-.inq-more > summary.is-on { border-color: var(--blue-500); color: var(--blue-600); }
-.inq-more .filter-dropdown-menu {
-  left: auto; right: 0; display: grid; gap: 8px; width: 230px; max-height: none; padding: 10px; overflow: visible;
-}
 
-/* Bảng và khung chi tiết */
+/* Bảng và khung chi tiết — cột cân đều, chữ hiện đủ */
 #inquiry-list .workflow-grid { grid-template-columns: minmax(0, 1fr) 284px; gap: 10px; }
-#inquiry-list .records .table-wrap { position: relative; }
-#inquiry-list .records .table { min-width: 770px; table-layout: fixed; }
+#inquiry-list .records .table-wrap { position: relative; overflow-x: auto; }
+#inquiry-list .records .table { width: 100%; min-width: 980px; table-layout: fixed; }
 #inquiry-list .records th,
-#inquiry-list .records td { padding: 2px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#inquiry-list .records th { padding-block: 6px; line-height: 1.15; white-space: normal; }
-#inquiry-list .records th:nth-child(1) { width: 86px; }   /* Mã tư vấn */
-#inquiry-list .records th:nth-child(2) { width: 160px; }  /* Khách hàng */
-#inquiry-list .records th:nth-child(3) { width: auto; }   /* Xe quan tâm */
-#inquiry-list .records th:nth-child(4) { width: 128px; }  /* Trạng thái tư vấn */
-#inquiry-list .records th:nth-child(5) { width: 80px; }   /* Lịch xem */
-#inquiry-list .records th:nth-child(6) { width: 70px; }   /* Nhân viên */
-#inquiry-list .records th:nth-child(7) { width: 92px; }   /* Hành động */
+#inquiry-list .records td {
+  padding: 8px 10px; vertical-align: middle;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#inquiry-list .records th {
+  padding-block: 8px; line-height: 1.25; font-weight: 700; white-space: nowrap;
+}
+#inquiry-list .records th:nth-child(1),
+#inquiry-list .records td:nth-child(1) { width: 11%; }  /* Mã tư vấn */
+#inquiry-list .records th:nth-child(2),
+#inquiry-list .records td:nth-child(2) { width: 18%; }  /* Khách hàng */
+#inquiry-list .records th:nth-child(3),
+#inquiry-list .records td:nth-child(3) { width: 20%; }  /* Xe quan tâm */
+#inquiry-list .records th:nth-child(4),
+#inquiry-list .records td:nth-child(4) { width: 15%; }  /* Trạng thái */
+#inquiry-list .records th:nth-child(5),
+#inquiry-list .records td:nth-child(5) { width: 12%; }  /* Lịch xem */
+#inquiry-list .records th:nth-child(6),
+#inquiry-list .records td:nth-child(6) { width: 12%; }  /* Nhân viên */
+#inquiry-list .records th:nth-child(7),
+#inquiry-list .records td:nth-child(7) { width: 12%; }  /* Hành động */
 #inquiry-list .table tbody tr { background: #fff; cursor: pointer; }
 #inquiry-list .table tbody tr:hover { background: #f4f9ff; }
 #inquiry-list .table tbody tr.is-selected { background: #e8f1fe; }
 #inquiry-list .records td:last-child { position: sticky; right: 0; z-index: 1; overflow: visible; background: inherit; }
 #inquiry-list .records th:last-child { position: sticky; right: 0; z-index: 3; }
-.inq-code { font-weight: 700; }
+#inquiry-list .records td.inq-code {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.inq-code { font-weight: 700; letter-spacing: 0.01em; }
 
 .inq-person { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .inq-person > span:nth-child(2) { flex: 1; min-width: 0; }
 .inq-person strong, .inq-car strong {
-  display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
 }
-.inq-person small, .inq-car small, .inq-when small { display: block; font-size: 11px; color: var(--ink-soft); }
+.inq-person small, .inq-car small, .inq-when small {
+  display: block; font-size: 11px; color: var(--ink-soft); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
 .inq-when span, .inq-when small { display: block; line-height: 1.3; }
 .inq-avatar, .inq-staff {
   display: inline-grid; place-items: center; flex: none; border-radius: 50%; font-weight: 700;
 }
 .inq-avatar { width: 30px; height: 30px; background: var(--violet-soft); color: var(--violet-ink); font-size: 11.5px; }
 .inq-staff { width: 28px; height: 28px; background: var(--navy-700); color: #fff; font-size: 11px; }
-.inq-unassigned { font-size: 11px; font-weight: 600; color: var(--violet-ink); white-space: nowrap; }
+.inq-unassigned {
+  display: inline-block; font-size: 12px; font-weight: 600; color: var(--violet-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+#inquiry-list .records td:nth-child(4) .pill {
+  display: inline-block; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;
+}
 
 .pill--new { background: var(--violet-soft); color: var(--violet-ink); }
 .pill--open { background: #dff5d8; color: #2d6a1f; }
@@ -126,8 +149,9 @@
   #inquiry-list .kpi-icon .ic { width: 17px; height: 17px; }
 }
 @media (max-width: 1240px) {
-  #inquiry-list .inq-toolbar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #inquiry-list .inq-toolbar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
   #inquiry-list .inq-toolbar .search { grid-column: 1 / -1; }
+  #inquiry-list .inq-toolbar .inq-field:has(.date-range) { grid-column: 1 / 3; }
 }
 @media (max-width: 1180px) {
   #inquiry-list .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }

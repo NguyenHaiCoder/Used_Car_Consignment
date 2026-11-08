@@ -1,13 +1,28 @@
 package fu.he.training.fall2026.controller.web.sales;
 
+import fu.he.training.fall2026.constant.sales.SalesDealCatalog;
+import fu.he.training.fall2026.dto.sales.CancelReservationForm;
+import fu.he.training.fall2026.dto.sales.DealListFilter;
+import fu.he.training.fall2026.dto.sales.ReservationForm;
+import fu.he.training.fall2026.dto.sales.ReservationResponse;
+import fu.he.training.fall2026.dto.sales.SalesContractResponse;
+import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
+import fu.he.training.fall2026.service.ReservationService;
+import fu.he.training.fall2026.service.SalesContractService;
+import fu.he.training.fall2026.service.SalesInquiryService;
+import fu.he.training.fall2026.service.impl.ReservationServiceImpl;
+import fu.he.training.fall2026.util.SessionAuthUtils;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,12 +31,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Đỗ Lan Anh: luồng Đặt cọc giữ xe, chạy trên mock trong bộ nhớ ({@link SalesDealUiData}), chưa ghi DB.
- * Chọn xe từ hồ sơ ký gửi rồi chọn khách đang tư vấn xe đó. Thu tiền cọc thực tế thuộc luồng Thanh toán.
- */
+/** Đặt cọc giữ xe — controller mỏng, dữ liệu lấy từ {@link ReservationService}. */
 @Controller
 @RequestMapping("/sales/reservations")
+@RequiredArgsConstructor
 public class SalesReservationWebController {
 
     private static final String BASE = "/sales/reservations";
@@ -30,167 +43,224 @@ public class SalesReservationWebController {
     private static final String DETAIL_VIEW = "sales/reservations/detail";
     private static final int DEFAULT_HOLD_DAYS = 7;
 
+    private final ReservationService reservationService;
+    private final SalesContractService salesContractService;
+    private final SalesInquiryService salesInquiryService;
+
     @ModelAttribute
     public void dictionaries(Model model) {
-        model.addAttribute("statuses", SalesDealUiData.HOLD_STATUSES);
-        model.addAttribute("decisions", SalesDealUiData.DEPOSIT_DECISIONS);
+        model.addAttribute("statuses", SalesDealCatalog.HOLD_STATUSES);
+        model.addAttribute("decisions", SalesDealCatalog.DEPOSIT_DECISIONS);
     }
 
     @GetMapping
-    public String list(@RequestParam Map<String, String> params, Model model) {
-        SalesDealUiData.bindList(model, BASE, SalesDealUiData.reservations(), "deposit", "holdUntil",
-                SalesDealUiData.HOLD_STATUSES, params);
-        model.addAttribute("contractIds", contractIds());
+    public String list(@ModelAttribute DealListFilter filter, Model model) {
+        reservationService.bindList(model, BASE, filter);
         return LIST_VIEW;
     }
 
     @GetMapping("/new")
-    public String createForm(@RequestParam Map<String, String> params, Model model, RedirectAttributes flash) {
-        Map<String, String> form = new HashMap<>(params);
-        if (params.containsKey("inquiryId")) {
-            Map<String, Object> inquiry = findInquiry(params.get("inquiryId"));
-            String error = inquiry == null ? "Không tìm thấy tư vấn." : holdError(inquiry);
+    public String createForm(
+            @RequestParam Map<String, String> params,
+            Model model,
+            RedirectAttributes flash) {
+        ReservationForm form = new ReservationForm();
+        form.setCar(blank(params.get("car")));
+        form.setInquiryId(blank(params.get("inquiryId")));
+        form.setDeposit(blank(params.get("deposit")));
+        form.setHoldUntil(blank(params.get("holdUntil")));
+        form.setTerms(blank(params.get("terms")));
+        if (params.containsKey("consent")) {
+            form.setConsent(params.get("consent"));
+        }
+
+        if (!form.getInquiryId().isBlank()) {
+            Map<String, Object> inquiry = findInquiry(form.getInquiryId());
+            String error = holdError(inquiry);
             if (error != null) {
                 flash.addFlashAttribute("flashError", error);
-                return inquiry == null ? "redirect:" + BASE : "redirect:/sales/inquiries/" + inquiry.get("id");
+                return inquiry == null
+                        ? "redirect:" + BASE
+                        : "redirect:/sales/inquiries/" + inquiry.get("id");
             }
-            form.put("car", String.valueOf(inquiry.get("car")));
+            form.setCar(String.valueOf(inquiry.get("vehicleId")));
+            form.setInquiryId(String.valueOf(inquiry.get("id")));
         }
-        form.putIfAbsent("holdUntil", LocalDate.now().plusDays(DEFAULT_HOLD_DAYS).toString());
-        form.putIfAbsent("terms", SalesDealUiData.HOLD_TERMS);
+
+        if (form.getHoldUntil().isBlank()) {
+            form.setHoldUntil(LocalDate.now().plusDays(DEFAULT_HOLD_DAYS).toString());
+        }
+        if (form.getTerms().isBlank()) {
+            form.setTerms(SalesDealCatalog.HOLD_TERMS);
+        }
         return showCreate(form, null, model);
     }
 
     @PostMapping
-    public String create(@RequestParam Map<String, String> form, Model model, RedirectAttributes flash) {
-        Map<String, Object> car = SalesDealUiData.availableCars().get(form.getOrDefault("car", ""));
-        if (car == null) {
-            form.remove("car");
-            return showCreate(form, "Xe này đã được giữ hoặc đã bán, vui lòng chọn xe khác.", model);
+    public String create(
+            @Valid @ModelAttribute("form") ReservationForm form,
+            BindingResult errors,
+            HttpSession session,
+            Model model,
+            RedirectAttributes flash) {
+        if (errors.hasErrors()) {
+            return showCreate(form, null, model);
         }
-        Map<String, Object> inquiry = findInquiry(form.get("inquiryId"));
-        if (inquiry == null || !form.get("car").equals(inquiry.get("car")) || !SalesDealUiData.canHold(inquiry)) {
-            return showCreate(form, "Vui lòng chọn khách hàng đang được tư vấn xe này.", model);
+        try {
+            Long id = reservationService.create(form, SessionAuthUtils.getUserId(session));
+            ReservationResponse saved = reservationService.findById(id);
+            flash.addFlashAttribute(
+                    "flashMessage",
+                    "Đã tạo phiếu đặt cọc " + saved.getCode() + ", có thể lập hợp đồng bán xe.");
+            return "redirect:" + BASE + "/" + id;
+        } catch (BusinessException ex) {
+            rejectReservationBusiness(errors, ex.getMessage());
+            return showCreate(form, null, model);
         }
-        long price = ((Number) car.get("price")).longValue();
-        String error = checkDeposit(form, price);
-        if (error == null && !form.containsKey("consent")) {
-            error = "Khách cần đồng ý lưu thông tin và điều khoản giữ xe.";
-        }
-        if (error != null) {
-            return showCreate(form, error, model);
-        }
-
-        long id = (Long) inquiry.get("id");
-        Map<String, Object> saved = SalesDealUiData.addReservation(inquiry,
-                SalesDealUiData.parseMoney(form.get("deposit")), form.get("holdUntil"),
-                form.getOrDefault("terms", "").trim(), LocalDateTime.now().withSecond(0).withNano(0).toString());
-        SalesInquiryUiData.viewingsOf(id).stream()
-                .filter(SalesInquiryUiData::isActive)
-                .forEach(v -> v.put("status", SalesInquiryUiData.CANCELLED));
-        inquiry.put("status", SalesInquiryUiData.CONVERTED);
-        flash.addFlashAttribute("flashMessage", "Đã tạo phiếu đặt cọc " + saved.get("code") + ", có thể lập hợp đồng bán xe.");
-        return "redirect:" + BASE + "/" + saved.get("id");
     }
 
     @GetMapping("/{id}")
-    public String detail(@PathVariable long id, @RequestParam(required = false) String cancel, Model model) {
-        Map<String, Object> item = find(id);
-        boolean canDecide = canDecide(item);
+    public String detail(
+            @PathVariable long id,
+            @RequestParam(required = false) String cancel,
+            Model model) {
+        ReservationResponse item = reservationService.findById(id);
+        boolean canDecide = "ACTIVE".equals(item.getStatus()) || "EXPIRED".equals(item.getStatus());
+        SalesContractResponse contract = salesContractService.findByReservationId(id).orElse(null);
         model.addAttribute("item", item);
-        model.addAttribute("contract", SalesDealUiData.contractOf(id).orElse(null));
+        model.addAttribute("contract", contract);
         model.addAttribute("canDecide", canDecide);
         model.addAttribute("openDialog", cancel != null && canDecide);
+        model.addAttribute("cancelForm", new CancelReservationForm());
         return DETAIL_VIEW;
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable long id, Model model, RedirectAttributes flash) {
-        Map<String, Object> item = find(id);
-        if (!SalesDealUiData.ACTIVE.equals(item.get("status"))) {
+        ReservationResponse item = reservationService.findById(id);
+        if (!"ACTIVE".equals(item.getStatus())) {
             return ended(id, flash);
         }
-        Map<String, String> form = new HashMap<>();
-        form.put("deposit", SalesDealUiData.money((Long) item.get("deposit")));
-        form.put("holdUntil", String.valueOf(item.get("holdUntil")));
-        form.put("terms", String.valueOf(item.get("terms")));
+        ReservationForm form = new ReservationForm();
+        form.setCar(String.valueOf(item.getVehicleId()));
+        form.setInquiryId(String.valueOf(item.getInquiryId()));
+        form.setDeposit(ReservationServiceImpl.money(item.getDeposit()));
+        form.setHoldUntil(item.getHoldUntil());
+        form.setTerms(item.getTerms());
+        form.setConsent("true");
         return showEdit(item, form, null, model);
     }
 
     @PostMapping("/{id}")
     public String update(
             @PathVariable long id,
-            @RequestParam Map<String, String> form,
+            @Valid @ModelAttribute("form") ReservationForm form,
+            BindingResult errors,
             Model model,
             RedirectAttributes flash) {
-        Map<String, Object> item = find(id);
-        if (!SalesDealUiData.ACTIVE.equals(item.get("status"))) {
+        ReservationResponse item = reservationService.findById(id);
+        if (!"ACTIVE".equals(item.getStatus())) {
             return ended(id, flash);
         }
-        String error = checkDeposit(form, ((Number) item.get("price")).longValue());
-        if (error != null) {
-            return showEdit(item, form, error, model);
+        if (errors.hasErrors()) {
+            return showEdit(item, form, null, model);
         }
-        item.put("deposit", SalesDealUiData.parseMoney(form.get("deposit")));
-        item.put("holdUntil", form.get("holdUntil"));
-        item.put("terms", form.getOrDefault("terms", "").trim());
-        flash.addFlashAttribute("flashMessage", "Đã cập nhật phiếu đặt cọc " + item.get("code") + ".");
-        return "redirect:" + BASE + "/" + id;
+        try {
+            reservationService.update(id, form);
+            flash.addFlashAttribute("flashMessage", "Đã cập nhật phiếu đặt cọc " + item.getCode() + ".");
+            return "redirect:" + BASE + "/" + id;
+        } catch (BusinessException ex) {
+            rejectReservationBusiness(errors, ex.getMessage());
+            return showEdit(item, form, null, model);
+        }
     }
 
-    /** Phiếu đang giữ thì hủy; phiếu hết hạn chỉ ghi nhận hoàn hay giữ cọc. Finance sẽ tạo Refund từ quyết định này. */
     @PostMapping("/{id}/cancel")
     public String cancel(
             @PathVariable long id,
-            @RequestParam(defaultValue = "") String reason,
-            @RequestParam(defaultValue = "") String decision,
+            @Valid @ModelAttribute("cancelForm") CancelReservationForm cancelForm,
+            BindingResult errors,
+            Model model,
             RedirectAttributes flash) {
-        Map<String, Object> item = find(id);
-        if (!canDecide(item)) {
+        ReservationResponse item = reservationService.findById(id);
+        boolean canDecide = "ACTIVE".equals(item.getStatus()) || "EXPIRED".equals(item.getStatus());
+        if (!canDecide) {
             return ended(id, flash);
         }
-        if (reason.isBlank() || !SalesDealUiData.DEPOSIT_DECISIONS.containsKey(decision)) {
-            flash.addFlashAttribute("flashError", "Vui lòng nhập lý do và chọn hoàn hay giữ cọc.");
-            return "redirect:" + BASE + "/" + id;
+        if (errors.hasErrors()) {
+            model.addAttribute("item", item);
+            model.addAttribute("contract", salesContractService.findByReservationId(id).orElse(null));
+            model.addAttribute("canDecide", true);
+            model.addAttribute("openDialog", true);
+            model.addAttribute("cancelForm", cancelForm);
+            return DETAIL_VIEW;
         }
-        item.put("cancelReason", reason.trim());
-        item.put("depositDecision", decision);
-        if (SalesDealUiData.ACTIVE.equals(item.get("status"))) {
-            long inquiryId = (Long) item.get("inquiryId");
-            item.put("status", SalesDealUiData.CANCELLED);
-            SalesDealUiData.releaseCar(String.valueOf(item.get("car")));
-            item.put("cancelledAt", LocalDateTime.now().withSecond(0).withNano(0).toString());
-            SalesInquiryUiData.inquiry(inquiryId).ifPresent(
-                    i -> i.put("status", SalesInquiryUiData.statusWithoutActiveStep(inquiryId)));
-            flash.addFlashAttribute("flashMessage", "Đã hủy phiếu đặt cọc " + item.get("code") + ", xe được mở bán lại.");
-        } else {
-            flash.addFlashAttribute("flashMessage", "Đã ghi nhận cách xử lý tiền cọc của phiếu " + item.get("code") + ".");
+        try {
+            reservationService.cancel(id, cancelForm.getReason(), cancelForm.getDecision());
+            if ("ACTIVE".equals(item.getStatus())) {
+                flash.addFlashAttribute(
+                        "flashMessage",
+                        "Đã hủy phiếu đặt cọc " + item.getCode() + ", xe được mở bán lại.");
+            } else {
+                flash.addFlashAttribute(
+                        "flashMessage",
+                        "Đã ghi nhận cách xử lý tiền cọc của phiếu " + item.getCode() + ".");
+            }
+        } catch (BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
         }
         return "redirect:" + BASE + "/" + id;
     }
 
-    private String showCreate(Map<String, String> form, String error, Model model) {
-        String title = form.getOrDefault("car", "");
-        Map<String, Map<String, Object>> cars = SalesDealUiData.availableCars();
-        Map<String, Object> picked = cars.get(title);
-        if (picked != null) {
+    private String showCreate(ReservationForm form, String error, Model model) {
+        Map<String, Map<String, Object>> cars = reservationService.availableCars();
+        Map<String, Object> picked = cars.get(form.getCar());
+        if (picked != null && form.getDeposit().isBlank()) {
             long price = ((Number) picked.get("price")).longValue();
-            form.putIfAbsent("deposit", SalesDealUiData.money(price / 10 / 1_000_000 * 1_000_000));
+            form.setDeposit(ReservationServiceImpl.money(Math.max(price / 10 / 1_000_000 * 1_000_000, 1_000_000)));
         }
+
+        List<ReservationResponse> buyers = List.of();
+        if (!form.getInquiryId().isBlank()) {
+            Map<String, Object> inquiry = findInquiry(form.getInquiryId());
+            if (inquiry != null) {
+                ReservationResponse buyer = new ReservationResponse();
+                buyer.setId((Long) inquiry.get("id"));
+                buyer.setCode(String.valueOf(inquiry.get("code")));
+                buyer.setBuyer(String.valueOf(inquiry.get("buyer")));
+                buyer.setPhone(String.valueOf(inquiry.get("phone")));
+                buyers = List.of(buyer);
+            }
+        } else if (picked != null) {
+            buyers = reservationService.holdableBuyers(ReservationServiceImpl.parseId(form.getCar()));
+        }
+
         model.addAttribute("cars", cars);
         model.addAttribute("picked", picked);
-        model.addAttribute("carTitle", picked == null ? "" : title);
-        model.addAttribute("buyers", picked == null ? List.of() : SalesDealUiData.inquiriesFor(title));
+        model.addAttribute("carTitle", picked == null ? "" : String.valueOf(picked.get("title")));
+        model.addAttribute("buyers", buyers);
         return showForm(null, form, error, model);
     }
 
-    private String showEdit(Map<String, Object> item, Map<String, String> form, String error, Model model) {
-        model.addAttribute("picked", item);
-        model.addAttribute("carTitle", item.get("car"));
+    private String showEdit(
+            ReservationResponse item, ReservationForm form, String error, Model model) {
+        Map<String, Object> picked = new HashMap<>();
+        picked.put("price", item.getPrice());
+        picked.put("km", item.getKm());
+        picked.put("fuel", item.getFuel());
+        picked.put("color", item.getColor());
+        picked.put("file", item.getFile());
+        picked.put("plate", item.getPlate());
+        picked.put("owner", item.getOwner());
+        picked.put("vin", item.getVin());
+        picked.put("title", item.getCar());
+        model.addAttribute("picked", picked);
+        model.addAttribute("carTitle", item.getCar());
         return showForm(item, form, error, model);
     }
 
-    private String showForm(Map<String, Object> item, Map<String, String> form, String error, Model model) {
+    private String showForm(
+            ReservationResponse item, ReservationForm form, String error, Model model) {
         model.addAttribute("item", item);
         model.addAttribute("form", form);
         model.addAttribute("formError", error);
@@ -198,55 +268,68 @@ public class SalesReservationWebController {
         return FORM_VIEW;
     }
 
-    private static Map<String, Object> findInquiry(String id) {
-        Long inquiryId = SalesDealUiData.parseId(id);
-        return inquiryId == null ? null : SalesInquiryUiData.inquiry(inquiryId).orElse(null);
+    private static void rejectReservationBusiness(BindingResult errors, String message) {
+        if (message == null || message.isBlank()) {
+            errors.reject("error", "Không lưu được phiếu đặt cọc.");
+            return;
+        }
+        String lower = message.toLowerCase();
+        if (lower.contains("tiền cọc") || lower.contains("cọc")) {
+            errors.rejectValue("deposit", "deposit", message);
+        } else if (lower.contains("hạn giữ") || lower.contains("hold")) {
+            errors.rejectValue("holdUntil", "holdUntil", message);
+        } else if (lower.contains("xe")) {
+            errors.rejectValue("car", "car", message);
+        } else if (lower.contains("khách") || lower.contains("tư vấn")) {
+            errors.rejectValue("inquiryId", "inquiryId", message);
+        } else if (lower.contains("đồng ý")) {
+            errors.rejectValue("consentAccepted", "consentAccepted", message);
+        } else {
+            errors.reject("error", message);
+        }
     }
 
-    private static String holdError(Map<String, Object> inquiry) {
-        if (SalesInquiryUiData.NEW.equals(inquiry.get("status"))) {
+    private Map<String, Object> findInquiry(String id) {
+        Long inquiryId = ReservationServiceImpl.parseId(id);
+        if (inquiryId == null) {
+            return null;
+        }
+        try {
+            return salesInquiryService.getCard(inquiryId);
+        } catch (ResourceNotFoundException | BusinessException ex) {
+            return null;
+        }
+    }
+
+    private String holdError(Map<String, Object> inquiry) {
+        if (inquiry == null) {
+            return "Không tìm thấy tư vấn.";
+        }
+        if ("NEW".equals(inquiry.get("status"))) {
             return "Cần nhận tư vấn trước khi đặt cọc.";
         }
-        if (!SalesDealUiData.canHold(inquiry)) {
+        String status = String.valueOf(inquiry.get("status"));
+        if (!List.of("OPEN", "SCHEDULED", "VIEWED").contains(status)) {
             return "Tư vấn này đã kết thúc nên không đặt cọc được.";
         }
-        return SalesDealUiData.carHeld(String.valueOf(inquiry.get("car")))
-                ? "Xe " + inquiry.get("car") + " đã được giữ hoặc đã bán."
-                : null;
-    }
-
-    private static String checkDeposit(Map<String, String> form, long price) {
-        Long deposit = SalesDealUiData.parseMoney(form.get("deposit"));
-        if (deposit == null || deposit <= 0) {
-            return "Vui lòng nhập tiền cọc.";
+        Long inquiryId = (Long) inquiry.get("id");
+        if (!salesInquiryService.canHold(inquiryId)) {
+            return "Tư vấn này đã có phiếu đặt cọc đang hiệu lực.";
         }
-        if (deposit >= price) {
-            return "Tiền cọc phải nhỏ hơn giá niêm yết của xe.";
+        Long vehicleId = (Long) inquiry.get("vehicleId");
+        Map<String, Map<String, Object>> cars = reservationService.availableCars();
+        if (vehicleId == null || !cars.containsKey(String.valueOf(vehicleId))) {
+            return "Xe " + inquiry.get("car") + " đã được giữ hoặc đã bán.";
         }
-        LocalDate holdUntil = SalesDealUiData.parseDate(form.get("holdUntil"));
-        if (holdUntil == null) {
-            return "Vui lòng chọn hạn giữ xe.";
-        }
-        return holdUntil.isAfter(LocalDate.now()) ? null : "Hạn giữ xe phải sau hôm nay.";
-    }
-
-    private static boolean canDecide(Map<String, Object> item) {
-        return SalesDealUiData.ACTIVE.equals(item.get("status"))
-                || (SalesDealUiData.EXPIRED.equals(item.get("status")) && "".equals(item.get("depositDecision")));
-    }
-
-    private static Map<Long, Long> contractIds() {
-        Map<Long, Long> ids = new HashMap<>();
-        SalesDealUiData.contracts().forEach(c -> ids.put((Long) c.get("reservationId"), (Long) c.get("id")));
-        return ids;
+        return null;
     }
 
     private static String ended(long id, RedirectAttributes flash) {
-        flash.addFlashAttribute("flashError", "Phiếu đặt cọc này đã kết thúc nên không thay đổi được.");
+        flash.addFlashAttribute("flashError", "Phiếu đặt cọc này đã kết thúc.");
         return "redirect:" + BASE + "/" + id;
     }
 
-    private static Map<String, Object> find(long id) {
-        return SalesDealUiData.reservation(id).orElseThrow(() -> new ResourceNotFoundException("Phiếu đặt cọc", id));
+    private static String blank(String value) {
+        return value == null ? "" : value.trim();
     }
 }

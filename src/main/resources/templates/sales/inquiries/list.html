@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!--/* Đỗ Lan Anh: Màn Tư vấn & lịch xem xe (Inquiry) của Nhân viên kinh doanh. Dữ liệu từ SalesInquiryWebController (mock trong bộ nhớ).
-       Yêu cầu vào từ modal Liên hệ ở /tin-ban-xe (channel WEBSITE, chưa có người phụ trách) hoặc do Sales tạo. */-->
+<!--/* Màn Tư vấn & lịch xem xe: dữ liệu từ SalesInquiryService (DB).
+       Yêu cầu từ /tin-ban-xe (WEBSITE, NEW) hoặc Sales tạo (OPEN). */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Tư vấn &amp; lịch xem xe', 'Kinh doanh', 'sales-inquiries',
                     null, ~{::link}, ~{::#inquiry-list})}">
@@ -16,8 +16,7 @@
 </head>
 <body>
 <div id="inquiry-list" class="workflow"
-     th:with="kpiKeys=${ {'NEW','OPEN','SCHEDULED','VIEWED','CLOSED'} },
-              base=${'/sales/inquiries?q=' + #uris.escapeQueryParam(q) + '&amp;status=' + status + '&amp;viewing=' + viewing + '&amp;from=' + dateFrom + '&amp;to=' + dateTo + '&amp;channel=' + channel + '&amp;need=' + need}">
+     th:with="kpiKeys=${ {'NEW','OPEN','SCHEDULED','VIEWED','CLOSED'} }">
 
   <div class="contracts-header">
     <div class="contracts-header-left">
@@ -47,7 +46,7 @@
     <a class="card kpi" th:each="k : ${kpiKeys}" th:with="s=${statuses.get(k)}"
        th:classappend="${'kpi--' + s.tone + (status == k ? ' is-active' : '')}"
        th:attr="aria-current=${status == k ? 'true' : null}"
-       th:href="@{/sales/inquiries(status=${k},size=${size})}">
+       th:href="@{/sales/inquiries(status=${k},size=${size != 10 ? size : null})}">
       <span class="kpi-icon"><svg th:replace="~{shell/icons :: icon(${s.icon})}"></svg></span>
       <div>
         <p th:text="${k == 'SCHEDULED' ? 'Lịch xem sắp tới' : s.label}">Trạng thái</p>
@@ -109,36 +108,6 @@
       </div>
     </div>
 
-    <details class="filter-dropdown inq-more">
-      <summary class="filter-dropdown-trigger" th:classappend="${channel != '' or need != ''} ? 'is-on'">
-        <svg th:replace="~{shell/icons :: icon('filter')}"></svg>
-        <span>Lọc nâng cao</span>
-      </summary>
-      <div class="filter-dropdown-menu">
-        <div class="inq-field">
-          <label for="inq-channel">Nguồn yêu cầu</label>
-          <span class="select">
-            <select id="inq-channel" name="channel">
-              <option value="">Tất cả</option>
-              <option th:each="c : ${channels}" th:value="${c.key}" th:text="${c.value}"
-                      th:selected="${c.key == channel}">Nguồn</option>
-            </select>
-          </span>
-        </div>
-        <div class="inq-field">
-          <label for="inq-need">Nhu cầu</label>
-          <span class="select">
-            <select id="inq-need" name="need">
-              <option value="">Tất cả</option>
-              <option th:each="c : ${needs}" th:value="${c.key}" th:text="${c.value}"
-                      th:selected="${c.key == need}">Nhu cầu</option>
-            </select>
-          </span>
-        </div>
-        <button class="btn btn--primary" type="submit">Áp dụng</button>
-      </div>
-    </details>
-
     <a class="btn" th:href="@{/sales/inquiries}">
       <svg th:replace="~{shell/icons :: icon('refresh')}"></svg>Làm mới
     </a>
@@ -163,8 +132,7 @@
           <tbody>
             <tr th:each="n : ${page.content}"
                 th:with="s=${statuses.get(n.status)}, v=${viewings.get(n.id)},
-                         editable=${n.status != 'CLOSED' and n.status != 'CONVERTED'},
-                         selectUrl=${base + '&amp;page=' + page.number + '&amp;size=' + size + '&amp;selected=' + n.id}"
+                         editable=${n.status != 'CLOSED' and n.status != 'CONVERTED'}"
                 th:classappend="${cur != null and cur.id == n.id} ? 'is-selected'"
                 th:attr="aria-selected=${cur != null and cur.id == n.id}">
               <td class="inq-code" th:text="${n.code}">TV-1</td>
@@ -196,16 +164,17 @@
               </td>
               <td>
                 <div class="row-actions">
-                  <a class="row-action" th:unless="${editable}"
+                  <!-- Bấm dòng → panel xem nhanh; nút mắt → trang chi tiết -->
+                  <a class="sr-only"
+                     th:href="@{/sales/inquiries(q=${q != null and !q.isEmpty() ? q : null},status=${status != null and !status.isEmpty() ? status : null},viewing=${viewing != null and !viewing.isEmpty() ? viewing : null},from=${dateFrom != null and !dateFrom.isEmpty() ? dateFrom : null},to=${dateTo != null and !dateTo.isEmpty() ? dateTo : null},page=${page.number > 0 ? page.number : null},size=${size != 10 ? size : null},selected=${n.id})}"
+                     data-select
+                     th:attr="aria-label=${'Chọn ' + n.code}">Chọn</a>
+                  <a class="row-action"
                      th:href="@{/sales/inquiries/{id}(id=${n.id})}"
                      th:attr="aria-label=${'Xem chi tiết ' + n.code}" title="Xem chi tiết">
                     <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
                   </a>
                   <th:block th:if="${editable}">
-                    <a class="row-action" th:href="@{${selectUrl}}" data-select
-                       th:attr="aria-label=${'Xem nhanh ' + n.code}" title="Xem nhanh">
-                      <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
-                    </a>
                     <a class="row-action" th:href="@{/sales/inquiries/{id}/edit(id=${n.id})}"
                        th:attr="aria-label=${'Sửa ' + n.code}" title="Sửa tư vấn">
                       <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>
@@ -264,22 +233,22 @@
               <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
                 <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
                    th:classappend="${n == size} ? 'is-active'"
-                   th:href="@{${base + '&amp;page=0&amp;size=' + n}}"
+                   th:href="@{/sales/inquiries(q=${q != null and !q.isEmpty() ? q : null},status=${status != null and !status.isEmpty() ? status : null},viewing=${viewing != null and !viewing.isEmpty() ? viewing : null},from=${dateFrom != null and !dateFrom.isEmpty() ? dateFrom : null},to=${dateTo != null and !dateTo.isEmpty() ? dateTo : null},size=${n != 10 ? n : null})}"
                    th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
               </div>
             </details>
           </div>
           <div class="pager-links">
             <a class="page-link" th:if="${page.number > 0}" aria-label="Trang trước"
-               th:href="@{${base + '&amp;page=' + (page.number - 1) + '&amp;size=' + size}}">‹</a>
+               th:href="@{/sales/inquiries(q=${q != null and !q.isEmpty() ? q : null},status=${status != null and !status.isEmpty() ? status : null},viewing=${viewing != null and !viewing.isEmpty() ? viewing : null},from=${dateFrom != null and !dateFrom.isEmpty() ? dateFrom : null},to=${dateTo != null and !dateTo.isEmpty() ? dateTo : null},page=${page.number - 1 > 0 ? page.number - 1 : null},size=${size != 10 ? size : null})}">‹</a>
             <span class="page-link is-off" th:unless="${page.number > 0}" aria-hidden="true">‹</span>
             <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
                th:classappend="${n == page.number} ? 'is-active'"
                th:attr="aria-current=${n == page.number ? 'page' : null}"
-               th:href="@{${base + '&amp;page=' + n + '&amp;size=' + size}}"
+               th:href="@{/sales/inquiries(q=${q != null and !q.isEmpty() ? q : null},status=${status != null and !status.isEmpty() ? status : null},viewing=${viewing != null and !viewing.isEmpty() ? viewing : null},from=${dateFrom != null and !dateFrom.isEmpty() ? dateFrom : null},to=${dateTo != null and !dateTo.isEmpty() ? dateTo : null},page=${n > 0 ? n : null},size=${size != 10 ? size : null})}"
                th:text="${n + 1}">1</a>
             <a class="page-link" th:if="${page.number + 1 < page.totalPages}" aria-label="Trang sau"
-               th:href="@{${base + '&amp;page=' + (page.number + 1) + '&amp;size=' + size}}">›</a>
+               th:href="@{/sales/inquiries(q=${q != null and !q.isEmpty() ? q : null},status=${status != null and !status.isEmpty() ? status : null},viewing=${viewing != null and !viewing.isEmpty() ? viewing : null},from=${dateFrom != null and !dateFrom.isEmpty() ? dateFrom : null},to=${dateTo != null and !dateTo.isEmpty() ? dateTo : null},page=${page.number + 1},size=${size != 10 ? size : null})}">›</a>
             <span class="page-link is-off" th:unless="${page.number + 1 < page.totalPages}" aria-hidden="true">›</span>
           </div>
         </div>

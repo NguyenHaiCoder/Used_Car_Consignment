@@ -95,6 +95,7 @@
                  th:alt="${'Ảnh xe ' + car.title}">
             <div class="photo-fallback" th:if="${car.coverUrl == null}"><svg th:replace="~{shell/icons :: icon('car')}"></svg><span>Hình ảnh đang cập nhật</span></div>
             <span class="inspection-badge"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>Đã kiểm định</span>
+            <span class="hold-badge" th:if="${car.status == 'RESERVED'}">Đã đặt cọc</span>
           </div>
           <div class="listing-content">
             <p class="listing-reference" th:text="${car.code}">TD-000001</p>
@@ -102,11 +103,12 @@
             <p class="listing-price" th:text="${price}">0 ₫</p>
             <p class="listing-specs" th:text="${specs}">Năm · km · nhiên liệu</p>
             <div class="listing-bottom">
-              <a class="sale-button primary listing-contact"
+              <a class="sale-button primary listing-contact" th:unless="${car.status == 'RESERVED'}"
                  th:href="@{/tin-ban-xe/{id}/lien-he(id=${car.id})}"
                  th:attr="aria-label=${'Liên hệ về ' + car.title}">
                 <svg th:replace="~{shell/icons :: icon('user')}"></svg>Liên hệ
               </a>
+              <span class="listing-held" th:if="${car.status == 'RESERVED'}">Xe đã được đặt cọc</span>
             </div>
           </div>
         </article>

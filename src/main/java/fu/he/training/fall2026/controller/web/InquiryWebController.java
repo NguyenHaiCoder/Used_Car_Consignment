@@ -82,8 +82,13 @@ public class InquiryWebController {
                 flash.addFlashAttribute("flashError", ex.getMessage());
                 return "redirect:/tin-ban-xe";
             }
+            String message = ex.getMessage();
+            if (message != null && message.toLowerCase().contains("điện thoại")) {
+                bindingResult.rejectValue("phone", "phone.duplicate", message);
+            } else {
+                model.addAttribute("errorMessage", message);
+            }
             fillFormModel(session, model, inquiry.getListingId());
-            model.addAttribute("errorMessage", ex.getMessage());
             return FORM_VIEW;
         }
     }

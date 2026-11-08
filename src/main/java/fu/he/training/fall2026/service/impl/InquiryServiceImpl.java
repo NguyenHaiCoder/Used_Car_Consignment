@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
+import fu.he.training.fall2026.constant.sales.SalesInquiryCatalog;
 import fu.he.training.fall2026.dto.sales.InquiryRequest;
 import fu.he.training.fall2026.entity.consignment.VehicleSaleNews;
 import fu.he.training.fall2026.entity.enums.InquiryStatus;
@@ -11,7 +12,6 @@ import fu.he.training.fall2026.repository.InquiryRepository;
 import fu.he.training.fall2026.repository.VehicleSaleNewsRepository;
 import fu.he.training.fall2026.service.InquiryService;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,11 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class InquiryServiceImpl implements InquiryService {
-
-    private static final Map<String, String> NEED_LABELS = Map.of(
-            "PRICE", "Hỏi giá",
-            "VIEWING", "Xem xe",
-            "TEST_DRIVE", "Lái thử");
 
     private final InquiryRepository inquiryRepository;
     private final VehicleSaleNewsRepository newsRepository;
@@ -45,10 +40,18 @@ public class InquiryServiceImpl implements InquiryService {
                     "Vui lòng nhập số di động Việt Nam hợp lệ (10 số hoặc +84).", HttpStatus.BAD_REQUEST);
         }
 
+        Long vehicleId = listing.getConsignment().getVehicle().getId();
+        // Gồm cả CONVERTED: khách đã có tư vấn/đặt cọc rồi thì không gửi form public lần nữa.
+        if (!inquiryRepository.findActiveByPhoneAndVehicle(phone, vehicleId).isEmpty()) {
+            throw new BusinessException(
+                    "Đã có liên hệ từ số điện thoại này cho xe này. Nhân viên sẽ liên hệ lại.",
+                    HttpStatus.CONFLICT);
+        }
+
         Inquiry inquiry = new Inquiry();
         inquiry.setCode(temporaryCode());
         inquiry.setVehicle(listing.getConsignment().getVehicle());
-        inquiry.setStatus(InquiryStatus.OPEN);
+        inquiry.setStatus(InquiryStatus.NEW);
         inquiry.setChannel(blankTo(form.getChannel(), "WEBSITE"));
         inquiry.setFullName(form.getFullName().trim());
         inquiry.setPhone(phone);
@@ -62,7 +65,7 @@ public class InquiryServiceImpl implements InquiryService {
     }
 
     private static String buildNotes(String need, String message) {
-        String needLabel = NEED_LABELS.getOrDefault(need, need);
+        String needLabel = SalesInquiryCatalog.NEEDS.getOrDefault(need, need);
         String body = message == null ? "" : message.trim();
         if (body.isEmpty()) {
             return "Nhu cầu: " + needLabel;

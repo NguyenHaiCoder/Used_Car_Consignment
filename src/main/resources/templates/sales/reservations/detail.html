@@ -132,17 +132,20 @@
   </div>
 
   <dialog class="intake-dialog inq-close-dialog" id="hold-dialog" aria-labelledby="hold-dialog-title" th:if="${canDecide}">
-    <form method="post" th:action="@{/sales/reservations/{id}/cancel(id=${item.id})}">
+    <form method="post" th:action="@{/sales/reservations/{id}/cancel(id=${item.id})}" th:object="${cancelForm}" novalidate>
       <h3 id="hold-dialog-title" th:text="${active ? 'Hủy đặt cọc' : 'Xử lý tiền cọc'}">Hủy đặt cọc</h3>
       <p th:text="${active ? 'Phiếu ' + item.code + ' sẽ hết hiệu lực và xe được mở bán lại.' : 'Phiếu ' + item.code + ' đã quá hạn giữ xe, cần chốt cách xử lý tiền cọc.'}">Xác nhận</p>
       <label for="hold-reason">Lý do <span class="req">*</span></label>
-      <textarea class="field-textarea" id="hold-reason" name="reason" rows="2" maxlength="2000" required></textarea>
+      <textarea class="field-textarea" id="hold-reason" th:field="*{reason}" rows="2" maxlength="2000"
+                th:classappend="${#fields.hasErrors('reason')} ? 'is-invalid'"></textarea>
+      <span class="field-error" th:if="${#fields.hasErrors('reason')}" th:errors="*{reason}"></span>
       <fieldset class="inq-need inq-need--2">
         <legend>Tiền cọc <span class="req">*</span></legend>
         <label th:each="d : ${decisions}">
-          <input type="radio" name="decision" th:value="${d.key}" required>
+          <input type="radio" th:field="*{decision}" th:value="${d.key}">
           <span th:text="${d.value}">Hoàn cọc</span>
         </label>
+        <span class="field-error" th:if="${#fields.hasErrors('decision')}" th:errors="*{decision}"></span>
       </fieldset>
       <div class="inq-dialog-actions">
         <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Đóng</button>
