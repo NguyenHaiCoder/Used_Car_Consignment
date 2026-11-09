@@ -30,6 +30,12 @@ public class SalesContractResponse {
     private String model;
     private String year;
     private long listedPrice;
+    /** Giá sàn của chủ xe trong hợp đồng ký gửi, 0 nếu chưa có. */
+    private long priceFloor;
+    /** Yêu cầu duyệt giá dưới sàn mới nhất: mã, trạng thái (PENDING, APPROVED...), ghi chú của Quản lý. */
+    private String floorApprovalCode = "";
+    private String floorApprovalStatus = "";
+    private String floorApprovalNote = "";
     private long salePrice;
     private long deposit;
     private long remaining;

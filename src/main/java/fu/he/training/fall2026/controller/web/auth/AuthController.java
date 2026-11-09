@@ -8,6 +8,7 @@ import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.AuthService;
 import fu.he.training.fall2026.util.AuthMessages;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.net.URLEncoder;
@@ -36,9 +37,16 @@ public class AuthController {
             @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "mode", required = false, defaultValue = "login") String mode,
             Model model,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletResponse response) {
+        // Không cho trình duyệt giữ trang trong bộ nhớ đệm: bấm Back phải hỏi lại server, tránh nút Xác nhận xoay mãi.
+        response.setHeader("Cache-Control", "no-store");
         if (SessionAuthUtils.isLoggedIn(session)) {
-            return "redirect:" + SessionAuthUtils.homePathForRole(SessionAuthUtils.getRoleCode(session));
+            // Đã nhập OTP xong rồi quay lại: báo đã đăng nhập, không cho nhập lại mã cũ.
+            model.addAttribute("verified", true);
+            model.addAttribute("email", SessionAuthUtils.getEmail(session));
+            model.addAttribute("homePath", SessionAuthUtils.homePathForRole(SessionAuthUtils.getRoleCode(session)));
+            return "auth/verify-otp";
         }
         VerifyOtpRequest form = new VerifyOtpRequest();
         form.setEmail(email);

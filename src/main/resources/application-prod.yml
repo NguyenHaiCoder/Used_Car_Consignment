@@ -4,7 +4,7 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:sqlserver://${DB_HOST}:${DB_PORT:1433};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false
+    url: jdbc:sqlserver://${DB_HOST}:${DB_PORT:1433};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;sendStringParametersAsUnicode=true
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver

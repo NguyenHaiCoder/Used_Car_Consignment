@@ -10,7 +10,6 @@ import static fu.he.training.fall2026.model.ui.UiModels.Row;
 import static fu.he.training.fall2026.model.ui.UiModels.Screen;
 
 import fu.he.training.fall2026.entity.auth.AuditEvent;
-import fu.he.training.fall2026.entity.auth.Permission;
 import fu.he.training.fall2026.entity.auth.Role;
 import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.auth.UserToken;
@@ -25,14 +24,12 @@ import fu.he.training.fall2026.repository.UserRepository;
 import fu.he.training.fall2026.repository.UserTokenRepository;
 import fu.he.training.fall2026.service.AdminEmployeeService;
 import fu.he.training.fall2026.service.AdminPermissionService;
-import fu.he.training.fall2026.service.impl.AdminPermissionServiceImpl;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,7 +83,7 @@ public class AdminUiModelService {
 
         String normalized = normalize(pageKey);
         String template = switch (normalized) {
-            case "dashboard", "dashboard-admin" -> "admin/dashboard";
+            case "dashboard", "dashboard-admin" -> "admin/employees/list";
             case "employees" -> "admin/employees/list";
             case "employees/new" -> "admin/employees/create";
             case "permissions" -> "admin/permissions/list";
@@ -149,9 +146,10 @@ public class AdminUiModelService {
         model.addAttribute("roleHome", "admin".equals(roleKey) ? "/admin/employees" : "/" + roleKey + "/dashboard");
         model.addAttribute("serverFormAction", serverFormAction);
         if ("permissions".equals(normalize(pageKey))) {
-            model.addAttribute("permissionGrants", permissionService.currentGrantKeys());
-            model.addAttribute("permissionRows", permissionService.listPermissions());
-            model.addAttribute("permissionRoles", permissionService.listRoles());
+            model.addAttribute("permissionMatrix", permissionService.matrix());
+        }
+        if ("employees".equals(normalize(pageKey))) {
+            model.addAttribute("deletableIds", employeeService.permanentlyDeletableIds());
         }
         return template;
     }
@@ -256,9 +254,9 @@ public class AdminUiModelService {
         List<Fact> facts = List.of(
                 new Fact("Họ tên", u.getFullName()),
                 new Fact("Email", u.getEmail()),
+                new Fact("Số điện thoại", u.getPhone() == null || u.getPhone().isBlank() ? "—" : u.getPhone()),
                 new Fact("Vai trò", u.getRole().getName()),
                 new Fact("Xác minh email", u.isEmailVerified() ? "Đã xác minh" : "Chưa xác minh"),
-                new Fact("Trạng thái", u.isActive() ? "ACTIVE" : "LOCKED"),
                 new Fact("Phiên đang hoạt động", sessions + " phiên"));
         List<Action> actions = new ArrayList<>();
         actions.add(new Action("Sửa hồ sơ", "/admin/employees/" + id + "/edit", "link", true, ""));
@@ -274,7 +272,7 @@ public class AdminUiModelService {
     private Screen permissionsScreen(String notice) {
         // Dedicated template section via model attrs; save happens inside the matrix form.
         return new Screen("permissions", "Vai trò & quyền truy cập", "Quản trị",
-                "Gán quyền nghiệp vụ theo từng vai trò. Lưu sẽ ghi RolePermission vào SQL Server.",
+                "Bật hoặc tắt từng chức năng chính của mỗi vai trò. Tắt thì nhân viên bấm vào sẽ được báo không có quyền.",
                 "permissions", "", notice == null ? "" : notice,
                 List.of(), List.of(), List.of(), List.of(), List.of(),
                 List.of(),

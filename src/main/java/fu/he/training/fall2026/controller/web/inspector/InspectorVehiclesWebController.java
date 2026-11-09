@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.controller.web.inspector;
 
+import fu.he.training.fall2026.constant.inspector.InspectorVehicleCatalog;
 import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
 import fu.he.training.fall2026.dto.inspection.InspectionQueueResponse;
 import fu.he.training.fall2026.dto.inspection.InspectionResultRequest;
@@ -10,9 +11,10 @@ import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.InspectionTypeService;
 import fu.he.training.fall2026.service.InspectorVehicleService;
 import fu.he.training.fall2026.service.ValuationService;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -36,19 +38,11 @@ public class InspectorVehiclesWebController {
     private static final String LIST_VIEW = "inspector/vehicles/list";
     private static final String INSPECT_VIEW = "inspector/vehicles/inspect";
 
-    private static final Map<String, String> STATUS_NAMES = Map.of(
-            "ACTIVE", "Đã duyệt",
-            "INSPECTION_RECEIVED", "Đang kiểm định",
-            "INSPECTED", "Đã kiểm định");
-    private static final Map<String, String> STATUS_TONES = Map.of(
-            "ACTIVE", "approved",
-            "INSPECTION_RECEIVED", "pending",
-            "INSPECTED", "approved");
-
     private final InspectorVehicleService inspectorVehicleService;
     private final InspectionTypeService inspectionTypeService;
     private final ValuationService valuationService;
 
+    @RequirePermission(Perm.INSPECTION_VIEW)
     @GetMapping
     public String list(
             @RequestParam(required = false) String q,
@@ -63,11 +57,12 @@ public class InspectorVehiclesWebController {
         model.addAttribute("q", q == null ? "" : q);
         model.addAttribute("status", "");
         model.addAttribute("size", pageSize);
-        model.addAttribute("statusNames", STATUS_NAMES);
-        model.addAttribute("statusTones", STATUS_TONES);
+        model.addAttribute("statusNames", InspectorVehicleCatalog.STATUS_NAMES);
+        model.addAttribute("statusTones", InspectorVehicleCatalog.STATUS_TONES);
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.INSPECTION_RECEIVE)
     @PostMapping("/{id}/receive")
     public String receive(@PathVariable Long id, RedirectAttributes flash) {
         try {
@@ -80,6 +75,7 @@ public class InspectorVehiclesWebController {
     }
 
     /** Màn tiến hành kiểm định: chọn loại kiểm định, kết quả + ảnh từng bước, giá chào bán. */
+    @RequirePermission(Perm.INSPECTION_PERFORM)
     @GetMapping("/{id}/inspect")
     public String inspect(
             @PathVariable Long id,
@@ -98,6 +94,7 @@ public class InspectorVehiclesWebController {
         return INSPECT_VIEW;
     }
 
+    @RequirePermission(Perm.INSPECTION_PERFORM)
     @PostMapping("/{id}/inspect")
     public String submitInspect(
             @PathVariable Long id,
@@ -114,6 +111,7 @@ public class InspectorVehiclesWebController {
                 return "redirect:" + BASE;
             } catch (BusinessException ex) {
                 errors.reject("business", ex.getMessage());
+                errors.rejectValue("proposedPrice", "low", ex.getMessage());
             }
         }
         model.addAttribute("vehicle", inspectorVehicleService.getForInspection(id));

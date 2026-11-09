@@ -1,11 +1,109 @@
 <!DOCTYPE html>
+<!--/* Nguyễn Việt Hải: Hàng đợi phê duyệt của Quản lý. Thanh loại ở trên lọc theo loại yêu cầu, số là số yêu cầu đang chờ duyệt.
+       Quyết toán bấm vào sẽ mở màn duyệt quyết toán của Vũ Mạnh Cường.
+       Dữ liệu thật từ ManagerApprovalService, không còn mock. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Hàng đợi phê duyệt', 'Quản lý', 'manager-approvals',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Hàng đợi phê duyệt</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiries.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/manager-approvals.css}">
+    <script th:src="@{/js/app/inspector-news.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Hàng đợi phê duyệt: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="manager/approvals/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow deal-list deal-list--approval">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg></div>
+      <div>
+        <h2>Hàng đợi phê duyệt</h2>
+        <p class="news-lead">Xem điều kiện của từng yêu cầu rồi duyệt, từ chối hoặc yêu cầu bổ sung.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+
+  <nav class="apr-tabs" aria-label="Lọc theo loại yêu cầu">
+    <a class="apr-tab" th:classappend="${type == null} ? 'is-active'" th:href="@{/manager/approvals}"
+       th:attr="aria-current=${type == null ? 'page' : null}">
+      <svg th:replace="~{shell/icons :: icon('list')}"></svg>Tất cả
+      <span class="apr-count" th:if="${pending.get('') > 0}" th:text="${pending.get('')}">0</span>
+    </a>
+    <a class="apr-tab" th:each="t : ${types}" th:if="${t.key != 'OTHER'}" th:classappend="${type == t.key} ? 'is-active'"
+       th:href="@{/manager/approvals/type/{type}(type=${t.key})}"
+       th:attr="aria-current=${type == t.key ? 'page' : null}">
+      <svg th:replace="~{shell/icons :: icon(${t.value.icon})}"></svg><span th:text="${t.value.label}">Loại</span>
+      <span class="apr-count" th:if="${pending.get(t.key) > 0}" th:text="${pending.get(t.key)}">0</span>
+    </a>
+  </nav>
+
+  <nav th:replace="~{sales/deal-parts :: kpis('yêu cầu')}"></nav>
+  <form th:replace="~{sales/deal-parts :: toolbar('Tìm yêu cầu', 'Tìm theo mã, hồ sơ, xe...', 'Khoảng ngày gửi', 'Số tiền')}"></form>
+
+  <section class="card records">
+    <div class="table-wrap" th:unless="${page.empty}">
+      <table class="table" aria-label="Danh sách yêu cầu phê duyệt">
+        <thead>
+          <tr>
+            <th scope="col" class="col-check"><input type="checkbox" data-check-all aria-label="Chọn tất cả trên trang"></th>
+            <th scope="col">Mã yêu cầu</th>
+            <th scope="col">Loại</th>
+            <th scope="col">Đối tượng</th>
+            <th scope="col">Xe</th>
+            <th scope="col">Người gửi</th>
+            <th scope="col" class="num">Số tiền</th>
+            <th scope="col">Ngày gửi</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="r : ${page.content}" th:with="s=${statuses.get(r.status)}, t=${types.get(r.type)}">
+            <td class="col-check"><input type="checkbox" data-check-row th:attr="aria-label=${'Chọn ' + r.code}"></td>
+            <td><a class="code" th:href="@{${r.url}}" th:text="${r.code}">PD-1</a></td>
+            <td th:text="${t.label}" th:title="${t.label}">Loại</td>
+            <td th:text="${r.target}" th:title="${r.target}">KG-1</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${r.car}" th:title="${r.car}">Xe</strong>
+                  <small th:text="${r.plate}">Biển số</small>
+                </span>
+              </div>
+            </td>
+            <td th:text="${r.staff}" th:title="${r.staff}">Người gửi</td>
+            <td class="num news-price" th:text="${#numbers.formatInteger(r.amount, 1, 'POINT') + ' ₫'}">0 ₫</td>
+            <td class="news-date"><span th:text="${#temporals.format(#temporals.createDateTime(r.created), 'dd/MM/yyyy')}">01/01/2026</span></td>
+            <td><span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span></td>
+            <td>
+              <div class="row-actions news-actions">
+                <a class="row-action" th:href="@{${r.url}}" th:attr="aria-label=${'Xem ' + r.code}" title="Xem chi tiết">
+                  <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có yêu cầu phù hợp</h4>
+      <p>Thử đổi bộ lọc hoặc chọn loại khác.</p>
+    </div>
+    <nav th:replace="~{sales/deal-parts :: pager('yêu cầu')}"></nav>
+  </section>
+</div>
 </body>
 </html>

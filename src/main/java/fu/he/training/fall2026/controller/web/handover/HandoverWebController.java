@@ -8,6 +8,8 @@ import fu.he.training.fall2026.dto.handover.HandoverView;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.HandoverService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,7 @@ public class HandoverWebController {
         model.addAttribute("statuses", handoverService.statusMeta());
     }
 
+    @RequirePermission(Perm.HANDOVER_VIEW)
     @GetMapping
     public String list(
             @ModelAttribute("filter") HandoverFilter filter,
@@ -60,6 +63,7 @@ public class HandoverWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.HANDOVER_VIEW)
     @GetMapping("/{id}")
     public String detail(@PathVariable long id, Model model) {
         model.addAttribute("item", handoverService.getByContractId(id));
@@ -69,6 +73,7 @@ public class HandoverWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.HANDOVER_CONFIRM)
     @PostMapping("/{id}/confirm")
     public String confirm(
             @PathVariable long id,
@@ -90,6 +95,7 @@ public class HandoverWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.HANDOVER_CLOSE_SALE)
     @PostMapping("/{id}/close")
     public String close(@PathVariable long id, RedirectAttributes flash) {
         try {
@@ -101,6 +107,7 @@ public class HandoverWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.HANDOVER_VIEW)
     @GetMapping("/{id}/receipt")
     public String receipt(@PathVariable long id, Model model, RedirectAttributes flash) {
         try {

@@ -20,6 +20,7 @@
   border: 1px solid var(--line, #b9cfea);
   border-radius: var(--toolbar-radius, 10px);
 }
+/* Menu lọc catalog dùng style dropdown chung (xám / trắng) từ consignment-workflow */
 .catalog-wrap .toolbar.toolbar--catalog .filter-dropdown-menu {
   min-width: 100%;
 }

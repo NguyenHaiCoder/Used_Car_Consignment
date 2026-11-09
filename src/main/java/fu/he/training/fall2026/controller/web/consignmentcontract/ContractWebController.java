@@ -6,6 +6,8 @@ import fu.he.training.fall2026.dto.consignment.ConsignmentRequestResponse;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.consignmentcontract.ConsignmentContractService;
 import fu.he.training.fall2026.service.consignmentrequest.ConsignmentRequestService;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -53,6 +55,7 @@ public class ContractWebController {
     private final ConsignmentContractService contractService;
     private final ConsignmentRequestService consignmentRequestService;
 
+    @RequirePermission(Perm.AGREEMENT_VIEW)
     @GetMapping
     public String list(Model model) {
         /* DataTables tìm kiếm / sắp xếp / phân trang ở trình duyệt nên lấy toàn bộ hợp đồng. */
@@ -61,8 +64,13 @@ public class ContractWebController {
     }
 
     /** Màn hợp đồng của một hồ sơ: điền sẵn mặc định, hoặc mở hợp đồng đã có của hồ sơ. */
+    @RequirePermission(Perm.AGREEMENT_EDIT)
     @GetMapping("/new")
-    public String form(@RequestParam Long consignmentId, Model model) {
+    public String form(@RequestParam(required = false) Long consignmentId, Model model, RedirectAttributes flash) {
+        if (consignmentId == null) {
+            flash.addFlashAttribute("flashMessage", "Chọn hồ sơ ký gửi trước khi lập hợp đồng.");
+            return "redirect:" + BASE;
+        }
         ConsignmentRequestResponse consignment = consignmentRequestService.get(consignmentId);
         ConsignmentContractResponse agreement = contractService.findByConsignment(consignmentId).orElse(null);
 
@@ -97,6 +105,7 @@ public class ContractWebController {
     }
 
     /** Lưu bản thảo: tạo mới khi chưa có hợp đồng, ngược lại sửa bản thảo. "Gửi duyệt" thì lưu rồi gửi duyệt luôn. */
+    @RequirePermission(Perm.AGREEMENT_EDIT)
     @PostMapping
     public String save(
             @Valid @ModelAttribute("form") ConsignmentContractRequest form,
@@ -131,8 +140,13 @@ public class ContractWebController {
     }
 
     /** DRAFT → PENDING_SIGNATURE (nút Gửi duyệt trên danh sách). */
+    @RequirePermission(Perm.AGREEMENT_SUBMIT)
     @PostMapping("/submit")
-    public String submit(@RequestParam Long consignmentId, RedirectAttributes flash) {
+    public String submit(@RequestParam(required = false) Long consignmentId, RedirectAttributes flash) {
+        if (consignmentId == null) {
+            flash.addFlashAttribute("flashMessage", "Chọn hồ sơ ký gửi trước khi gửi duyệt hợp đồng.");
+            return "redirect:" + BASE;
+        }
         contractService.submit(consignmentId);
         flash.addFlashAttribute("flashMessage", "Đã gửi duyệt hợp đồng. Nội dung được khóa, chờ ký.");
         return "redirect:" + BASE;

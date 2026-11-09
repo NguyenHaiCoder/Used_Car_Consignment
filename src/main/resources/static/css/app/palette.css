@@ -11,4 +11,10 @@
   --ink: #0a2257;
   --ink-soft: #3b5079;
   --mute: #6d80a0;
+  /* Dropdown list: mục active/hover xám + chữ trắng */
+  --dd-active-bg: #6b6b6b;
+  --dd-active-fg: #fff;
+  --dd-item-bg: #fff;
+  --dd-item-fg: #0b1b33;
+  --dd-border: #4a4a4a;
 }

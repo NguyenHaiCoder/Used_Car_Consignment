@@ -8,6 +8,8 @@ import fu.he.training.fall2026.dto.listing.SaleNewsResponse;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.SaleNewsService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.util.LinkedHashMap;
@@ -41,6 +43,7 @@ public class InspectorListingsWebController {
 
     private final SaleNewsService saleNewsService;
 
+    @RequirePermission(Perm.LISTING_VIEW)
     @GetMapping
     public String list(
             @ModelAttribute("filter") SaleNewsFilter filter,
@@ -61,6 +64,7 @@ public class InspectorListingsWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.LISTING_EDIT)
     @GetMapping("/new")
     public String createForm(
             @RequestParam(required = false) Long consignmentId,
@@ -72,6 +76,7 @@ public class InspectorListingsWebController {
         return CREATE_VIEW;
     }
 
+    @RequirePermission(Perm.LISTING_EDIT)
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         SaleNewsRequest form = saleNewsService.formFor(id);
@@ -81,6 +86,7 @@ public class InspectorListingsWebController {
     }
 
     /** Creates the listing when the hidden id is empty, otherwise updates it. */
+    @RequirePermission(Perm.LISTING_EDIT)
     @PostMapping
     public String save(
             @Valid @ModelAttribute("form") SaleNewsRequest form,
@@ -110,6 +116,7 @@ public class InspectorListingsWebController {
         return EDIT_VIEW;
     }
 
+    @RequirePermission(Perm.LISTING_TOGGLE)
     @PostMapping("/{id}/pause")
     public String pause(@PathVariable Long id, RedirectAttributes flash) {
         try {
@@ -120,6 +127,7 @@ public class InspectorListingsWebController {
         return "redirect:" + BASE;
     }
 
+    @RequirePermission(Perm.LISTING_TOGGLE)
     @PostMapping("/{id}/resume")
     public String resume(@PathVariable Long id, RedirectAttributes flash) {
         try {

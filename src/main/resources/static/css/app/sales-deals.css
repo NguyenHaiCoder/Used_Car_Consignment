@@ -88,3 +88,8 @@
   .contract-doc { padding: 0; border: 0; }
   .contracts-wrap { display: block; }
 }
+
+/* Nguyễn Việt Hải: dòng giá sàn của chủ xe và trạng thái duyệt giá dưới sàn, dưới ô Giá bán của hợp đồng */
+.floor-note { display: block; margin-top: 6px; font-size: 12.5px; line-height: 1.45; color: var(--ink-soft, #5b6b84); }
+.floor-note.is-warn { color: #b45309; font-weight: 600; }
+.floor-note.is-ok { color: #15803d; font-weight: 600; }

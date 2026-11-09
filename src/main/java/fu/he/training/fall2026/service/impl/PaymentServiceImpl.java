@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
+import fu.he.training.fall2026.constant.finance.PaymentCatalog;
 import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
 import fu.he.training.fall2026.dto.finance.PaymentDealRow;
 import fu.he.training.fall2026.dto.finance.PaymentFilter;
@@ -66,12 +67,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Map<String, Map<String, String>> paymentStatusMeta() {
-        Map<String, Map<String, String>> map = new LinkedHashMap<>();
-        map.put("PARTIAL", meta("Còn phải thu", "amber", "coins", "pending"));
-        map.put("PAID", meta("Đã thu đủ", "green", "check", "listed"));
-        map.put("REFUND_PENDING", meta("Cần hoàn cọc", "red", "undo", "sold"));
-        map.put("REFUNDED", meta("Đã hoàn cọc", "slate", "history", "closed"));
-        return map;
+        return PaymentCatalog.STATUSES;
     }
 
     @Override
@@ -505,10 +501,6 @@ public class PaymentServiceImpl implements PaymentService {
             return false;
         }
         return amountMax == null || r.getAmount() <= amountMax;
-    }
-
-    private static Map<String, String> meta(String label, String tone, String icon, String pill) {
-        return Map.of("label", label, "tone", tone, "icon", icon, "pill", pill);
     }
 
     private static Map<String, String> step(String label, String note, boolean passed) {

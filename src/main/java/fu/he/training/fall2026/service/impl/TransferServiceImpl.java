@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
+import fu.he.training.fall2026.constant.documents.TransferCatalog;
 import fu.he.training.fall2026.dto.documents.TransferCheckResponse;
 import fu.he.training.fall2026.dto.documents.TransferResponse;
 import fu.he.training.fall2026.dto.storage.StoredFile;
@@ -63,11 +64,7 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     public Map<String, Map<String, String>> statusMeta() {
-        Map<String, Map<String, String>> map = new LinkedHashMap<>();
-        map.put(TransferStatus.PENDING.name(), meta("Chờ xử lý", "slate", "hourglass", "draft"));
-        map.put(TransferStatus.IN_PROGRESS.name(), meta("Đang xử lý", "blue", "refresh", "signed"));
-        map.put(TransferStatus.COMPLETED.name(), meta("Hoàn tất", "green", "check", "listed"));
-        return map;
+        return TransferCatalog.STATUSES;
     }
 
     @Override
@@ -409,10 +406,6 @@ public class TransferServiceImpl implements TransferService {
                 .note(note)
                 .passed(String.valueOf(passed))
                 .build();
-    }
-
-    private static Map<String, String> meta(String label, String tone, String icon, String pill) {
-        return Map.of("label", label, "tone", tone, "icon", icon, "pill", pill);
     }
 
     private static String blankToEmpty(String value) {

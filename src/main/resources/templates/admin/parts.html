@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+
+<nav th:fragment="kpis" class="kpis" aria-label="Số liệu" th:if="${screen != null and !#lists.isEmpty(screen.metrics)}">
+  <article class="card kpi kpi--blue" th:each="m : ${screen.metrics}">
+    <span class="kpi-icon"><svg th:replace="~{shell/icons :: icon('grid')}"></svg></span>
+    <div>
+      <p th:text="${m.label}">Chỉ số</p>
+      <strong th:text="${m.value}">0</strong>
+      <small th:text="${m.caption}">Ghi chú</small>
+    </div>
+  </article>
+</nav>
+
+<p th:fragment="notice" class="flash" th:if="${screen != null and !#strings.isEmpty(screen.notice)}" th:text="${screen.notice}" role="status"></p>
+
+<section th:fragment="table(kind)" class="card records staff-table">
+  <div class="table-wrap" th:if="${screen != null and !#lists.isEmpty(screen.rows)}">
+    <table class="table">
+      <caption class="sr-only" th:text="${screen.title}">Danh sách</caption>
+      <thead>
+        <tr>
+          <th scope="col" th:each="column : ${screen.columns}" th:text="${column}">Cột</th>
+          <th scope="col">Trạng thái</th>
+          <th scope="col">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="row : ${screen.rows}">
+          <td th:each="cell : ${row.cells}" th:text="${cell}" th:title="${cell}">Ô</td>
+          <td>
+            <span class="pill"
+                  th:classappend="${(row.status == 'ACTIVE' or row.status == 'RECORDED' or row.status == 'APPROVED') ? 'pill--listed' : ((row.status == 'PENDING' or row.status == 'NEED_MORE_INFO') ? 'pill--pending' : 'pill--closed')}"
+                  th:text="${row.status == 'ACTIVE' ? 'Đang hoạt động' : (row.status == 'LOCKED' ? 'Đã khóa' : (row.status == 'REVOKED' ? 'Đã thu hồi' : (row.status == 'EXPIRED' ? 'Hết hạn' : (row.status == 'RECORDED' ? 'Đã ghi' : (row.status == 'PENDING' ? 'Chờ duyệt' : row.status)))))}">Trạng thái</span>
+          </td>
+          <td>
+            <div class="row-actions staff-actions" th:if="${kind == 'employees'}">
+              <a class="row-action" th:href="@{/admin/employees/{id}(id=${row.id})}" title="Xem"><svg th:replace="~{shell/icons :: icon('eye')}"></svg></a>
+              <a class="row-action" th:href="@{/admin/employees/{id}/edit(id=${row.id})}" title="Sửa"><svg th:replace="~{shell/icons :: icon('pencil')}"></svg></a>
+              <form th:action="@{/admin/employees/{id}/toggle-active(id=${row.id})}" method="post">
+                <button class="row-action" type="submit" th:title="${row.status == 'ACTIVE' ? 'Khóa' : 'Mở khóa'}">
+                  <svg th:replace="~{shell/icons :: icon(${row.status == 'ACTIVE' ? 'lock' : 'lock-open'})}"></svg>
+                </button>
+              </form>
+              <form th:if="${deletableIds != null and deletableIds.contains(row.id)}"
+                    th:action="@{/admin/employees/{id}/delete(id=${row.id})}" method="post"
+                    th:data-name="${row.cells[0]}"
+                    onsubmit="return confirm('Xóa vĩnh viễn tài khoản «' + this.dataset.name + '»? Không thể hoàn tác.')">
+                <button class="row-action row-action--danger" type="submit" title="Xóa vĩnh viễn"><svg th:replace="~{shell/icons :: icon('trash')}"></svg></button>
+              </form>
+              <button th:unless="${deletableIds != null and deletableIds.contains(row.id)}"
+                      class="row-action row-action--danger is-off" type="button"
+                      th:data-name="${row.cells[0]}"
+                      title="Còn hồ sơ liên quan"
+                      onclick="alert('Không xóa vĩnh viễn được «' + this.dataset.name + '» vì tài khoản còn hồ sơ liên quan. Hãy khóa tài khoản.')">
+                <svg th:replace="~{shell/icons :: icon('trash')}"></svg>
+              </button>
+            </div>
+            <div class="row-actions news-actions" th:if="${kind != 'employees' and !#strings.isEmpty(row.url)}">
+              <a class="row-action" th:href="@{${row.url}}" title="Xem"><svg th:replace="~{shell/icons :: icon('eye')}"></svg></a>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="empty" th:if="${screen == null or #lists.isEmpty(screen.rows)}">
+    <h4>Chưa có dữ liệu</h4>
+  </div>
+</section>
+
+<section th:fragment="formCard" class="section-card" th:if="${screen != null and !#lists.isEmpty(screen.fields)}">
+  <div class="section-head"><h3>Nhập thông tin</h3></div>
+  <form class="section-body inq-form" method="post" th:action="@{${serverFormAction}}">
+    <div class="field" th:each="field : ${screen.fields}">
+      <label th:for="${'field-' + field.name}">
+        <span th:text="${field.label}">Nhãn</span>
+        <span class="req" th:if="${field.required}">*</span>
+      </label>
+      <span class="select" th:if="${field.type == 'select'}">
+        <select th:id="${'field-' + field.name}" th:name="${field.name}" th:required="${field.required}">
+          <option value="">Chọn</option>
+          <option th:each="option : ${field.options}" th:value="${option}" th:text="${option}" th:selected="${option == field.value}">Mục</option>
+        </select>
+      </span>
+      <textarea th:if="${field.type == 'textarea'}" class="field-textarea" rows="4"
+                th:id="${'field-' + field.name}" th:name="${field.name}" th:text="${field.value}" th:required="${field.required}"></textarea>
+      <div class="field-input" th:if="${field.type != 'select' and field.type != 'textarea'}">
+        <input th:type="${field.type}" th:id="${'field-' + field.name}" th:name="${field.name}"
+               th:value="${field.value}" th:required="${field.required}">
+      </div>
+    </div>
+    <div class="create-actions">
+      <button class="btn-c btn-c--primary" type="submit">Lưu</button>
+    </div>
+  </form>
+</section>
+
+<section th:fragment="facts" class="card inq-card" th:if="${screen != null and !#lists.isEmpty(screen.facts)}">
+  <h3><svg th:replace="~{shell/icons :: icon('info')}"></svg>Thông tin</h3>
+  <dl class="inq-rows staff-facts">
+    <div th:each="fact : ${screen.facts}">
+      <dt th:text="${fact.label}">Nhãn</dt>
+      <dd th:text="${fact.value == 'ACTIVE' ? 'Đang hoạt động' : (fact.value == 'LOCKED' ? 'Đã khóa' : fact.value)}">Giá trị</dd>
+    </div>
+  </dl>
+</section>
+
+</body></html>

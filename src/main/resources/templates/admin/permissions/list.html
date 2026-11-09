@@ -1,106 +1,265 @@
 <!DOCTYPE html>
+<!--/* Nguyễn Việt Hải: màn phân quyền theo chức năng. Mỗi role một tab, chỉ bật/tắt chức năng của chính role đó.
+       Dữ liệu: permissionMatrix (List<PermissionMatrix.RoleTab>). Lưu một lần cho mọi tab, server lưu theo diff. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Vai trò &amp; quyền', 'Quản trị', 'admin-permissions',
+                    null, ~{::link}, ~{::#rbac-page})}">
+<head>
+  <title>Phân quyền</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/admin-permissions.css}">
+  </th:block>
+</head>
 <body>
-<section th:fragment="content" class="screen-content" data-template="admin/permissions/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-
-  <th:block th:if="${appShell}">
-    <aside class="perm-legend" aria-label="Giải thích quyền">
-      <article class="perm-legend-item" th:each="perm : ${permissionRows}">
-        <strong th:text="${perm.name}">Quyền</strong>
-        <code th:text="${perm.code}">CODE</code>
-        <p th:text="${perm.description}">Mô tả</p>
-      </article>
-    </aside>
-
-    <form method="post" th:action="@{/admin/permissions}" class="perm-board" id="perm-matrix-form">
-      <div class="perm-board-toolbar">
-        <div>
-          <h2>Ma trận gán quyền</h2>
-          <p>Mỗi ô là một grant Role → Permission. Lưu sẽ ghi đè toàn bộ bảng RolePermission.</p>
-        </div>
-        <div class="perm-board-meta">
-          <span><strong id="perm-grant-count" th:text="${permissionGrants != null ? permissionGrants.size() : 0}">0</strong> grant đang chọn</span>
-        </div>
+<div id="rbac-page" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg></div>
+      <div>
+        <h2>Vai trò &amp; quyền truy cập</h2>
+        <nav class="contracts-breadcrumb"><a th:href="@{/admin/employees}">Quản trị</a><span>/</span><span>Phân quyền</span></nav>
       </div>
-
-      <div class="perm-matrix-scroll">
-        <table class="perm-matrix">
-          <thead>
-          <tr>
-            <th scope="col" class="perm-col-role">Vai trò</th>
-            <th scope="col" th:each="perm : ${permissionRows}">
-              <span class="perm-col-name" th:text="${perm.name}">Quyền</span>
-              <span class="perm-col-code" th:text="${perm.code}">CODE</span>
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="role : ${permissionRoles}">
-            <th scope="row" class="perm-col-role">
-              <span class="perm-role-name" th:text="${role.name}">Role</span>
-              <span class="perm-role-code" th:text="${role.code}">ADMIN</span>
-              <span class="perm-role-count"><span>0</span>/<span th:text="${#lists.size(permissionRows)}">4</span></span>
-            </th>
-            <td th:each="perm : ${permissionRows}"
-                th:with="gkey=${role.code.name() + '|' + perm.code},
-                         on=${permissionGrants != null and permissionGrants.contains(gkey)}">
-              <label class="perm-cell" th:classappend="${on} ? 'is-on' : ''">
-                <input type="checkbox" name="grants"
-                       th:value="${gkey}"
-                       th:checked="${on}"
-                       th:attr="aria-label=${'Gán ' + perm.name + ' cho ' + role.name}"/>
-                <span class="perm-switch" aria-hidden="true"><span class="perm-knob"></span></span>
-                <span class="perm-cell-state" th:text="${on} ? 'Bật' : 'Tắt'">Tắt</span>
-              </label>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="perm-board-footer">
-        <p>Thay đổi chỉ có hiệu lực sau khi lưu.</p>
-        <button type="submit" class="button button-primary">Lưu ma trận</button>
-      </div>
-    </form>
-  </th:block>
-
-  <th:block th:unless="${appShell}">
-    <section th:replace="~{common/fragments/workflow-panels :: topPanels}"></section>
-    <div class="detail-grid">
-      <section th:replace="~{common/fragments/components :: facts}"></section>
-      <section th:replace="~{common/fragments/components :: checks}"></section>
     </div>
-  </th:block>
+  </div>
+  <p th:replace="~{admin/parts :: notice}"></p>
 
-  <script th:if="${appShell}">
+  <form method="post" th:action="@{/admin/permissions}" class="rbac" id="rbac-form"
+        th:with="activeRole=${param.role != null ? param.role[0] : (permissionMatrix.isEmpty() ? '' : permissionMatrix[0].code().name())}">
+    <input type="hidden" name="role" id="rbac-active-role" th:value="${activeRole}">
+
+    <div class="rbac-intro">
+      <div>
+        <h2>Chức năng theo vai trò</h2>
+        <p>Tắt một chức năng thì nhân viên của vai trò đó bấm vào sẽ được báo không có quyền.
+          Danh mục dùng chung (hãng, dòng xe, loại xe, loại kiểm định) luôn mở cho mọi vai trò.</p>
+      </div>
+      <label class="rbac-search">
+        <span class="sr-only">Tìm chức năng</span>
+        <input type="search" id="rbac-search" placeholder="Tìm chức năng trong vai trò đang xem..." autocomplete="off">
+      </label>
+    </div>
+
+    <div class="rbac-tabs" role="tablist" aria-label="Vai trò">
+      <button type="button" class="rbac-tab" role="tab"
+              th:each="tab : ${permissionMatrix}"
+              th:id="${'rbac-tab-' + tab.code().name()}"
+              th:attr="data-role=${tab.code().name()},aria-controls=${'rbac-panel-' + tab.code().name()},aria-selected=${tab.code().name() == activeRole}"
+              th:classappend="${tab.code().name() == activeRole} ? 'is-active' : ''">
+        <span class="rbac-tab-name" th:text="${tab.name()}">Vai trò</span>
+        <span class="rbac-tab-count" th:classappend="${tab.disabled() > 0} ? 'has-off' : ''">
+          <span data-count-on th:text="${tab.enabled()}">0</span>/<span th:text="${tab.total()}">0</span>
+        </span>
+      </button>
+    </div>
+
+    <section class="rbac-panel" role="tabpanel"
+             th:each="tab : ${permissionMatrix}"
+             th:id="${'rbac-panel-' + tab.code().name()}"
+             th:attr="data-role=${tab.code().name()},aria-labelledby=${'rbac-tab-' + tab.code().name()}"
+             th:hidden="${tab.code().name() != activeRole}">
+      <div class="rbac-panel-head">
+        <p>
+          <strong th:text="${tab.name()}">Vai trò</strong>:
+          đang bật <strong data-panel-on th:text="${tab.enabled()}">0</strong>
+          trên <span th:text="${tab.total()}">0</span> chức năng.
+        </p>
+        <div class="rbac-panel-actions">
+          <button type="button" class="button" data-action="all-on">Bật tất cả</button>
+          <button type="button" class="button" data-action="reset">Hoàn tác vai trò này</button>
+        </div>
+      </div>
+
+      <div class="rbac-modules">
+        <article class="rbac-module" th:each="group : ${tab.modules()}">
+          <header class="rbac-module-head">
+            <h3 th:text="${group.name()}">Nhóm</h3>
+            <label class="rbac-switch rbac-switch--group" title="Bật/tắt cả nhóm">
+              <input type="checkbox" data-group-toggle aria-label="Bật/tắt cả nhóm">
+              <span class="rbac-track" aria-hidden="true"><span class="rbac-knob"></span></span>
+              <span class="rbac-group-label">Cả nhóm</span>
+            </label>
+          </header>
+          <ul class="rbac-items">
+            <li class="rbac-item" th:each="item : ${group.items()}"
+                th:classappend="${item.locked()} ? 'is-locked' : ''"
+                th:attr="data-search=${#strings.toLowerCase(item.label() + ' ' + item.description() + ' ' + item.code())}">
+              <div class="rbac-item-text">
+                <span class="rbac-item-label">
+                  <span th:text="${item.label()}">Chức năng</span>
+                  <span class="rbac-pill rbac-pill--locked" th:if="${item.locked()}">Luôn bật</span>
+                  <span class="rbac-pill rbac-pill--dirty" hidden>Chưa lưu</span>
+                </span>
+                <span class="rbac-item-desc" th:text="${item.description()}">Mô tả</span>
+                <code class="rbac-item-code" th:text="${item.code()}">CODE</code>
+              </div>
+              <label class="rbac-switch">
+                <input type="checkbox" name="grants"
+                       th:value="${item.grantKey()}"
+                       th:checked="${item.enabled()}"
+                       th:disabled="${item.locked()}"
+                       th:attr="data-initial=${item.enabled()},aria-label=${(item.enabled() ? 'Tắt ' : 'Bật ') + item.label()}">
+                <span class="rbac-track" aria-hidden="true"><span class="rbac-knob"></span></span>
+                <span class="rbac-state" th:text="${item.enabled()} ? 'Bật' : 'Tắt'">Bật</span>
+              </label>
+            </li>
+          </ul>
+        </article>
+      </div>
+      <p class="rbac-empty" hidden>Không có chức năng nào khớp từ khóa.</p>
+    </section>
+
+    <footer class="rbac-footer">
+      <p id="rbac-dirty-text">Chưa có thay đổi.</p>
+      <div>
+        <button type="button" class="button" id="rbac-discard" disabled>Hủy thay đổi</button>
+        <button type="submit" class="button button-primary" id="rbac-save" disabled>Lưu phân quyền</button>
+      </div>
+    </footer>
+  </form>
+
+  <script>
     (function () {
-      const form = document.getElementById('perm-matrix-form');
+      const form = document.getElementById('rbac-form');
       if (!form) return;
-      const countEl = document.getElementById('perm-grant-count');
-      const sync = () => {
-        const boxes = form.querySelectorAll('input[name="grants"]');
-        let n = 0;
-        boxes.forEach((box) => {
-          const cell = box.closest('.perm-cell');
-          const on = box.checked;
-          if (cell) cell.classList.toggle('is-on', on);
-          const state = cell && cell.querySelector('.perm-cell-state');
-          if (state) state.textContent = on ? 'Bật' : 'Tắt';
-          if (on) n += 1;
+      const boxes = () => Array.from(form.querySelectorAll('input[name="grants"]'));
+      const panels = Array.from(form.querySelectorAll('.rbac-panel'));
+      const tabs = Array.from(form.querySelectorAll('.rbac-tab'));
+      const activeInput = document.getElementById('rbac-active-role');
+      const search = document.getElementById('rbac-search');
+      const dirtyText = document.getElementById('rbac-dirty-text');
+      const saveBtn = document.getElementById('rbac-save');
+      const discardBtn = document.getElementById('rbac-discard');
+      let submitting = false;
+
+      const initial = (box) => box.dataset.initial === 'true';
+
+      function syncItem(box) {
+        const item = box.closest('.rbac-item');
+        const label = item.querySelector('.rbac-item-label > span:first-child').textContent.trim();
+        item.querySelector('.rbac-state').textContent = box.checked ? 'Bật' : 'Tắt';
+        item.classList.toggle('is-off', !box.checked);
+        item.querySelector('.rbac-pill--dirty').hidden = box.checked === initial(box);
+        box.setAttribute('aria-label', (box.checked ? 'Tắt ' : 'Bật ') + label);
+      }
+
+      function syncGroup(module) {
+        const items = Array.from(module.querySelectorAll('input[name="grants"]:not(:disabled)'));
+        const toggle = module.querySelector('[data-group-toggle]');
+        if (!items.length) { toggle.disabled = true; toggle.checked = true; return; }
+        const on = items.filter((b) => b.checked).length;
+        toggle.checked = on === items.length;
+        toggle.indeterminate = on > 0 && on < items.length;
+      }
+
+      function syncCounts() {
+        panels.forEach((panel) => {
+          const all = Array.from(panel.querySelectorAll('input[name="grants"]'));
+          const on = all.filter((b) => b.checked).length;
+          panel.querySelector('[data-panel-on]').textContent = on;
+          const tab = tabs.find((t) => t.dataset.role === panel.dataset.role);
+          if (tab) {
+            tab.querySelector('[data-count-on]').textContent = on;
+            tab.querySelector('.rbac-tab-count').classList.toggle('has-off', on < all.length);
+            const dirty = all.some((b) => b.checked !== initial(b));
+            tab.classList.toggle('is-dirty', dirty);
+          }
         });
-        form.querySelectorAll('tbody tr').forEach((row) => {
-          const total = row.querySelectorAll('input[name="grants"]').length;
-          const on = row.querySelectorAll('input[name="grants"]:checked').length;
-          const badge = row.querySelector('.perm-role-count');
-          if (badge) badge.innerHTML = '<span>' + on + '</span>/<span>' + total + '</span>';
+        const changed = boxes().filter((b) => b.checked !== initial(b)).length;
+        dirtyText.textContent = changed ? 'Có ' + changed + ' thay đổi chưa lưu.' : 'Chưa có thay đổi.';
+        form.classList.toggle('is-dirty', changed > 0);
+        saveBtn.disabled = changed === 0;
+        discardBtn.disabled = changed === 0;
+      }
+
+      function syncAll() {
+        boxes().forEach(syncItem);
+        form.querySelectorAll('.rbac-module').forEach(syncGroup);
+        syncCounts();
+      }
+
+      function showTab(role) {
+        tabs.forEach((t) => {
+          const on = t.dataset.role === role;
+          t.classList.toggle('is-active', on);
+          t.setAttribute('aria-selected', String(on));
         });
-        if (countEl) countEl.textContent = String(n);
-      };
-      form.addEventListener('change', sync);
-      sync();
+        panels.forEach((p) => { p.hidden = p.dataset.role !== role; });
+        activeInput.value = role;
+        applySearch();
+      }
+
+      function applySearch() {
+        const q = (search.value || '').trim().toLowerCase();
+        panels.forEach((panel) => {
+          let shown = 0;
+          panel.querySelectorAll('.rbac-module').forEach((module) => {
+            let moduleShown = 0;
+            module.querySelectorAll('.rbac-item').forEach((item) => {
+              const match = !q || item.dataset.search.includes(q);
+              item.hidden = !match;
+              if (match) moduleShown++;
+            });
+            module.hidden = moduleShown === 0;
+            shown += moduleShown;
+          });
+          panel.querySelector('.rbac-empty').hidden = shown > 0;
+        });
+      }
+
+      tabs.forEach((t) => t.addEventListener('click', () => showTab(t.dataset.role)));
+      search.addEventListener('input', applySearch);
+
+      form.addEventListener('change', (e) => {
+        const target = e.target;
+        if (target.matches('[data-group-toggle]')) {
+          const module = target.closest('.rbac-module');
+          module.querySelectorAll('input[name="grants"]:not(:disabled)').forEach((b) => {
+            b.checked = target.checked;
+            syncItem(b);
+          });
+          syncGroup(module);
+          syncCounts();
+        } else if (target.name === 'grants') {
+          syncItem(target);
+          syncGroup(target.closest('.rbac-module'));
+          syncCounts();
+        }
+      });
+
+      form.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const panel = btn.closest('.rbac-panel');
+        panel.querySelectorAll('input[name="grants"]:not(:disabled)').forEach((b) => {
+          b.checked = btn.dataset.action === 'all-on' ? true : initial(b);
+        });
+        syncAll();
+      });
+
+      discardBtn.addEventListener('click', () => {
+        boxes().forEach((b) => { b.checked = initial(b); });
+        syncAll();
+      });
+
+      form.addEventListener('submit', () => {
+        submitting = true;
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Đang lưu...';
+      });
+
+      window.addEventListener('beforeunload', (e) => {
+        if (submitting || !form.classList.contains('is-dirty')) return;
+        e.preventDefault();
+        e.returnValue = '';
+      });
+
+      syncAll();
+      if (!tabs.some((t) => t.classList.contains('is-active')) && tabs.length) {
+        showTab(tabs[0].dataset.role);
+      }
     })();
   </script>
 </section>

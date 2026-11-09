@@ -11,6 +11,11 @@ import fu.he.training.fall2026.service.PaymentService;
 import fu.he.training.fall2026.service.ReservationService;
 import fu.he.training.fall2026.service.SalesContractService;
 import fu.he.training.fall2026.service.impl.ReservationServiceImpl;
+import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.PermissionGuard;
+import fu.he.training.fall2026.security.RequirePermission;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -37,18 +42,21 @@ public class SalesContractWebController {
     private final SalesContractService salesContractService;
     private final ReservationService reservationService;
     private final PaymentService paymentService;
+    private final PermissionGuard permissionGuard;
 
     @ModelAttribute
     public void dictionaries(Model model) {
         model.addAttribute("statuses", SalesDealCatalog.CONTRACT_STATUSES);
     }
 
+    @RequirePermission(Perm.SALES_CONTRACT_VIEW)
     @GetMapping
     public String list(@ModelAttribute DealListFilter filter, Model model) {
         salesContractService.bindList(model, BASE, filter);
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.SALES_CONTRACT_CREATE)
     @GetMapping("/new")
     public String createForm(
             @RequestParam(required = false) Long reservationId,
@@ -66,13 +74,16 @@ public class SalesContractWebController {
         return show(salesContractService.draftFromReservation(reservationId), toForm(null), null, model);
     }
 
+    @RequirePermission(Perm.SALES_CONTRACT_CREATE)
     @PostMapping
     public String create(
             @RequestParam long reservationId,
             @Valid @ModelAttribute("form") SalesContractForm form,
             BindingResult errors,
+            HttpSession session,
             Model model,
             RedirectAttributes flash) {
+        requireSignPermission(form);
         String redirect = blockedBy(reservationId, flash);
         if (redirect != null) {
             return redirect;
@@ -83,27 +94,31 @@ public class SalesContractWebController {
             return show(draft, form, null, model);
         }
         try {
-            Long id = salesContractService.create(reservationId, form);
-            return finish(salesContractService.findById(id), flash);
+            Long id = salesContractService.create(reservationId, form, SessionAuthUtils.getUserId(session));
+            return finish(salesContractService.findById(id), form, flash);
         } catch (BusinessException ex) {
             rejectContractBusiness(errors, ex.getMessage());
             return show(draft, form, null, model);
         }
     }
 
+    @RequirePermission(Perm.SALES_CONTRACT_VIEW)
     @GetMapping("/{id}")
     public String open(@PathVariable long id, Model model) {
         SalesContractResponse contract = salesContractService.findById(id);
         return show(contract, toForm(contract), null, model);
     }
 
+    @RequirePermission(Perm.SALES_CONTRACT_CREATE)
     @PostMapping("/{id}")
     public String save(
             @PathVariable long id,
             @Valid @ModelAttribute("form") SalesContractForm form,
             BindingResult errors,
+            HttpSession session,
             Model model,
             RedirectAttributes flash) {
+        requireSignPermission(form);
         SalesContractResponse contract = salesContractService.findById(id);
         if (!"DRAFT".equals(contract.getStatus())) {
             flash.addFlashAttribute("flashError", "Hợp đồng đã ký nên không sửa được.");
@@ -114,15 +129,23 @@ public class SalesContractWebController {
             return show(contract, form, null, model);
         }
         try {
-            salesContractService.update(id, form);
-            return finish(salesContractService.findById(id), flash);
+            salesContractService.update(id, form, SessionAuthUtils.getUserId(session));
+            return finish(salesContractService.findById(id), form, flash);
         } catch (BusinessException ex) {
             rejectContractBusiness(errors, ex.getMessage());
             return show(contract, form, null, model);
         }
     }
 
+    /** Nguyễn Việt Hải: Lưu nháp và Ký chung một nút gửi, chỉ bấm Ký mới cần quyền ký. */
+    private void requireSignPermission(SalesContractForm form) {
+        if ("sign".equals(form.getIntent())) {
+            permissionGuard.require(Perm.SALES_CONTRACT_SIGN);
+        }
+    }
+
     /** Sales gửi yêu cầu thu sang Tài chính. */
+    @RequirePermission(Perm.SALES_PAYMENT_REQUEST)
     @PostMapping("/{id}/payment-request")
     public String requestPayment(@PathVariable long id, RedirectAttributes flash) {
         SalesContractResponse contract = salesContractService.findById(id);
@@ -166,12 +189,18 @@ public class SalesContractWebController {
         return form;
     }
 
-    private static String finish(SalesContractResponse contract, RedirectAttributes flash) {
-        flash.addFlashAttribute(
-                "flashMessage",
-                "SIGNED".equals(contract.getStatus())
-                        ? "Đã ký hợp đồng " + contract.getCode() + "."
-                        : "Đã lưu nháp hợp đồng " + contract.getCode() + ".");
+    private static String finish(SalesContractResponse contract, SalesContractForm form, RedirectAttributes flash) {
+        boolean wantedSign = "sign".equals(form.getIntent());
+        if (wantedSign && !"SIGNED".equals(contract.getStatus()) && "PENDING".equals(contract.getFloorApprovalStatus())) {
+            flash.addFlashAttribute("flashError", "Giá bán thấp hơn giá sàn của chủ xe nên chưa ký được. Đã lưu nháp và gửi "
+                    + "Quản lý duyệt (" + contract.getFloorApprovalCode() + "), duyệt xong bấm Ký lại.");
+        } else {
+            flash.addFlashAttribute(
+                    "flashMessage",
+                    "SIGNED".equals(contract.getStatus())
+                            ? "Đã ký hợp đồng " + contract.getCode() + "."
+                            : "Đã lưu nháp hợp đồng " + contract.getCode() + ".");
+        }
         return "redirect:" + BASE + "/" + contract.getId();
     }
 

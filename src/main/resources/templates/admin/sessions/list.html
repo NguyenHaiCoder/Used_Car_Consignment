@@ -1,11 +1,29 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Phiên đăng nhập', 'Quản trị', 'admin-sessions',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Phiên đăng nhập</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+  </th:block>
+</head>
 <body>
-<!-- Phiên đăng nhập &amp; xác minh: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="admin/sessions/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('history')}"></svg></div>
+      <div>
+        <h2>Phiên đăng nhập &amp; xác minh</h2>
+        <nav class="contracts-breadcrumb"><a th:href="@{/admin/employees}">Quản trị</a><span>/</span><span>Phiên đăng nhập</span></nav>
+        <p class="news-lead" th:text="${screen.description}">Mô tả</p>
+      </div>
+    </div>
+  </div>
+  <nav th:replace="~{admin/parts :: kpis}"></nav>
+  <section th:replace="~{admin/parts :: table('plain')}"></section>
+</div>
 </body>
 </html>

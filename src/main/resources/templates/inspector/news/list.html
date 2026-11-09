@@ -20,6 +20,7 @@
      th:with="
        statuses=${ {
          'LISTED':{'label':'Đang hiển thị','tone':'blue','icon':'megaphone','pill':'listed'},
+         'RESERVED':{'label':'Đã đặt cọc','tone':'amber','icon':'coins','pill':'reserved'},
          'PAUSED':{'label':'Tạm ẩn','tone':'slate','icon':'eye-off','pill':'closed'},
          'SOLD':{'label':'Đã bán','tone':'red','icon':'store','pill':'sold'}
        } },
@@ -185,7 +186,7 @@
                       th:text="${s != null ? s.label : n.status.name()}">Trạng thái</span></td>
             <td>
               <div class="row-actions news-actions">
-                <a class="row-action" th:if="${n.status.name() != 'SOLD'}"
+                <a class="row-action" th:if="${n.status.name() == 'LISTED' or n.status.name() == 'PAUSED'}"
                    th:href="@{/inspector/listings/{id}/edit(id=${n.id})}"
                    th:attr="aria-label=${'Sửa tin ' + n.code}" title="Sửa tin">
                   <svg th:replace="~{shell/icons :: icon('pencil')}"></svg>

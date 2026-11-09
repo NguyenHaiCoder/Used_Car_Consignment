@@ -1,12 +1,34 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Nhân sự &amp; tài khoản', 'Quản trị', 'admin-employees',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Nhân sự</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+  </th:block>
+</head>
 <body>
-<!-- Nhân sự &amp; tài khoản: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="admin/employees/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div th:replace="~{common/fragments/components :: metrics}"></div>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('user')}"></svg></div>
+      <div>
+        <h2>Nhân sự &amp; tài khoản</h2>
+        <nav class="contracts-breadcrumb"><a th:href="@{/admin/employees}">Quản trị</a><span>/</span><span>Nhân sự</span></nav>
+        <p class="news-lead" th:text="${screen.description}">Mô tả</p>
+      </div>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--primary" th:href="@{/admin/employees/new}"><svg th:replace="~{shell/icons :: icon('plus')}"></svg>Thêm nhân viên</a>
+    </div>
+  </div>
+  <p th:replace="~{admin/parts :: notice}"></p>
+  <nav th:replace="~{admin/parts :: kpis}"></nav>
+  <section th:replace="~{admin/parts :: table('employees')}"></section>
+</div>
 </body>
 </html>

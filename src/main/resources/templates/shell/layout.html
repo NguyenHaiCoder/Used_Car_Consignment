@@ -23,6 +23,8 @@
       <th:block th:replace="${content}"></th:block>
     </main>
   </div>
+  <th:block th:replace="~{common/access-toast :: accessToast}"></th:block>
+  <script th:src="@{/js/app/custom-select.js}" defer></script>
   <script th:src="@{/js/ui/shell.js}" defer></script>
 </body>
 </html>

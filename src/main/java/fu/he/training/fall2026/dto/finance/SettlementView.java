@@ -17,6 +17,9 @@ public class SettlementView {
     String buyer;
     String staff;
     long salePrice;
+    /** Nguyễn Việt Hải: giá niêm yết sau kiểm định (0 nếu chưa có) và phần bán chênh so với giá đó. */
+    long listedPrice;
+    long priceGap;
     String commissionRate;
     long commission;
     long fee;

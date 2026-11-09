@@ -1,19 +1,15 @@
 package fu.he.training.fall2026.service;
 
+import fu.he.training.fall2026.dto.admin.PermissionMatrix;
 import fu.he.training.fall2026.dto.admin.SavePermissionsRequest;
-import fu.he.training.fall2026.entity.auth.Permission;
-import fu.he.training.fall2026.entity.auth.Role;
 import fu.he.training.fall2026.entity.auth.User;
 import java.util.List;
-import java.util.Set;
 
+/** Nguyễn Việt Hải: bật/tắt chức năng của từng role. Không cấp chéo chức năng sang role khác. */
 public interface AdminPermissionService {
 
-    List<Permission> listPermissions();
+    List<PermissionMatrix.RoleTab> matrix();
 
-    List<Role> listRoles();
-
-    Set<String> currentGrantKeys();
-
-    void saveGrants(SavePermissionsRequest request, User actor);
+    /** Lưu theo diff so với DB, trả câu tóm tắt để báo cho Admin. */
+    String saveGrants(SavePermissionsRequest request, User actor);
 }

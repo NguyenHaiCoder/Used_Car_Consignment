@@ -73,13 +73,136 @@ button, input, select { font: inherit; color: inherit; }
   background-position: right 6px center, right 1px center;
   background-size: 5px 5px; background-repeat: no-repeat;
 }
-.select select option,
-.select select optgroup {
-  background-color: #fff; color: #0b1b33; font-weight: 500; font-size: 13px;
-}
 .select:focus-within { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(37, 117, 232, .15); }
 .select:has(select:disabled) { background: #f4f7fb; color: var(--mute); box-shadow: none; }
 .select:has(select:disabled) select { background-color: #f4f7fb; cursor: not-allowed; }
+
+/*
+ * Dropdown đồng bộ: custom UI (custom-select.js) vì native <option>
+ * trên Windows gần như không nhận background/color.
+ * Fallback option:checked vẫn giữ cho select chưa được enhance.
+ */
+select,
+.select select { color-scheme: light; }
+select option,
+select optgroup,
+.select select option,
+.select select optgroup {
+  background-color: #fff !important;
+  color: #0b1b33 !important;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 10px 12px;
+}
+select option:checked,
+select option:hover,
+.select select option:checked,
+.select select option:hover {
+  background-color: #6b6b6b !important;
+  background: #6b6b6b linear-gradient(0deg, #6b6b6b 0%, #6b6b6b 100%) !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+/* Custom select (thay native popup) — đủ style ngay cả khi chưa load workflow.css */
+.select-dd {
+  position: relative; display: block; width: 100%; min-width: 0;
+}
+.select-dd[open] { z-index: 60; }
+.select.select--custom:has(.select-dd[open]) { z-index: 60; }
+.select-dd > summary { list-style: none; cursor: pointer; }
+.select-dd > summary::-webkit-details-marker { display: none; }
+.select-dd .filter-dropdown-caret {
+  display: inline-flex; flex: none; margin-left: auto; color: var(--mute);
+  transition: transform .08s linear;
+}
+.select-dd .filter-dropdown-caret .ic { width: 14px; height: 14px; }
+.select-dd[open] .filter-dropdown-caret { transform: rotate(180deg); }
+.select-dd .filter-dropdown-menu {
+  /* vị trí fixed do custom-select.js (tránh bị section-card overflow:hidden cắt) */
+  z-index: 400; max-height: 260px; overflow-y: auto; overflow-x: hidden;
+}
+/* Card form thường overflow:hidden — mở select thì cho nổi lên */
+.section-card:has(.select-dd[open]),
+.section-body:has(.select-dd[open]),
+.inq-card:has(.select-dd[open]),
+.field:has(.select-dd[open]) {
+  overflow: visible;
+}
+.select-native--hidden {
+  position: absolute !important;
+  width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important;
+  overflow: hidden !important; clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important; border: 0 !important;
+  opacity: 0 !important; pointer-events: none !important;
+}
+.select.select--custom {
+  position: relative;
+  padding: 0; border: 0; background: transparent; box-shadow: none;
+  min-height: 0;
+}
+.select.select--custom .select-dd { width: 100%; z-index: 5; }
+.select-dd-trigger,
+.select.select--custom .filter-dropdown-trigger {
+  box-sizing: border-box; width: 100%;
+  min-height: 36px; height: auto; padding: 0 10px; gap: 6px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff;
+  color: var(--ink); font-size: 12.5px; font-weight: 600;
+  box-shadow: 0 1px 0 rgba(15, 40, 80, .04);
+  display: flex; align-items: center;
+}
+.select.select--custom .filter-dropdown-trigger > span:not(.filter-dropdown-caret) {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.select.select--custom .filter-dropdown[open] > .filter-dropdown-trigger,
+.select.select--custom .filter-dropdown-trigger:hover {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(37, 117, 232, .15);
+}
+.select.select--custom.is-disabled .filter-dropdown-trigger,
+.select-dd.is-disabled .filter-dropdown-trigger {
+  background: #f4f7fb; color: var(--mute); cursor: not-allowed; box-shadow: none;
+}
+.select-dd .filter-dropdown-item.is-disabled {
+  opacity: .45; cursor: not-allowed;
+}
+/* Menu: xám / trắng — trùng filter-dropdown */
+.select-dd .filter-dropdown-menu {
+  padding: 0; border: 1px solid var(--dd-border, #4a4a4a); border-radius: 4px;
+  background: var(--dd-item-bg, #fff); box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
+}
+.select-dd .filter-dropdown-item {
+  width: 100%; text-align: left; border: 0; border-radius: 0; cursor: pointer;
+  padding: 10px 14px; background: var(--dd-item-bg, #fff); color: var(--dd-item-fg, #0b1b33);
+  font: inherit; font-size: 13px; font-weight: 500;
+}
+.select-dd .filter-dropdown-item:hover {
+  background: var(--dd-active-bg, #6b6b6b); color: var(--dd-active-fg, #fff);
+}
+.select-dd .filter-dropdown-item.is-active {
+  background: var(--dd-active-bg, #6b6b6b); color: var(--dd-active-fg, #fff); font-weight: 700;
+}
+
+/* field-select / field-input đứng một mình (không bọc .select) */
+select.field-select.select-native--hidden + .select-dd,
+.field-input > select.select-native--hidden + .select-dd {
+  display: block; width: 100%; flex: 1; min-width: 0;
+}
+select.field-select.select-native--hidden + .select-dd .select-dd-trigger,
+.field-input > select.select-native--hidden + .select-dd .select-dd-trigger {
+  min-height: 36px; border-radius: 8px; font-size: 13px; font-weight: 500;
+}
+.field-input:has(> select.select-native--hidden) {
+  padding-right: 0;
+}
+.field-input > select.select-native--hidden + .select-dd .select-dd-trigger {
+  border: 0; border-radius: 0; box-shadow: none; min-height: 34px; padding: 0 28px 0 0;
+  background: transparent;
+}
+.field-input > select.select-native--hidden + .select-dd .filter-dropdown-menu {
+  left: -10px; right: -10px; width: auto; min-width: calc(100% + 20px);
+}
 
 /* Nút */
 .btn {
@@ -118,14 +241,18 @@ button, input, select { font: inherit; color: inherit; }
 .user-text strong { display: block; font-size: 14px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
 .user-text small { display: block; font-size: 12.5px; color: var(--ink-soft); line-height: 1.25; }
 .menu-pop {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 35; display: grid; min-width: 170px; padding: 6px;
-  border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 8px 22px rgba(10, 40, 90, .18);
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 35; display: grid; min-width: 170px; padding: 0;
+  border: 1px solid var(--dd-border, #4a4a4a); border-radius: 4px; background: var(--dd-item-bg, #fff);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
 }
 .menu-pop a, .menu-pop button {
-  display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px;
-  background: none; font-size: 13px; text-align: left; white-space: nowrap; cursor: pointer;
+  display: block; width: 100%; padding: 10px 14px; border: 0; border-radius: 0;
+  background: var(--dd-item-bg, #fff); color: var(--dd-item-fg, #0b1b33);
+  font-size: 13px; font-weight: 500; text-align: left; white-space: nowrap; cursor: pointer;
 }
-.menu-pop a:hover, .menu-pop button:hover { background: var(--blue-50); }
+.menu-pop a:hover, .menu-pop button:hover {
+  background: var(--dd-active-bg, #6b6b6b); color: var(--dd-active-fg, #fff); font-weight: 700;
+}
 .menu-pop form { margin: 0; }
 
 @media (max-width: 1100px) {

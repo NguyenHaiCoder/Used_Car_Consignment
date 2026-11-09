@@ -165,6 +165,7 @@ public class SaleNewsServiceImpl implements SaleNewsService {
             throw new BusinessException("Chỉ đăng tin cho hồ sơ đã kiểm định.");
         }
         requireEditableStatus(form.getStatus());
+        requireAskingPrice(consignment.getExpectedPrice(), form.getListPrice());
         List<MultipartFile> images = selected(form.getImages());
         if (images.isEmpty()) {
             throw new BusinessException("Vui lòng chọn ít nhất 1 ảnh xe.");
@@ -198,7 +199,11 @@ public class SaleNewsServiceImpl implements SaleNewsService {
         if (news.getStatus() == ListingStatus.SOLD) {
             throw new BusinessException("Tin " + news.getCode() + " đã bán, không sửa được.");
         }
+        if (news.getStatus() == ListingStatus.RESERVED) {
+            throw new BusinessException("Tin " + news.getCode() + " đang đặt cọc, không sửa được.");
+        }
         requireEditableStatus(form.getStatus());
+        requireAskingPrice(news.getConsignment().getExpectedPrice(), form.getListPrice());
         apply(news, form);
 
         List<MultipartFile> images = selected(form.getImages());
@@ -296,6 +301,14 @@ public class SaleNewsServiceImpl implements SaleNewsService {
         target.setStatus(form.getStatus());
         if (form.getStatus() == ListingStatus.LISTED && target.getPublishedAt() == null) {
             target.setPublishedAt(Instant.now());
+        }
+    }
+
+    private static void requireAskingPrice(java.math.BigDecimal expectedPrice, java.math.BigDecimal askingPrice) {
+        if (expectedPrice != null && askingPrice != null && askingPrice.compareTo(expectedPrice) < 0) {
+            throw new BusinessException("Giá chào bán không được thấp hơn giá mong muốn của chủ xe ("
+                    + java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")).format(expectedPrice)
+                    + " ₫).");
         }
     }
 

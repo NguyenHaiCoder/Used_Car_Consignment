@@ -5,8 +5,12 @@ import fu.he.training.fall2026.dto.sales.DealListFilter;
 import fu.he.training.fall2026.dto.sales.ReservationResponse;
 import fu.he.training.fall2026.dto.sales.SalesContractForm;
 import fu.he.training.fall2026.dto.sales.SalesContractResponse;
+import fu.he.training.fall2026.entity.auth.Approval;
 import fu.he.training.fall2026.entity.consignment.Consignment;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
+import fu.he.training.fall2026.entity.enums.AgreementStatus;
+import fu.he.training.fall2026.entity.enums.ApprovalStatus;
+import fu.he.training.fall2026.entity.enums.ApprovalType;
 import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import fu.he.training.fall2026.entity.enums.ContractStatus;
 import fu.he.training.fall2026.entity.enums.HandoverStatus;
@@ -17,12 +21,15 @@ import fu.he.training.fall2026.entity.sales.Reservation;
 import fu.he.training.fall2026.entity.sales.SalesContract;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
+import fu.he.training.fall2026.repository.ApprovalRepository;
+import fu.he.training.fall2026.repository.ConsignmentAgreementRepository;
 import fu.he.training.fall2026.repository.ConsignmentRepository;
 import fu.he.training.fall2026.repository.HandoverRepository;
 import fu.he.training.fall2026.repository.PaymentRequestRepository;
 import fu.he.training.fall2026.repository.ReservationRepository;
 import fu.he.training.fall2026.repository.SalesContractRepository;
 import fu.he.training.fall2026.repository.TransferCaseRepository;
+import fu.he.training.fall2026.repository.UserRepository;
 import fu.he.training.fall2026.repository.VehicleSaleNewsRepository;
 import fu.he.training.fall2026.service.ReservationService;
 import fu.he.training.fall2026.service.SalesContractService;
@@ -34,7 +41,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -48,6 +57,8 @@ public class SalesContractServiceImpl implements SalesContractService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String SIGNATURE_PREFIX = "data:image/png;base64,";
+    /** Đối tượng của yêu cầu duyệt giá dưới sàn (Approval.targetType). */
+    public static final String FLOOR_TARGET = "SalesContract";
 
     private final SalesContractRepository salesContractRepository;
     private final ReservationRepository reservationRepository;
@@ -56,6 +67,9 @@ public class SalesContractServiceImpl implements SalesContractService {
     private final TransferCaseRepository transferCaseRepository;
     private final HandoverRepository handoverRepository;
     private final VehicleSaleNewsRepository newsRepository;
+    private final ConsignmentAgreementRepository agreementRepository;
+    private final ApprovalRepository approvalRepository;
+    private final UserRepository userRepository;
     private final ReservationService reservationService;
 
     @Override
@@ -104,7 +118,7 @@ public class SalesContractServiceImpl implements SalesContractService {
     }
 
     @Override
-    public Long create(Long reservationId, SalesContractForm form) {
+    public Long create(Long reservationId, SalesContractForm form, Long actorUserId) {
         Reservation reservation = reservationRepository.findDetailById(reservationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Phiếu đặt cọc", reservationId));
         if (reservation.getStatus() != ReservationStatus.ACTIVE) {
@@ -123,9 +137,12 @@ public class SalesContractServiceImpl implements SalesContractService {
         contract.setPaymentTerms(SalesDealCatalog.PAYMENT_TERMS);
         contract.setHandoverTerms(SalesDealCatalog.HANDOVER_TERMS);
         contract.setTerminationTerms(SalesDealCatalog.TERMINATION_TERMS);
-        applyForm(contract, form, true);
+        boolean belowFloor = applyForm(contract, form, true);
         contract = salesContractRepository.save(contract);
         contract.setCode(String.format("HDBX-%06d", contract.getId()));
+        if (belowFloor) {
+            requestBelowFloor(contract, actorUserId);
+        }
         // Phiếu cọc chỉ chuyển CONVERTED khi ký — lưu nháp vẫn giữ ACTIVE để hủy/hết hạn được.
         if (contract.getStatus() == ContractStatus.SIGNED) {
             reservation.setStatus(ReservationStatus.CONVERTED);
@@ -135,12 +152,14 @@ public class SalesContractServiceImpl implements SalesContractService {
     }
 
     @Override
-    public void update(Long id, SalesContractForm form) {
+    public void update(Long id, SalesContractForm form, Long actorUserId) {
         SalesContract contract = require(id);
         if (contract.getStatus() != ContractStatus.DRAFT) {
             throw new BusinessException("Hợp đồng đã ký nên không sửa được.", HttpStatus.CONFLICT);
         }
-        applyForm(contract, form, true);
+        if (applyForm(contract, form, true)) {
+            requestBelowFloor(contract, actorUserId);
+        }
         if (contract.getStatus() == ContractStatus.SIGNED) {
             contract.getReservation().setStatus(ReservationStatus.CONVERTED);
         }
@@ -160,7 +179,8 @@ public class SalesContractServiceImpl implements SalesContractService {
         return steps;
     }
 
-    private void applyForm(SalesContract contract, SalesContractForm form, boolean allowSign) {
+    /** @return true khi Sales bấm Ký nhưng giá bán dưới giá sàn và chưa được duyệt: hợp đồng giữ nháp. */
+    private boolean applyForm(SalesContract contract, SalesContractForm form, boolean allowSign) {
         Long salePrice = ReservationServiceImpl.parseMoney(form.getSalePrice());
         long deposit = contract.getDepositAmount() == null ? 0L : contract.getDepositAmount().longValue();
         if (salePrice == null || salePrice <= deposit) {
@@ -181,7 +201,7 @@ public class SalesContractServiceImpl implements SalesContractService {
         }
 
         if (!allowSign || !"sign".equals(form.getIntent())) {
-            return;
+            return false;
         }
         String idNumber = blank(form.getBuyerIdNumber());
         if (!idNumber.matches("\\d{12}")) {
@@ -197,10 +217,78 @@ public class SalesContractServiceImpl implements SalesContractService {
         }
         inquiry.setIdNumber(idNumber);
         inquiry.setAddress(form.getBuyerAddress().trim());
+        long floor = priceFloorOf(contract.getReservation().getVehicle());
+        if (floor > 0 && salePrice < floor && !belowFloorApproved(contract, salePrice)) {
+            return true;
+        }
         contract.setSellerSignaturePath(seller);
         contract.setBuyerSignaturePath(buyer);
         contract.setStatus(ContractStatus.SIGNED);
         contract.setSignedOn(LocalDate.now(ZONE));
+        return false;
+    }
+
+    /**
+     * Giá sàn của chủ xe: lấy từ hợp đồng ký gửi (chưa chấm dứt) của hồ sơ mới nhất của xe. Không có thì 0, không chặn.
+     */
+    private long priceFloorOf(Vehicle vehicle) {
+        return consignmentRepository.findByVehicleIdOrderByIdDesc(vehicle.getId()).stream()
+                .findFirst()
+                .flatMap(c -> agreementRepository.findByConsignmentId(c.getId()))
+                .filter(a -> a.getStatus() != AgreementStatus.TERMINATED && a.getPriceFloor() != null)
+                .map(a -> a.getPriceFloor().longValue())
+                .orElse(0L);
+    }
+
+    /** Quản lý đã duyệt đúng mức giá này. Đổi sang giá khác vẫn dưới sàn thì phải duyệt lại. */
+    private boolean belowFloorApproved(SalesContract contract, long salePrice) {
+        if (contract.getId() == null) {
+            return false;
+        }
+        return latestFloorRequest(contract.getId())
+                .filter(a -> a.getStatus() == ApprovalStatus.APPROVED)
+                .map(a -> a.getReason() != null && a.getReason().startsWith(floorReasonPrefix(salePrice)))
+                .orElse(false);
+    }
+
+    /** Tạo yêu cầu duyệt giá dưới sàn; đang có yêu cầu chờ thì cập nhật lại mức giá trên yêu cầu đó. */
+    private void requestBelowFloor(SalesContract contract, Long actorUserId) {
+        long salePrice = contract.getSalePrice().longValue();
+        long floor = priceFloorOf(contract.getReservation().getVehicle());
+        String reason = floorReasonPrefix(salePrice) + " thấp hơn giá sàn " + money(floor) + " ₫ của chủ xe, hợp đồng "
+                + contract.getCode() + ".";
+        Optional<Approval> latest = latestFloorRequest(contract.getId());
+        if (latest.isPresent() && latest.get().getStatus() == ApprovalStatus.PENDING) {
+            latest.get().setReason(reason);
+            return;
+        }
+        if (actorUserId == null) {
+            throw new BusinessException("Phiên đăng nhập không hợp lệ.", HttpStatus.UNAUTHORIZED);
+        }
+        Approval approval = new Approval();
+        approval.setCode("TMP-" + UUID.randomUUID().toString().substring(0, 12));
+        approval.setType(ApprovalType.BELOW_FLOOR_PRICE);
+        approval.setStatus(ApprovalStatus.PENDING);
+        approval.setTargetType(FLOOR_TARGET);
+        approval.setTargetId(contract.getId());
+        approval.setReason(reason);
+        approval.setRequestedBy(userRepository.getReferenceById(actorUserId));
+        approvalRepository.save(approval);
+        approval.setCode(String.format("PD-%06d", approval.getId()));
+    }
+
+    private Optional<Approval> latestFloorRequest(Long contractId) {
+        return approvalRepository.findRequests(ApprovalType.BELOW_FLOOR_PRICE, FLOOR_TARGET, contractId).stream()
+                .findFirst();
+    }
+
+    /** Lý do luôn bắt đầu bằng mức giá, để biết Quản lý đã duyệt cho đúng mức giá nào. */
+    private static String floorReasonPrefix(long salePrice) {
+        return "Giá bán " + money(salePrice) + " ₫";
+    }
+
+    private static String money(long value) {
+        return String.format(Locale.US, "%,d", value).replace(',', '.');
     }
 
     private SalesContractResponse draftDto(Reservation reservation) {
@@ -266,6 +354,11 @@ public class SalesContractServiceImpl implements SalesContractService {
         dto.setTransferred(transferred);
         dto.setHandoverStatus(handoverStatus);
         dto.setHandedOver(handed);
+        latestFloorRequest(contract.getId()).ifPresent(a -> {
+            dto.setFloorApprovalCode(a.getCode());
+            dto.setFloorApprovalStatus(a.getStatus().name());
+            dto.setFloorApprovalNote(a.getDecisionNote() == null ? "" : a.getDecisionNote());
+        });
         return dto;
     }
 
@@ -303,6 +396,7 @@ public class SalesContractServiceImpl implements SalesContractService {
         dto.setModel(nullToEmpty(vehicle.getModel()));
         dto.setYear(vehicle.getYear() == null ? "" : String.valueOf(vehicle.getYear()));
         dto.setListedPrice(price);
+        dto.setPriceFloor(priceFloorOf(vehicle));
         dto.setSalePrice(price);
         dto.setDeposit(deposit);
         dto.setRemaining(price - deposit);

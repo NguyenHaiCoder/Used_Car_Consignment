@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.dto.inspection;
 
+import java.math.BigDecimal;
 import lombok.Builder;
 import lombok.Value;
 
@@ -13,4 +14,6 @@ public class InspectVehicleResponse {
     String code;
     String displayLabel;
     String vin;
+    /** Giá mong muốn của chủ xe. Giá chào bán không được thấp hơn mức này. */
+    BigDecimal expectedPrice;
 }

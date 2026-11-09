@@ -10,6 +10,8 @@ import fu.he.training.fall2026.dto.finance.RefundView;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.PaymentService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class FinancePaymentWebController {
         model.addAttribute("methods", PaymentService.METHODS);
     }
 
+    @RequirePermission(Perm.PAYMENT_VIEW)
     @GetMapping
     public String list(
             @ModelAttribute("filter") PaymentFilter filter,
@@ -63,6 +66,7 @@ public class FinancePaymentWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.PAYMENT_VIEW)
     @GetMapping("/{id}")
     public String detail(@PathVariable long id, Model model) {
         PaymentDealRow item = paymentService.getPaymentDeal(id);
@@ -73,6 +77,7 @@ public class FinancePaymentWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.PAYMENT_RECORD)
     @PostMapping("/{id}/receipts")
     public String addReceipt(
             @PathVariable long id,
@@ -96,6 +101,7 @@ public class FinancePaymentWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.REFUND_PROCESS)
     @GetMapping("/refunds/{id}")
     public String refundForm(@PathVariable long id, Model model) {
         model.addAttribute("item", paymentService.getRefund(id));
@@ -103,6 +109,7 @@ public class FinancePaymentWebController {
         return REFUND_VIEW;
     }
 
+    @RequirePermission(Perm.REFUND_PROCESS)
     @PostMapping("/refunds/{id}")
     public String refund(
             @PathVariable long id,

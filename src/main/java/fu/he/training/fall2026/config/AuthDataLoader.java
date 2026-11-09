@@ -1,31 +1,28 @@
 package fu.he.training.fall2026.config;
 
 import fu.he.training.fall2026.entity.auth.Approval;
-import fu.he.training.fall2026.entity.auth.Permission;
 import fu.he.training.fall2026.entity.auth.Role;
-import fu.he.training.fall2026.entity.auth.RolePermission;
 import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.enums.ApprovalStatus;
 import fu.he.training.fall2026.entity.enums.ApprovalType;
 import fu.he.training.fall2026.entity.enums.RoleCode;
 import fu.he.training.fall2026.repository.ApprovalRepository;
-import fu.he.training.fall2026.repository.PermissionRepository;
-import fu.he.training.fall2026.repository.RolePermissionRepository;
 import fu.he.training.fall2026.repository.RoleRepository;
 import fu.he.training.fall2026.repository.UserRepository;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Seeds roles, permissions, demo users (Hải = ADMIN), sample approvals. */
+/** Seeds roles, tài khoản nhóm, và vài approval cho Manager. Quyền: xem PermissionCatalogSync. */
 @Slf4j
 @Component
+@Order(10)
 @RequiredArgsConstructor
 public class AuthDataLoader implements ApplicationRunner {
 
@@ -33,28 +30,25 @@ public class AuthDataLoader implements ApplicationRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
-    private final PermissionRepository permissionRepository;
-    private final RolePermissionRepository rolePermissionRepository;
     private final ApprovalRepository approvalRepository;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         Map<RoleCode, Role> roles = ensureRoles();
-        Map<String, Permission> permissions = ensurePermissions();
-        ensureDefaultGrants(roles, permissions);
+        // Nguyễn Việt Hải: danh mục quyền và grant mặc định do PermissionCatalogSync nạp.
 
-        User hai = ensureUser("hai@garagepro.example", "Nguyễn Việt Hải", "0901000001", roles.get(RoleCode.ADMIN));
-        User manager = ensureUser("manager@garagepro.example", "Demo Manager", "0901000002", roles.get(RoleCode.MANAGER));
-        ensureUser("consign@garagepro.example", "Demo Consignment", "0901000003", roles.get(RoleCode.CONSIGNMENT));
-        ensureUser("inspect@garagepro.example", "Demo Inspector", "0901000004", roles.get(RoleCode.INSPECTOR));
-        ensureUser("sales@garagepro.example", "Demo Sales", "0901000005", roles.get(RoleCode.SALES));
-        ensureUser("finance@garagepro.example", "Demo Finance", "0901000006", roles.get(RoleCode.FINANCE));
-        ensureUser("handover@garagepro.example", "Demo Handover", "0901000007", roles.get(RoleCode.HANDOVER));
-        ensureUser("docs@garagepro.example", "Demo Documents", "0901000008", roles.get(RoleCode.DOCUMENTS));
+        ensureUser("admin@gmail.com", "Nguyễn Việt Hải", "0901000001", roles.get(RoleCode.ADMIN));
+        User manager = ensureUser("hainv@gmail.com", "Nguyễn Việt Hải", "0901000002", roles.get(RoleCode.MANAGER));
+        ensureUser("quyenhl@gmail.com", "Hà Lệ Quyên", "0901000003", roles.get(RoleCode.CONSIGNMENT));
+        ensureUser("annvt@gmail.com", "Nguyễn Vũ Trường An", "0901000004", roles.get(RoleCode.INSPECTOR));
+        ensureUser("lanh@gmail.com", "Đỗ Lan Anh", "0901000005", roles.get(RoleCode.SALES));
+        ensureUser("cuongvm@gmail.com", "Vũ Mạnh Cường", "0901000006", roles.get(RoleCode.FINANCE));
+        ensureUser("cuongvmhandover@gmail.com", "Vũ Mạnh Cường", "0901000007", roles.get(RoleCode.HANDOVER));
+        ensureUser("khangnp@gmail.com", "Nguyễn Phúc Khang", "0901000008", roles.get(RoleCode.DOCUMENTS));
 
-        ensureSampleApprovals(manager != null ? manager : hai);
-        log.info("[AUTH] Seed ready — Hải ADMIN: hai@garagepro.example");
+        ensureSampleApprovals(manager);
+        log.info("[AUTH] Tài khoản nhóm đã sẵn sàng. Admin: admin@gmail.com");
     }
 
     private Map<RoleCode, Role> ensureRoles() {
@@ -70,64 +64,6 @@ public class AuthDataLoader implements ApplicationRunner {
             map.put(code, role);
         }
         return map;
-    }
-
-    private Map<String, Permission> ensurePermissions() {
-        List<String[]> defs = List.of(
-                new String[]{"VIEW_WORK", "Xem công việc", "Xem danh sách và chi tiết module"},
-                new String[]{"HANDLE_MODULE", "Xử lý module", "Tạo/sửa hồ sơ trong module được gán"},
-                new String[]{"APPROVE", "Phê duyệt", "Duyệt yêu cầu / ngoại lệ"},
-                new String[]{"MANAGE_PERMISSIONS", "Quản trị quyền", "Quản lý tài khoản và ma trận quyền"});
-        Map<String, Permission> map = new java.util.LinkedHashMap<>();
-        for (String[] def : defs) {
-            Permission p = permissionRepository.findByCode(def[0]).orElseGet(() -> {
-                Permission created = new Permission();
-                created.setCode(def[0]);
-                created.setName(def[1]);
-                created.setDescription(def[2]);
-                return permissionRepository.save(created);
-            });
-            map.put(def[0], p);
-        }
-        return map;
-    }
-
-    private void ensureDefaultGrants(Map<RoleCode, Role> roles, Map<String, Permission> permissions) {
-        if (!rolePermissionRepository.findAll().isEmpty()) {
-            return;
-        }
-        // ADMIN: all
-        grantAll(roles.get(RoleCode.ADMIN), permissions);
-        // MANAGER: view, handle, approve
-        grant(roles.get(RoleCode.MANAGER), permissions, "VIEW_WORK", "HANDLE_MODULE", "APPROVE");
-        // Others: view + handle
-        for (RoleCode code : List.of(RoleCode.CONSIGNMENT, RoleCode.INSPECTOR, RoleCode.SALES,
-                RoleCode.FINANCE, RoleCode.HANDOVER, RoleCode.DOCUMENTS)) {
-            grant(roles.get(code), permissions, "VIEW_WORK", "HANDLE_MODULE");
-        }
-    }
-
-    private void grantAll(Role role, Map<String, Permission> permissions) {
-        permissions.values().forEach(p -> saveGrant(role, p));
-    }
-
-    private void grant(Role role, Map<String, Permission> permissions, String... codes) {
-        for (String code : codes) {
-            saveGrant(role, permissions.get(code));
-        }
-    }
-
-    private void saveGrant(Role role, Permission permission) {
-        if (role == null || permission == null) {
-            return;
-        }
-        if (rolePermissionRepository.existsByRoleIdAndPermissionId(role.getId(), permission.getId())) {
-            return;
-        }
-        RolePermission rp = new RolePermission();
-        rp.setRole(role);
-        rp.setPermission(permission);
-        rolePermissionRepository.save(rp);
     }
 
     private User ensureUser(String email, String fullName, String phone, Role role) {

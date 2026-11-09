@@ -4,6 +4,7 @@ import fu.he.training.fall2026.dto.admin.CreateEmployeeRequest;
 import fu.he.training.fall2026.dto.admin.SavePermissionsRequest;
 import fu.he.training.fall2026.dto.admin.UpdateEmployeeRequest;
 import fu.he.training.fall2026.entity.auth.User;
+import fu.he.training.fall2026.entity.enums.RoleCode;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.model.ui.UiModels.Role;
 import fu.he.training.fall2026.model.ui.AppRoles;
@@ -12,8 +13,11 @@ import fu.he.training.fall2026.service.AdminEmployeeService;
 import fu.he.training.fall2026.service.AdminPermissionService;
 import fu.he.training.fall2026.service.admin.AdminUiModelService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /** Authenticated Admin UI for Nguyễn Việt Hải — data from SQL Server. */
@@ -47,18 +52,21 @@ public class AdminWebController {
         return "redirect:/admin/employees";
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_VIEW)
     @GetMapping("/employees")
     public String employees(HttpSession session, Model model) {
         String notice = (String) model.asMap().getOrDefault("notice", null);
         return uiModelService.renderAdminPage("employees", model, sessionRole(session), notice);
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_CREATE)
     @GetMapping("/employees/new")
     public String createForm(HttpSession session, Model model) {
         String notice = (String) model.asMap().getOrDefault("notice", null);
         return uiModelService.renderAdminPage("employees/new", model, sessionRole(session), notice);
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_CREATE)
     @PostMapping("/employees")
     public String createEmployee(
             @Valid @ModelAttribute CreateEmployeeRequest request,
@@ -83,18 +91,21 @@ public class AdminWebController {
         }
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_VIEW)
     @GetMapping("/employees/{id}")
     public String employeeDetail(@PathVariable Long id, HttpSession session, Model model) {
         String notice = (String) model.asMap().getOrDefault("notice", null);
         return uiModelService.renderAdminPage("employees/" + id, model, sessionRole(session), notice);
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_EDIT)
     @GetMapping("/employees/{id}/edit")
     public String editForm(@PathVariable Long id, HttpSession session, Model model) {
         String notice = (String) model.asMap().getOrDefault("notice", null);
         return uiModelService.renderAdminPage("employees/" + id + "/edit", model, sessionRole(session), notice);
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_EDIT)
     @PostMapping("/employees/{id}")
     public String updateEmployee(
             @PathVariable Long id,
@@ -119,6 +130,7 @@ public class AdminWebController {
         }
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_LOCK)
     @PostMapping("/employees/{id}/toggle-active")
     public String toggleActivePost(
             @PathVariable Long id,
@@ -127,6 +139,7 @@ public class AdminWebController {
         return toggleActive(id, session, redirectAttributes);
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_LOCK)
     @GetMapping("/employees/{id}/toggle-active")
     public String toggleActive(@PathVariable Long id, HttpSession session, RedirectAttributes redirectAttributes) {
         try {
@@ -139,6 +152,7 @@ public class AdminWebController {
         return "redirect:/admin/employees";
     }
 
+    @RequirePermission(Perm.ADMIN_ACCOUNT_DELETE)
     @PostMapping("/employees/{id}/delete")
     public String deleteEmployee(
             @PathVariable Long id,
@@ -153,36 +167,46 @@ public class AdminWebController {
         return "redirect:/admin/employees";
     }
 
+    @RequirePermission(Perm.ADMIN_PERMISSION_MANAGE)
     @GetMapping("/permissions")
     public String permissions(HttpSession session, Model model) {
         String notice = (String) model.asMap().getOrDefault("notice", null);
         return uiModelService.renderAdminPage("permissions", model, sessionRole(session), notice);
     }
 
+    @RequirePermission(Perm.ADMIN_PERMISSION_MANAGE)
     @PostMapping("/permissions")
     public String savePermissions(
             @ModelAttribute SavePermissionsRequest request,
+            @RequestParam(name = "role", required = false) String role,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         try {
-            permissionService.saveGrants(request, currentUser(session));
-            redirectAttributes.addFlashAttribute("notice", "Đã lưu ma trận quyền vào database.");
+            redirectAttributes.addFlashAttribute("notice", permissionService.saveGrants(request, currentUser(session)));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("notice", ex.getMessage());
+        }
+        // Nguyễn Việt Hải: quay về đúng tab vai trò đang xem.
+        boolean knownRole = role != null && Arrays.stream(RoleCode.values()).anyMatch(r -> r.name().equals(role));
+        if (knownRole) {
+            redirectAttributes.addAttribute("role", role);
         }
         return "redirect:/admin/permissions";
     }
 
+    @RequirePermission(Perm.ADMIN_SESSION_VIEW)
     @GetMapping("/sessions")
     public String sessions(HttpSession session, Model model) {
         return uiModelService.renderAdminPage("sessions", model, sessionRole(session), null);
     }
 
+    @RequirePermission(Perm.ADMIN_AUDIT_VIEW)
     @GetMapping("/audit")
     public String audit(HttpSession session, Model model) {
         return uiModelService.renderAdminPage("audit", model, sessionRole(session), null);
     }
 
+    @RequirePermission(Perm.ADMIN_REPORT_VIEW)
     @GetMapping("/reports")
     public String reports(HttpSession session, Model model) {
         return uiModelService.renderAdminPage("reports", model, sessionRole(session), null);

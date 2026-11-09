@@ -7,6 +7,8 @@ import fu.he.training.fall2026.dto.finance.SettlementView;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.SettlementService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,6 +41,7 @@ public class ManagerSettlementWebController {
         model.addAttribute("statuses", settlementService.reviewStatusMeta());
     }
 
+    @RequirePermission(Perm.MANAGER_SETTLEMENT_VIEW)
     @GetMapping
     public String list(
             @ModelAttribute("filter") SettlementFilter filter,
@@ -56,12 +59,14 @@ public class ManagerSettlementWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.MANAGER_SETTLEMENT_VIEW)
     @GetMapping("/{id}")
     public String detail(@PathVariable long id, Model model) {
         model.addAttribute("item", settlementService.getForReview(id));
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.MANAGER_SETTLEMENT_DECIDE)
     @PostMapping("/{id}/decide")
     public String decide(
             @PathVariable long id,

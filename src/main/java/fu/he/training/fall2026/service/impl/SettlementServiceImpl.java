@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
+import fu.he.training.fall2026.constant.finance.SettlementCatalog;
 import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
 import fu.he.training.fall2026.dto.finance.PayoutRequest;
 import fu.he.training.fall2026.dto.finance.SettlementFilter;
@@ -26,6 +27,7 @@ import fu.he.training.fall2026.repository.ConsignmentRepository;
 import fu.he.training.fall2026.repository.PayoutRepository;
 import fu.he.training.fall2026.repository.SettlementRepository;
 import fu.he.training.fall2026.repository.UserRepository;
+import fu.he.training.fall2026.repository.ValuationRepository;
 import fu.he.training.fall2026.service.SettlementService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -59,23 +61,17 @@ public class SettlementServiceImpl implements SettlementService {
     private final ConsignmentRepository consignmentRepository;
     private final ConsignmentAgreementRepository agreementRepository;
     private final ApprovalRepository approvalRepository;
+    private final ValuationRepository valuationRepository;
     private final UserRepository userRepository;
 
     @Override
     public Map<String, Map<String, String>> statusMeta() {
-        Map<String, Map<String, String>> map = new LinkedHashMap<>();
-        map.put("DRAFT", meta("Nháp", "slate", "pencil", "draft"));
-        map.putAll(reviewStatusMeta());
-        return map;
+        return SettlementCatalog.STATUSES;
     }
 
     @Override
     public Map<String, Map<String, String>> reviewStatusMeta() {
-        Map<String, Map<String, String>> map = new LinkedHashMap<>();
-        map.put("PENDING_REVIEW", meta("Chờ duyệt", "amber", "hourglass", "pending"));
-        map.put("APPROVED", meta("Đã duyệt", "blue", "shield-check", "signed"));
-        map.put("PAID_OUT", meta("Đã chi", "green", "check", "listed"));
-        return map;
+        return SettlementCatalog.REVIEW_STATUSES;
     }
 
     @Override
@@ -302,6 +298,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .findFirst()
                 .map(a -> a.getApprovedBy() != null ? a.getApprovedBy().getFullName() : "")
                 .orElse("");
+        long listed = listedPriceOf(consignment);
         return SettlementView.builder()
                 .id(s.getId())
                 .code(s.getCode())
@@ -314,6 +311,8 @@ public class SettlementServiceImpl implements SettlementService {
                 .staff(contract.getReservation().getAssignedTo() != null
                         ? contract.getReservation().getAssignedTo().getFullName() : "")
                 .salePrice(money(s.getBaseAmount()))
+                .listedPrice(listed)
+                .priceGap(listed == 0 ? 0 : money(s.getBaseAmount()) - listed)
                 .commissionRate(rateText)
                 .commission(money(s.getCommissionAmount()))
                 .fee(money(s.getFeeAmount()))
@@ -384,10 +383,6 @@ public class SettlementServiceImpl implements SettlementService {
         return value == null ? null : MILLION.multiply(BigDecimal.valueOf(value.longValue()));
     }
 
-    private static Map<String, String> meta(String label, String tone, String icon, String pill) {
-        return Map.of("label", label, "tone", tone, "icon", icon, "pill", pill);
-    }
-
     private static Map<String, String> step(String label, String note, boolean passed) {
         return Map.of("label", label, "note", note, "passed", String.valueOf(passed));
     }
@@ -409,6 +404,17 @@ public class SettlementServiceImpl implements SettlementService {
 
     private static long money(BigDecimal value) {
         return nz(value).longValue();
+    }
+
+    /**
+     * Nguyễn Việt Hải: giá niêm yết sau kiểm định = giá đề xuất của lần định giá mới nhất,
+     * chưa định giá thì lấy giá chào bán của xe. Dùng để hiện phần bán chênh trên màn quyết toán.
+     */
+    private long listedPriceOf(Consignment consignment) {
+        return valuationRepository.findFirstByConsignmentIdOrderByIdDesc(consignment.getId())
+                .map(v -> money(v.getProposedPrice()))
+                .filter(price -> price > 0)
+                .orElseGet(() -> money(consignment.getVehicle().getAskingPrice()));
     }
 
     private static String nullToEmpty(String value) {

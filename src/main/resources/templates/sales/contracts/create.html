@@ -179,6 +179,16 @@
                   <span>VNĐ</span>
                 </div>
                 <span class="field-error" th:if="${#fields.hasErrors('salePrice')}" th:errors="*{salePrice}"></span>
+                <!--/* Nguyễn Việt Hải: giá sàn chủ xe đã ký trong hợp đồng ký gửi; bán thấp hơn thì phải chờ Quản lý duyệt. */-->
+                <span class="floor-note" th:if="${contract.priceFloor > 0}"
+                      th:text="${'Giá sàn của chủ xe: ' + #numbers.formatInteger(contract.priceFloor, 1, 'POINT') + ' ₫. Bán thấp hơn mức này cần Quản lý duyệt.'}">Giá sàn</span>
+                <span class="floor-note is-warn" th:if="${contract.floorApprovalStatus == 'PENDING'}"
+                      th:text="${'Đang chờ Quản lý duyệt giá dưới sàn (' + contract.floorApprovalCode + ').'}">Chờ duyệt</span>
+                <span class="floor-note is-ok" th:if="${contract.floorApprovalStatus == 'APPROVED' and contract.status == 'DRAFT'}"
+                      th:text="${'Quản lý đã duyệt giá dưới sàn (' + contract.floorApprovalCode + '), có thể ký với đúng mức giá đã gửi.'}">Đã duyệt</span>
+                <span class="floor-note is-warn" th:if="${contract.status == 'DRAFT' and (contract.floorApprovalStatus == 'REJECTED' or contract.floorApprovalStatus == 'NEED_MORE_INFO')}"
+                      th:text="${(contract.floorApprovalStatus == 'REJECTED' ? 'Quản lý từ chối giá dưới sàn' : 'Quản lý yêu cầu bổ sung')
+                                 + (contract.floorApprovalNote == '' ? '.' : ': ' + contract.floorApprovalNote)}">Từ chối</span>
               </div>
               <div class="terms-inline-field">
                 <label for="deal-deposit-value">Tiền cọc đã đặt</label>

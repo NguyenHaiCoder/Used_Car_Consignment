@@ -23,4 +23,9 @@ public interface RolePermissionRepository extends JpaRepository<RolePermission, 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from RolePermission rp where rp.role.id = :roleId")
     void deleteByRoleId(@Param("roleId") Long roleId);
+
+    /** Nguyễn Việt Hải: dọn grant của chức năng đã bỏ khỏi danh mục trước khi xóa chính chức năng đó. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from RolePermission rp where rp.permission.id = :permissionId")
+    void deleteByPermissionId(@Param("permissionId") Long permissionId);
 }

@@ -9,6 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
     <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
     <link rel="stylesheet" th:href="@{/css/app/inspector-vehicles.css}">
+    <script th:src="@{/js/app/inspector-vehicles.js}" defer></script>
   </th:block>
 </head>
 <body>
@@ -99,13 +100,17 @@
         <h4>Định giá</h4>
       </header>
       <p class="inspect-valuation-hint">
-        Giá chào bán sau kiểm định sẽ cập nhật vào hồ sơ ký gửi và hợp đồng.
+        Giá chào bán không được thấp hơn giá mong muốn của chủ xe
+        <th:block th:if="${vehicle.expectedPrice != null}">
+          (<span th:text="${#numbers.formatDecimal(vehicle.expectedPrice, 0, 'POINT', 0, 'COMMA')}">0</span> ₫)
+        </th:block>.
       </p>
       <div class="inspect-valuation-grid">
         <div class="inspect-valuation-field inspect-valuation-field--full">
           <label for="proposedPrice">Giá chào bán (định giá) <span class="req">*</span></label>
           <div class="inspect-valuation-input">
-            <input type="number" th:field="*{proposedPrice}" step="any" placeholder="VD: 750000000">
+            <input th:field="*{proposedPrice}" inputmode="numeric" maxlength="17" data-money
+                   placeholder="VD: 750.000.000">
             <span>VNĐ</span>
           </div>
           <span class="field-error" th:if="${#fields.hasErrors('proposedPrice')}" th:errors="*{proposedPrice}"></span>

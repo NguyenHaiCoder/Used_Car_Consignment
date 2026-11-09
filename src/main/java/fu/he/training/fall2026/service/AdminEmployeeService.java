@@ -4,6 +4,7 @@ import fu.he.training.fall2026.dto.admin.CreateEmployeeRequest;
 import fu.he.training.fall2026.dto.admin.UpdateEmployeeRequest;
 import fu.he.training.fall2026.entity.auth.User;
 import java.util.List;
+import java.util.Set;
 
 public interface AdminEmployeeService {
 
@@ -18,4 +19,7 @@ public interface AdminEmployeeService {
     User toggleActive(Long id, User actor);
 
     void deleteEmployee(Long id, User actor);
+
+    /** Tài khoản không còn hồ sơ nghiệp vụ, được phép xóa vĩnh viễn. */
+    Set<Long> permanentlyDeletableIds();
 }

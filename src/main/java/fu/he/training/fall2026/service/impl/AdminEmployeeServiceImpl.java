@@ -7,7 +7,6 @@ import fu.he.training.fall2026.entity.auth.User;
 import fu.he.training.fall2026.entity.auth.UserToken;
 import fu.he.training.fall2026.entity.enums.RoleCode;
 import fu.he.training.fall2026.exception.BusinessException;
-import fu.he.training.fall2026.repository.ApprovalRepository;
 import fu.he.training.fall2026.repository.AuditEventRepository;
 import fu.he.training.fall2026.repository.OtpVerificationRepository;
 import fu.he.training.fall2026.repository.RoleRepository;
@@ -20,6 +19,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminEmployeeServiceImpl implements AdminEmployeeService {
 
     private static final String OTP_PASSWORD_PLACEHOLDER = "{OTP_LOGIN}";
+    private static final String LINKED_ACCOUNT =
+            "Không thể xóa vĩnh viễn vì tài khoản còn hồ sơ liên quan. Hãy khóa tài khoản.";
 
     private static final Map<String, RoleCode> ROLE_LABELS = Map.ofEntries(
             Map.entry("Quản trị viên", RoleCode.ADMIN),
@@ -47,9 +51,6 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
     private final UserTokenRepository userTokenRepository;
     private final OtpVerificationRepository otpVerificationRepository;
     private final AuditEventRepository auditEventRepository;
-    private final ApprovalRepository approvalRepository;
-
-    @Override
     @Transactional(readOnly = true)
     public List<User> listEmployees() {
         return userRepository.findAllWithRole();
@@ -139,19 +140,30 @@ public class AdminEmployeeServiceImpl implements AdminEmployeeService {
             throw new BusinessException("Không thể xóa chính tài khoản đang đăng nhập.");
         }
         User user = getEmployee(id);
-        if (approvalRepository.countByRequestedBy_Id(id) > 0
-                || approvalRepository.countByApprovedBy_Id(id) > 0) {
-            throw new BusinessException(
-                    "Không thể xóa vĩnh viễn vì còn phê duyệt liên quan. Hãy khóa tài khoản thay vì xóa.");
+        if (!permanentlyDeletableIds().contains(id)) {
+            throw new BusinessException(LINKED_ACCOUNT);
         }
 
         String email = user.getEmail();
-        otpVerificationRepository.deleteByUserId(id);
-        userTokenRepository.deleteByUserId(id);
-        auditEventRepository.clearActorByUserId(id);
-        userRepository.delete(user);
+        try {
+            otpVerificationRepository.deleteByUserId(id);
+            userTokenRepository.deleteByUserId(id);
+            userRepository.deleteAuthTokensByUserId(id);
+            auditEventRepository.clearActorByUserId(id);
+            userRepository.deleteById(id);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BusinessException(LINKED_ACCOUNT);
+        }
 
         auditService.record(actor, "DELETE_EMPLOYEE", "User", id, "Xóa vĩnh viễn tài khoản " + email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Long> permanentlyDeletableIds() {
+        return userRepository.findIdsWithoutBusinessLinks().stream()
+                .map(Number::longValue)
+                .collect(Collectors.toSet());
     }
 
     private void revokeAllSessions(Long userId) {

@@ -15,6 +15,7 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -52,4 +53,9 @@ public class Approval extends BaseEntity {
     private User approvedBy;
 
     private Instant decidedAt;
+
+    /** Nguyễn Việt Hải: ghi chú của Quản lý khi quyết định. Tách khỏi reason vì reason là lý do của người gửi. */
+    @Nationalized
+    @Column(length = 2000)
+    private String decisionNote;
 }

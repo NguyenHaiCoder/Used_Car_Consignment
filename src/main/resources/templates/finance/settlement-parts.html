@@ -62,7 +62,13 @@
   <section class="card inq-card">
     <h3><svg th:replace="~{shell/icons :: icon('coins')}"></svg>Bảng tính tiền chủ xe</h3>
     <dl class="deal-money fin-sheet">
-      <div><dt>Giá bán</dt><dd th:text="${#numbers.formatInteger(item.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <!--/* Nguyễn Việt Hải: giá niêm yết và phần bán chênh chỉ để giải thích, tiền chủ xe vẫn tính trên giá bán thực tế. */-->
+      <div th:if="${item.listedPrice > 0}"><dt>Giá niêm yết sau kiểm định</dt>
+        <dd th:text="${#numbers.formatInteger(item.listedPrice, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <div><dt>Giá bán thực tế</dt><dd th:text="${#numbers.formatInteger(item.salePrice, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
+      <div th:if="${item.listedPrice > 0 and item.priceGap != 0}">
+        <dt th:text="${item.priceGap > 0 ? 'Bán chênh so với giá niêm yết' : 'Bán thấp hơn giá niêm yết'}">Bán chênh</dt>
+        <dd th:text="${(item.priceGap > 0 ? '+ ' : '− ') + #numbers.formatInteger(item.priceGap > 0 ? item.priceGap : -item.priceGap, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
       <div><dt th:text="${'Hoa hồng theo hợp đồng ký gửi (' + item.commissionRate + ')'}">Hoa hồng</dt>
         <dd th:text="${'− ' + #numbers.formatInteger(item.commission, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>
       <div><dt>Phí cố định</dt><dd th:text="${'− ' + #numbers.formatInteger(item.fee, 1, 'POINT') + ' ₫'}">0 ₫</dd></div>

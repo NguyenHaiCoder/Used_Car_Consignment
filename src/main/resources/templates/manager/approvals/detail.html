@@ -1,16 +1,138 @@
 <!DOCTYPE html>
+<!--/* Nguyễn Việt Hải: Chi tiết yêu cầu phê duyệt, dùng chung cho hồ sơ ký gửi, hợp đồng ký gửi, giá dưới sàn, tin đăng và rút ký gửi.
+       Mỗi loại khác nhau ở các thẻ thông tin (item.sections) và điều kiện duyệt (item.checks).
+       Dữ liệu thật từ ManagerApprovalService; quyết định xong là đổi trạng thái hồ sơ, hợp đồng, tin đăng. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${item.code}, 'Quản lý', 'manager-approvals',
+                    null, ~{::link}, ~{::#approval-detail})}">
+<head>
+  <title>Yêu cầu phê duyệt</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiries.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/document-transfers.css}">
+    <link rel="stylesheet" th:href="@{/css/app/finance-deals.css}">
+    <link rel="stylesheet" th:href="@{/css/app/manager-approvals.css}">
+    <script th:src="@{/js/app/finance-deals.js}" defer></script>
+  </th:block>
+</head>
 <body>
-<!-- Đánh giá yêu cầu PD-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="manager/approvals/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="approval-detail" class="inq-detail" th:with="s=${statuses.get(item.status)}, t=${types.get(item.type)}">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon(${t.icon})}"></svg></div>
+      <div>
+        <h2 th:text="${t.label + ' ' + item.target}">Yêu cầu</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/manager/approvals}">Hàng đợi phê duyệt</a>
+          <span>/</span>
+          <a th:href="@{/manager/approvals/type/{type}(type=${item.type})}" th:text="${t.label}">Loại</a>
+          <span>/</span>
+          <span th:text="${item.code}">PD-1</span>
+        </nav>
+      </div>
+      <span class="pill" th:classappend="${'pill--' + s.pill}" th:text="${s.label}">Trạng thái</span>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/manager/approvals/type/{type}(type=${item.type})}">Quay lại</a>
+      <th:block th:if="${open}">
+        <button class="btn-c btn-c--outline" type="button" data-dialog="more-dialog">Yêu cầu bổ sung</button>
+        <button class="btn-c btn-c--danger" type="button" data-dialog="reject-dialog">Từ chối</button>
+        <form method="post" th:action="@{/manager/approvals/{id}/decide(id=${item.id})}">
+          <input type="hidden" name="decision" value="APPROVED">
+          <button class="btn-c btn-c--primary" type="submit" th:disabled="${blockers > 0}">Duyệt</button>
+        </form>
+      </th:block>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+  <p class="flash flash--error" th:if="${flashError == null and open and blockers > 0}" role="alert"
+     th:text="${'Còn ' + blockers + ' điều kiện chưa đạt nên chưa duyệt được.'}">Còn điều kiện chưa đạt.</p>
+
+  <div class="apr-grid">
+    <div class="apr-col">
+      <section class="card inq-card">
+        <h3><svg th:replace="~{shell/icons :: icon('send')}"></svg>Nội dung yêu cầu</h3>
+        <dl class="inq-rows">
+          <div><dt>Người gửi</dt><dd th:text="${item.staff}">Người gửi</dd></div>
+          <div><dt>Ngày gửi</dt><dd th:text="${#temporals.format(#temporals.createDateTime(item.created), 'dd/MM/yyyy HH:mm')}">01/01/2026</dd></div>
+          <div><dt>Xe</dt><dd th:text="${item.plate == '' ? item.car : item.car + ' · ' + item.plate}">Xe</dd></div>
+          <div><dt>Lý do</dt><dd th:text="${item.reason}">Lý do</dd></div>
+        </dl>
+      </section>
+
+      <section class="card inq-card" th:each="sec : ${item.sections}">
+        <h3><svg th:replace="~{shell/icons :: icon(${sec.icon})}"></svg><span th:text="${sec.title}">Thông tin</span></h3>
+        <dl class="inq-rows">
+          <div th:each="r : ${sec.rows}"><dt th:text="${r.label}">Nhãn</dt><dd th:text="${r.value}">Giá trị</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <div class="apr-col">
+      <section class="card inq-card" th:if="${item.decidedAt != null}">
+        <h3><svg th:replace="~{shell/icons :: icon(${s.icon})}"></svg>Quyết định</h3>
+        <dl class="inq-rows">
+          <div><dt>Kết quả</dt><dd th:text="${s.label}">Kết quả</dd></div>
+          <div><dt>Người quyết định</dt><dd th:text="${item.decidedBy}">Quản lý</dd></div>
+          <div><dt>Thời điểm</dt><dd th:text="${#temporals.format(#temporals.createDateTime(item.decidedAt), 'dd/MM/yyyy HH:mm')}">01/01/2026</dd></div>
+          <div th:if="${item.decisionNote != ''}"><dt>Lý do</dt><dd th:text="${item.decisionNote}">Lý do</dd></div>
+        </dl>
+      </section>
+
+      <!--/* th:replace chạy trước th:if trên cùng thẻ nên bọc bằng th:block. */-->
+      <th:block th:if="${!item.checks.isEmpty()}">
+        <div th:replace="~{documents/transfers/parts :: column('Điều kiện duyệt', 'shield-check', ${item.checks})}"></div>
+      </th:block>
+      <section class="card inq-card" th:if="${item.checks.isEmpty()}">
+        <h3><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>Điều kiện duyệt</h3>
+        <p class="news-lead">Loại yêu cầu này không có điều kiện tự kiểm tra, Quản lý tự đối chiếu trước khi quyết định.</p>
+      </section>
+
+      <section class="card inq-card" th:if="${open}">
+        <h3><svg th:replace="~{shell/icons :: icon('info')}"></svg>Sau khi quyết định</h3>
+        <dl class="inq-rows">
+          <div th:each="e : ${item.effects}"><dt th:text="${e.label}">Quyết định</dt><dd th:text="${e.value}">Tác động</dd></div>
+        </dl>
+      </section>
+    </div>
+  </div>
+
+  <th:block th:if="${open}">
+    <dialog class="intake-dialog inq-close-dialog fin-dialog" id="reject-dialog" aria-labelledby="reject-title">
+      <form method="post" th:action="@{/manager/approvals/{id}/decide(id=${item.id})}">
+        <input type="hidden" name="decision" value="REJECTED">
+        <h3 id="reject-title">Từ chối yêu cầu</h3>
+        <p th:text="${item.effects[1].value}">Tác động</p>
+        <label for="rj-note">Lý do <span class="req">*</span></label>
+        <textarea id="rj-note" name="note" rows="3" maxlength="1000" required></textarea>
+        <div class="inq-dialog-actions">
+          <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Đóng</button>
+          <button class="btn-c btn-c--danger" type="submit">Từ chối</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="intake-dialog inq-close-dialog fin-dialog" id="more-dialog" aria-labelledby="more-title">
+      <form method="post" th:action="@{/manager/approvals/{id}/decide(id=${item.id})}">
+        <input type="hidden" name="decision" value="NEED_MORE_INFO">
+        <h3 id="more-title">Yêu cầu bổ sung</h3>
+        <p th:text="${item.effects[2].value}">Tác động</p>
+        <label for="more-note">Cần bổ sung gì <span class="req">*</span></label>
+        <textarea id="more-note" name="note" rows="3" maxlength="1000" required></textarea>
+        <div class="inq-dialog-actions">
+          <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Đóng</button>
+          <button class="btn-c btn-c--primary" type="submit">Gửi yêu cầu</button>
+        </div>
+      </form>
+    </dialog>
+  </th:block>
+</div>
 </body>
 </html>

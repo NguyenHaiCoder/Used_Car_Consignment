@@ -59,6 +59,15 @@
 .inq-buyer { display: flex; align-items: flex-start; gap: 14px; }
 .inq-buyer .inq-avatar { width: 60px; height: 60px; font-size: 19px; }
 .inq-rows { display: grid; gap: 6px; flex: 1; min-width: 0; margin: 0; font-size: 12.5px; }
+#staff-detail .contracts-header-left > .pill { flex: none; white-space: nowrap; }
+#staff-detail .staff-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; }
+#staff-detail .staff-facts > div {
+  grid-template-columns: 132px minmax(0, 1fr); align-items: center;
+  min-height: 36px; border-bottom: 1px solid var(--line);
+}
+@media (max-width: 760px) {
+  #staff-detail .staff-facts { grid-template-columns: minmax(0, 1fr); }
+}
 .inq-rows > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 8px; }
 .inq-rows dt { color: var(--ink-soft); }
 .inq-rows dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

@@ -1,10 +1,29 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${screen.title}, 'Quản trị', 'admin-employees',
+                    null, ~{::link}, ~{::#staff-form})}">
+<head>
+  <title>Sửa nhân viên</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-create.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiry-forms.css}">
+  </th:block>
+</head>
 <body>
-<section th:fragment="content" class="screen-content" data-template="admin/employees/edit">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-</section>
+<div id="staff-form" class="create-wrap inq-form-page">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('pencil')}"></svg></div>
+      <div>
+        <h2 th:text="${screen.title}">Sửa</h2>
+        <nav class="contracts-breadcrumb"><a th:href="@{/admin/employees}">Nhân sự</a><span>/</span><span>Sửa</span></nav>
+      </div>
+    </div>
+  </div>
+  <p th:replace="~{admin/parts :: notice}"></p>
+  <section th:replace="~{admin/parts :: formCard}"></section>
+</div>
 </body>
 </html>

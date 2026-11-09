@@ -23,9 +23,10 @@ public interface SalesContractService {
     /** Bản nháp chưa lưu (id = null), điền sẵn từ phiếu cọc. */
     SalesContractResponse draftFromReservation(Long reservationId);
 
-    Long create(Long reservationId, SalesContractForm form);
+    /** Bấm Ký với giá bán dưới giá sàn của chủ xe thì chỉ lưu nháp và gửi Quản lý duyệt (loại Giá dưới sàn). */
+    Long create(Long reservationId, SalesContractForm form, Long actorUserId);
 
-    void update(Long id, SalesContractForm form);
+    void update(Long id, SalesContractForm form, Long actorUserId);
 
     List<java.util.Map<String, String>> steps(SalesContractResponse contract);
 }

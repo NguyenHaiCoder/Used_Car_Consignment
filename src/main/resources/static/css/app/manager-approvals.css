@@ -1,0 +1,37 @@
+/* Nguyễn Việt Hải: Hàng đợi phê duyệt. Khung list lấy từ inspector-news.css và sales-deals.css, ở đây chỉ chỉnh phần riêng. */
+
+/* Thanh loại yêu cầu */
+.apr-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.apr-tab { display: inline-flex; align-items: center; gap: 6px; flex: none; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink-soft); font-size: 13px; font-weight: 600; text-decoration: none; }
+.apr-tab .ic { width: 15px; height: 15px; }
+.apr-tab:hover { border-color: var(--blue-600); color: var(--navy-700); }
+.apr-tab.is-active { border-color: var(--blue-600); background: var(--blue-100); color: var(--navy-700); }
+.apr-count { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--amber-soft); color: var(--amber-ink); font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+
+/* Danh sách */
+#news-list.deal-list--approval .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#news-list.deal-list--approval .records th:nth-child(2) { width: 96px; }   /* Mã yêu cầu */
+#news-list.deal-list--approval .records th:nth-child(3) { width: 122px; }  /* Loại */
+#news-list.deal-list--approval .records th:nth-child(4) { width: 112px; }  /* Đối tượng */
+#news-list.deal-list--approval .records th:nth-child(5) { width: auto; }   /* Xe */
+#news-list.deal-list--approval .records th:nth-child(6) { width: 136px; }  /* Người gửi */
+#news-list.deal-list--approval .records th:nth-child(7) { width: 118px; }  /* Số tiền */
+#news-list.deal-list--approval .records th:nth-child(8) { width: 88px; }   /* Ngày gửi */
+#news-list.deal-list--approval .records th:nth-child(9) { width: 104px; }  /* Trạng thái */
+#news-list.deal-list--approval .records th:nth-child(10) { width: 64px; }  /* Thao tác */
+#news-list.deal-list--approval .records td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Chi tiết */
+.apr-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 10px; align-items: start; }
+.apr-col { display: grid; gap: 10px; min-width: 0; }
+.apr-grid .inq-rows > div { grid-template-columns: 124px minmax(0, 1fr); }
+
+@media (max-width: 1180px) {
+  #news-list.deal-list--approval .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .apr-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  #news-list.deal-list--approval .kpis { grid-template-columns: 1fr; }
+}

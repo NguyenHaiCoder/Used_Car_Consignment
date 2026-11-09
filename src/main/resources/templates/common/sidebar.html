@@ -41,12 +41,20 @@
     <th:block th:if="${session.AUTH_ROLE_CODE == 'HANDOVER'}">
     <a th:replace="~{common/sidebar :: link('car', 'Hàng đợi bàn giao', '/handover/handovers', ${active == 'handover-queue'})}"></a>
     </th:block>
-    <th:block th:if="${session.AUTH_ROLE_CODE == 'MANAGER' and (navigation == null or #lists.isEmpty(navigation))}">
-    <a th:replace="~{common/sidebar :: link('grid', 'Tổng quan', '/manager/dashboard', false)}"></a>
-    <a th:replace="~{common/sidebar :: link('shield-check', 'Hàng đợi phê duyệt', '/manager/approvals', false)}"></a>
+    <th:block th:if="${session.AUTH_ROLE_CODE == 'ADMIN'}">
+    <a th:replace="~{common/sidebar :: link('user', 'Nhân sự &amp; tài khoản', '/admin/employees', ${active == 'admin-employees'})}"></a>
+    <a th:replace="~{common/sidebar :: link('shield-check', 'Vai trò &amp; quyền', '/admin/permissions', ${active == 'admin-permissions'})}"></a>
+    <a th:replace="~{common/sidebar :: link('history', 'Phiên đăng nhập', '/admin/sessions', ${active == 'admin-sessions'})}"></a>
+    <a th:replace="~{common/sidebar :: link('clipboard', 'Nhật ký hoạt động', '/admin/audit', ${active == 'admin-audit'})}"></a>
+    <a th:replace="~{common/sidebar :: link('chart', 'Báo cáo vận hành', '/admin/reports', ${active == 'admin-reports'})}"></a>
+    </th:block>
+    <th:block th:if="${session.AUTH_ROLE_CODE == 'MANAGER'}">
+    <a th:replace="~{common/sidebar :: link('grid', 'Tổng quan', '/manager/dashboard', ${active == 'manager-dashboard'})}"></a>
+    <a th:replace="~{common/sidebar :: link('shield-check', 'Hàng đợi phê duyệt', '/manager/approvals', ${active == 'manager-approvals'})}"></a>
     <a th:replace="~{common/sidebar :: link('clipboard', 'Duyệt quyết toán', '/manager/settlements', ${active == 'manager-settlements'})}"></a>
-    <a th:replace="~{common/sidebar :: link('history', 'Nhật ký hoạt động', '/manager/audit', false)}"></a>
-    <a th:replace="~{common/sidebar :: link('chart', 'Báo cáo vận hành', '/manager/reports', false)}"></a>
+    <a th:replace="~{common/sidebar :: link('car', 'Hồ sơ ký gửi', '/manager/consignments', ${active == 'manager-consignments'})}"></a>
+    <a th:replace="~{common/sidebar :: link('history', 'Nhật ký hoạt động', '/manager/audit', ${active == 'manager-audit'})}"></a>
+    <a th:replace="~{common/sidebar :: link('chart', 'Báo cáo vận hành', '/manager/reports', ${active == 'manager-reports'})}"></a>
     </th:block>
 
     <th:block th:if="${session.AUTH_ROLE_CODE != 'INSPECTOR' and session.AUTH_ROLE_CODE != 'SALES' and session.AUTH_ROLE_CODE != 'DOCUMENTS' and session.AUTH_ROLE_CODE != 'FINANCE' and session.AUTH_ROLE_CODE != 'HANDOVER' and session.AUTH_ROLE_CODE != 'MANAGER' and (session.AUTH_ROLE_CODE == 'CONSIGNMENT' or navigation == null or #lists.isEmpty(navigation))}">
@@ -61,7 +69,7 @@
     <span th:replace="~{common/sidebar :: locked('gear', 'Hệ thống')}"></span>
     </th:block>
 
-    <th:block th:unless="${session.AUTH_ROLE_CODE == 'INSPECTOR' or session.AUTH_ROLE_CODE == 'SALES' or session.AUTH_ROLE_CODE == 'DOCUMENTS' or session.AUTH_ROLE_CODE == 'FINANCE' or session.AUTH_ROLE_CODE == 'HANDOVER' or session.AUTH_ROLE_CODE == 'CONSIGNMENT' or navigation == null or #lists.isEmpty(navigation)}">
+    <th:block th:unless="${session.AUTH_ROLE_CODE == 'INSPECTOR' or session.AUTH_ROLE_CODE == 'SALES' or session.AUTH_ROLE_CODE == 'DOCUMENTS' or session.AUTH_ROLE_CODE == 'FINANCE' or session.AUTH_ROLE_CODE == 'HANDOVER' or session.AUTH_ROLE_CODE == 'CONSIGNMENT' or session.AUTH_ROLE_CODE == 'ADMIN' or session.AUTH_ROLE_CODE == 'MANAGER' or navigation == null or #lists.isEmpty(navigation)}">
       <a th:each="item : ${navigation}" class="nav-item"
          th:classappend="${activeNav == item.url ? 'is-active' : ''}"
          th:attr="aria-current=${activeNav == item.url ? 'page' : null}" th:href="@{${item.url}}">

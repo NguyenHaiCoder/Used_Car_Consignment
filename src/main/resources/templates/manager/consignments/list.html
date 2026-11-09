@@ -1,11 +1,170 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page('Hồ sơ ký gửi', 'Quản lý', 'manager-consignments',
+                    null, ~{::link}, ~{::#news-list})}">
+<head>
+  <title>Hồ sơ ký gửi</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-catalog.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+  </th:block>
+</head>
 <body>
-<!-- Hồ sơ ký gửi: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="manager/consignments/list">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <section th:replace="~{common/fragments/table :: table}"></section>
-</section>
+<div id="news-list" class="catalog-wrap workflow">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('car')}"></svg></div>
+      <div>
+        <h2>Hồ sơ ký gửi</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/manager/dashboard}">Quản lý</a><span>/</span><span>Hồ sơ ký gửi</span>
+        </nav>
+        <p class="news-lead">Theo dõi hồ sơ từ lúc tiếp nhận đến khi đóng.</p>
+      </div>
+    </div>
+  </div>
+
+  <form class="card toolbar news-toolbar consign-toolbar" method="get" th:action="@{/manager/consignments}">
+    <label class="search">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <input type="search" name="q" th:value="${q}" placeholder="Mã hồ sơ, chủ xe, VIN, hãng hoặc dòng xe" aria-label="Tìm hồ sơ ký gửi">
+      <input type="hidden" name="status" th:if="${status != null}" th:value="${status}">
+    </label>
+    <details class="filter-dropdown">
+      <summary class="filter-dropdown-trigger" aria-label="Trạng thái hồ sơ">
+        <span th:switch="${status != null ? status.name() : ''}">
+          <th:block th:case="''">Mọi trạng thái</th:block>
+          <th:block th:case="'DRAFT'">Lưu nháp</th:block>
+          <th:block th:case="'SUBMITTED'">Chờ phê duyệt</th:block>
+          <th:block th:case="'ACTIVE'">Đã duyệt</th:block>
+          <th:block th:case="'INSPECTION_RECEIVED'">Đang kiểm định</th:block>
+          <th:block th:case="'INSPECTED'">Đã kiểm định</th:block>
+          <th:block th:case="'LISTED'">Đang đăng bán</th:block>
+          <th:block th:case="'RESERVED'">Đã đặt cọc</th:block>
+          <th:block th:case="'SOLD'">Đã bán</th:block>
+          <th:block th:case="'COMPLETED'">Hoàn thành</th:block>
+          <th:block th:case="'WITHDRAW_REQUESTED'">Đang yêu cầu rút</th:block>
+          <th:block th:case="'WITHDRAWN'">Đã rút</th:block>
+          <th:block th:case="'CLOSED'">Đã đóng</th:block>
+          <th:block th:case="*" th:text="${status}">Trạng thái</th:block>
+        </span>
+        <span class="filter-dropdown-caret" aria-hidden="true"><svg th:replace="~{shell/icons :: icon('chevron')}"></svg></span>
+      </summary>
+      <div class="filter-dropdown-menu" role="listbox">
+        <a class="filter-dropdown-item" th:classappend="${status == null} ? 'is-active'" th:href="@{/manager/consignments(q=${q})}">Mọi trạng thái</a>
+        <a class="filter-dropdown-item" th:each="entry : ${counts}"
+           th:classappend="${entry.key == status} ? 'is-active'"
+           th:href="@{/manager/consignments(q=${q},status=${entry.key})}">
+          <span th:switch="${entry.key.name()}">
+            <th:block th:case="'DRAFT'">Lưu nháp</th:block>
+            <th:block th:case="'SUBMITTED'">Chờ phê duyệt</th:block>
+            <th:block th:case="'ACTIVE'">Đã duyệt</th:block>
+            <th:block th:case="'INSPECTION_RECEIVED'">Đang kiểm định</th:block>
+            <th:block th:case="'INSPECTED'">Đã kiểm định</th:block>
+            <th:block th:case="'LISTED'">Đang đăng bán</th:block>
+            <th:block th:case="'RESERVED'">Đã đặt cọc</th:block>
+            <th:block th:case="'SOLD'">Đã bán</th:block>
+            <th:block th:case="'COMPLETED'">Hoàn thành</th:block>
+            <th:block th:case="'WITHDRAW_REQUESTED'">Đang yêu cầu rút</th:block>
+            <th:block th:case="'WITHDRAWN'">Đã rút</th:block>
+            <th:block th:case="'CLOSED'">Đã đóng</th:block>
+            <th:block th:case="*" th:text="${entry.key}">Trạng thái</th:block>
+          </span>
+          <span th:text="${' (' + entry.value + ')'}"></span>
+        </a>
+      </div>
+    </details>
+    <div class="news-toolbar-actions">
+      <button class="btn btn--primary" type="submit">Tìm</button>
+      <a class="btn" th:href="@{/manager/consignments}">
+        <svg th:replace="~{shell/icons :: icon('refresh')}"></svg>Làm mới
+      </a>
+    </div>
+  </form>
+
+  <section class="card records consign-table">
+    <div class="table-wrap" th:if="${!page.empty}">
+      <table class="table">
+        <caption class="sr-only">Danh sách hồ sơ ký gửi</caption>
+        <thead>
+          <tr>
+            <th scope="col">Mã hồ sơ</th>
+            <th scope="col">Chủ xe</th>
+            <th scope="col">Xe</th>
+            <th scope="col" class="num">Giá kỳ vọng</th>
+            <th scope="col">Trạng thái</th>
+            <th scope="col">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="c : ${page.content}">
+            <td><a class="code" th:href="@{/manager/consignments/{id}(id=${c.id})}" th:text="${c.code}">KG</a></td>
+            <td th:text="${c.consignorName}">Chủ xe</td>
+            <td>
+              <div class="vehicle">
+                <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
+                <span>
+                  <strong th:text="${c.vehicle.displayLabel}">Xe</strong>
+                  <small th:text="${c.vehicle.vin}">VIN</small>
+                </span>
+              </div>
+            </td>
+            <td class="num" th:text="${c.expectedPrice != null ? #numbers.formatDecimal(c.expectedPrice, 0, 'POINT', 0, 'COMMA') + ' ₫' : '—'}">0</td>
+            <td>
+              <span class="pill" th:with="st=${c.status.name()}"
+                    th:classappend="${(st == 'LISTED' or st == 'ACTIVE' or st == 'COMPLETED' or st == 'INSPECTED') ? 'pill--listed' : (st == 'SOLD' ? 'pill--sold' : ((st == 'DRAFT' or st == 'CLOSED' or st == 'WITHDRAWN') ? 'pill--closed' : 'pill--pending'))}"
+                    th:switch="${st}">
+                <th:block th:case="'DRAFT'">Lưu nháp</th:block>
+                <th:block th:case="'SUBMITTED'">Chờ phê duyệt</th:block>
+                <th:block th:case="'ACTIVE'">Đã duyệt</th:block>
+                <th:block th:case="'INSPECTION_RECEIVED'">Đang kiểm định</th:block>
+                <th:block th:case="'INSPECTED'">Đã kiểm định</th:block>
+                <th:block th:case="'LISTED'">Đang đăng bán</th:block>
+                <th:block th:case="'RESERVED'">Đã đặt cọc</th:block>
+                <th:block th:case="'SOLD'">Đã bán</th:block>
+                <th:block th:case="'COMPLETED'">Hoàn thành</th:block>
+                <th:block th:case="'WITHDRAW_REQUESTED'">Đang yêu cầu rút</th:block>
+                <th:block th:case="'WITHDRAWN'">Đã rút</th:block>
+                <th:block th:case="'CLOSED'">Đã đóng</th:block>
+              </span>
+            </td>
+            <td>
+              <a class="row-action" th:href="@{/manager/consignments/{id}(id=${c.id})}" th:attr="title=${'Xem ' + c.code},aria-label=${'Xem ' + c.code}">
+                <svg th:replace="~{shell/icons :: icon('eye')}"></svg>
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" th:if="${page.empty}">
+      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
+      <h4>Không có hồ sơ phù hợp</h4>
+      <p>Thử đổi từ khóa hoặc bấm Làm mới để bỏ bộ lọc.</p>
+    </div>
+    <nav class="pager" aria-label="Phân trang"
+         th:with="last=${page.totalPages > 0 ? page.totalPages - 1 : 0},
+                  from=${page.number > 2 ? page.number - 2 : 0},
+                  to=${page.number + 2 < last ? page.number + 2 : last},
+                  first=${page.totalElements == 0 ? 0 : page.number * page.size + 1}">
+      <span th:text="${page.empty ? 'Không có hồ sơ nào' : 'Hiển thị ' + first + ' – ' + (first + page.numberOfElements - 1) + ' trên ' + page.totalElements + ' hồ sơ'}">Hiển thị</span>
+      <div class="pager-links" th:if="${page.totalPages > 1}">
+        <span class="page-link is-off" th:unless="${page.hasPrevious()}" aria-hidden="true">‹</span>
+        <a class="page-link" th:if="${page.hasPrevious()}" aria-label="Trang trước"
+           th:href="@{/manager/consignments(q=${q},status=${status},page=${page.number - 1})}">‹</a>
+        <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
+           th:classappend="${n == page.number} ? 'is-active'"
+           th:attr="aria-current=${n == page.number ? 'page' : null}"
+           th:href="@{/manager/consignments(q=${q},status=${status},page=${n})}"
+           th:text="${n + 1}">1</a>
+        <a class="page-link" th:if="${page.hasNext()}" aria-label="Trang sau"
+           th:href="@{/manager/consignments(q=${q},status=${status},page=${page.number + 1})}">›</a>
+        <span class="page-link is-off" th:unless="${page.hasNext()}" aria-hidden="true">›</span>
+      </div>
+    </nav>
+  </section>
+</div>
 </body>
 </html>

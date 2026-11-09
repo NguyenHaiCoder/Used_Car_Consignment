@@ -7,6 +7,8 @@ import fu.he.training.fall2026.dto.finance.SettlementFilter;
 import fu.he.training.fall2026.dto.finance.SettlementView;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.SettlementService;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,6 +42,7 @@ public class FinanceSettlementWebController {
         model.addAttribute("statuses", settlementService.statusMeta());
     }
 
+    @RequirePermission(Perm.SETTLEMENT_VIEW)
     @GetMapping
     public String list(
             @ModelAttribute("filter") SettlementFilter filter,
@@ -57,6 +60,7 @@ public class FinanceSettlementWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.SETTLEMENT_VIEW)
     @GetMapping("/{id}")
     public String detail(@PathVariable long id, Model model) {
         SettlementView item = settlementService.get(id);
@@ -66,6 +70,7 @@ public class FinanceSettlementWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.SETTLEMENT_SUBMIT)
     @PostMapping("/{id}/submit")
     public String submit(@PathVariable long id, RedirectAttributes flash) {
         settlementService.submit(id);
@@ -73,6 +78,7 @@ public class FinanceSettlementWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.SETTLEMENT_PAYOUT)
     @PostMapping("/{id}/payout")
     public String payout(
             @PathVariable long id,

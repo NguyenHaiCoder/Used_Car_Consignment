@@ -7,8 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Each entry: roleCode|permissionCode (e.g. ADMIN|VIEW_WORK).
- * Bound from checkbox name="grants" value="ADMIN|VIEW_WORK".
+ * Nguyễn Việt Hải: các chức năng đang bật, mỗi phần tử dạng ROLE|MÃ (ví dụ SALES|SALES_CONTRACT_SIGN).
+ * Bind từ checkbox name="grants" của màn phân quyền.
  */
 @Getter
 @Setter

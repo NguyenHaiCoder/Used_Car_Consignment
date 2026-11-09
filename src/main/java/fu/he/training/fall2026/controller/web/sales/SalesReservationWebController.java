@@ -13,6 +13,8 @@ import fu.he.training.fall2026.service.SalesContractService;
 import fu.he.training.fall2026.service.SalesInquiryService;
 import fu.he.training.fall2026.service.impl.ReservationServiceImpl;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -53,12 +55,14 @@ public class SalesReservationWebController {
         model.addAttribute("decisions", SalesDealCatalog.DEPOSIT_DECISIONS);
     }
 
+    @RequirePermission(Perm.RESERVATION_VIEW)
     @GetMapping
     public String list(@ModelAttribute DealListFilter filter, Model model) {
         reservationService.bindList(model, BASE, filter);
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.RESERVATION_CREATE)
     @GetMapping("/new")
     public String createForm(
             @RequestParam Map<String, String> params,
@@ -96,6 +100,7 @@ public class SalesReservationWebController {
         return showCreate(form, null, model);
     }
 
+    @RequirePermission(Perm.RESERVATION_CREATE)
     @PostMapping
     public String create(
             @Valid @ModelAttribute("form") ReservationForm form,
@@ -119,6 +124,7 @@ public class SalesReservationWebController {
         }
     }
 
+    @RequirePermission(Perm.RESERVATION_VIEW)
     @GetMapping("/{id}")
     public String detail(
             @PathVariable long id,
@@ -135,6 +141,7 @@ public class SalesReservationWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.RESERVATION_EDIT)
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable long id, Model model, RedirectAttributes flash) {
         ReservationResponse item = reservationService.findById(id);
@@ -151,6 +158,7 @@ public class SalesReservationWebController {
         return showEdit(item, form, null, model);
     }
 
+    @RequirePermission(Perm.RESERVATION_EDIT)
     @PostMapping("/{id}")
     public String update(
             @PathVariable long id,
@@ -175,6 +183,7 @@ public class SalesReservationWebController {
         }
     }
 
+    @RequirePermission(Perm.RESERVATION_CANCEL)
     @PostMapping("/{id}/cancel")
     public String cancel(
             @PathVariable long id,

@@ -1,16 +1,86 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${'Rút ký gửi ' + consignment.code}, 'Quản lý', 'manager-consignments',
+                    null, ~{::link}, ~{::#withdraw-page})}">
+<head>
+  <title>Rút ký gửi</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiries.css}">
+  </th:block>
+</head>
 <body>
-<!-- Rút / đóng ký gửi KG-101: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="manager/consignments/withdraw">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="withdraw-page" class="inq-detail">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('undo')}"></svg></div>
+      <div>
+        <h2 th:text="${'Yêu cầu rút · ' + consignment.code}">Rút ký gửi</h2>
+        <nav class="contracts-breadcrumb" aria-label="Vị trí trang">
+          <a th:href="@{/manager/consignments/{id}(id=${consignment.id})}" th:text="${consignment.code}">KG</a>
+          <span>/</span><span>Rút ký gửi</span>
+        </nav>
+        <p class="news-lead">Kiểm tra tin đăng, phiếu đặt cọc và tiền cọc trước khi trả xe.</p>
+      </div>
+    </div>
+    <a class="btn-c btn-c--ghost" th:href="@{/manager/consignments/{id}(id=${consignment.id})}">Về hồ sơ</a>
   </div>
-  <section th:replace="~{common/fragments/forms :: form}"></section>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+
+  <section class="file-block">
+    <h3><svg th:replace="~{shell/icons :: icon('car')}"></svg>Hồ sơ</h3>
+    <div class="file-profile">
+      <article class="card"><small>Chủ xe</small><strong th:text="${consignment.consignorName}">Chủ xe</strong></article>
+      <article class="card"><small>Xe</small><strong th:text="${consignment.displayLabel + ' · ' + consignment.vin}">Xe</strong></article>
+      <article class="card"><small>Trạng thái</small><strong th:switch="${consignment.status.name()}">
+        <th:block th:case="'DRAFT'">Lưu nháp</th:block>
+        <th:block th:case="'SUBMITTED'">Chờ phê duyệt</th:block>
+        <th:block th:case="'ACTIVE'">Đã duyệt</th:block>
+        <th:block th:case="'INSPECTION_RECEIVED'">Đang kiểm định</th:block>
+        <th:block th:case="'INSPECTED'">Đã kiểm định</th:block>
+        <th:block th:case="'LISTED'">Đang đăng bán</th:block>
+        <th:block th:case="'RESERVED'">Đã đặt cọc</th:block>
+        <th:block th:case="'SOLD'">Đã bán</th:block>
+        <th:block th:case="'COMPLETED'">Hoàn thành</th:block>
+        <th:block th:case="'WITHDRAW_REQUESTED'">Đang yêu cầu rút</th:block>
+        <th:block th:case="'WITHDRAWN'">Đã rút</th:block>
+        <th:block th:case="'CLOSED'">Đã đóng</th:block>
+      </strong></article>
+    </div>
+  </section>
+
+  <section class="file-block">
+    <h3><svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>Điều kiện</h3>
+    <ul class="withdraw-checks">
+      <li th:each="check : ${checks}" th:classappend="${check.passed} ? 'is-pass' : 'is-fail'">
+        <strong th:text="${check.label}">Điều kiện</strong>
+        <span th:if="${check.passed}">Đã đáp ứng</span>
+        <span th:if="${!check.passed}">Cần xử lý trước khi rút</span>
+        <em th:if="${!check.passed and !#strings.isEmpty(check.detail)}" th:text="${check.detail}">Chi tiết</em>
+      </li>
+    </ul>
+  </section>
+
+  <section class="file-block">
+    <h3><svg th:replace="~{shell/icons :: icon('file')}"></svg>Yêu cầu rút</h3>
+    <p class="card file-empty" th:if="${withdrawRequest == null}">Chưa có yêu cầu rút cho hồ sơ này.</p>
+    <div class="file-profile" th:if="${withdrawRequest != null}">
+      <article class="card"><small>Trạng thái</small><strong th:switch="${withdrawRequest.status.name()}">
+        <th:block th:case="'PENDING'">Chờ duyệt</th:block>
+        <th:block th:case="'APPROVED'">Đã duyệt</th:block>
+        <th:block th:case="'REJECTED'">Từ chối</th:block>
+        <th:block th:case="'NEED_MORE_INFO'">Cần bổ sung</th:block>
+        <th:block th:case="*" th:text="${withdrawRequest.status}">Trạng thái</th:block>
+      </strong></article>
+      <article class="card"><small>Người gửi</small><strong th:text="${withdrawRequest.requestedByName}">Người gửi</strong></article>
+      <article class="card"><small>Thời điểm gửi</small><strong th:text="${#temporals.format(withdrawRequest.createdAt, 'dd/MM/yyyy HH:mm')}">Ngày</strong></article>
+      <article class="card"><small>Ngày trả xe</small><strong th:text="${withdrawRequest.returnDate != null ? #temporals.format(withdrawRequest.returnDate, 'dd/MM/yyyy') : '—'}">Ngày</strong></article>
+      <article class="card is-wide"><small>Lý do</small><strong th:text="${withdrawRequest.reason}">Lý do</strong></article>
+      <article class="card"><small>Tình trạng xe khi trả</small><strong th:text="${withdrawRequest.condition ?: '—'}">Tình trạng</strong></article>
+      <article class="card"><small>Bằng chứng</small><strong th:text="${withdrawRequest.evidencePath ?: '—'}">File</strong></article>
+    </div>
+  </section>
+</div>
 </body>
 </html>

@@ -12,6 +12,8 @@ import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
 import fu.he.training.fall2026.service.SalesInquiryService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -60,6 +62,7 @@ public class SalesInquiryWebController {
         model.addAttribute("dayNames", SalesInquiryCatalog.DAY_NAMES);
     }
 
+    @RequirePermission(Perm.INQUIRY_VIEW)
     @GetMapping
     public String list(@ModelAttribute("filter") SalesInquiryFilter filter, Model model) {
         int pageSize = CatalogPageSupport.normalizeSize(filter.sizeOrNull());
@@ -95,6 +98,7 @@ public class SalesInquiryWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.INQUIRY_EDIT)
     @GetMapping("/new")
     public String createForm(@RequestParam(required = false) String car, Model model) {
         SalesInquiryForm form = new SalesInquiryForm();
@@ -104,6 +108,7 @@ public class SalesInquiryWebController {
         return showCreate(form, null, model);
     }
 
+    @RequirePermission(Perm.INQUIRY_EDIT)
     @PostMapping
     public String create(
             @Valid @ModelAttribute("form") SalesInquiryForm form,
@@ -129,6 +134,7 @@ public class SalesInquiryWebController {
         }
     }
 
+    @RequirePermission(Perm.INQUIRY_VIEW)
     @GetMapping("/{id}")
     public String detail(
             @PathVariable long id,
@@ -147,6 +153,7 @@ public class SalesInquiryWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.INQUIRY_EDIT)
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable long id, Model model, RedirectAttributes flash) {
         Map<String, Object> item = salesInquiryService.getCard(id);
@@ -158,6 +165,7 @@ public class SalesInquiryWebController {
         return EDIT_VIEW;
     }
 
+    @RequirePermission(Perm.INQUIRY_EDIT)
     @PostMapping("/{id}")
     public String update(
             @PathVariable long id,
@@ -187,6 +195,7 @@ public class SalesInquiryWebController {
         }
     }
 
+    @RequirePermission(Perm.INQUIRY_EDIT)
     @PostMapping("/{id}/claim")
     public String claim(@PathVariable long id, HttpSession session, RedirectAttributes flash) {
         try {
@@ -199,6 +208,7 @@ public class SalesInquiryWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.INQUIRY_EDIT)
     @PostMapping("/{id}/notes")
     public String saveNote(
             @PathVariable long id,
@@ -213,6 +223,7 @@ public class SalesInquiryWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.INQUIRY_CLOSE)
     @PostMapping("/{id}/close")
     public String close(
             @PathVariable long id,
@@ -241,6 +252,7 @@ public class SalesInquiryWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @GetMapping("/{id}/viewings/new")
     public String viewingForm(@PathVariable long id, Model model, RedirectAttributes flash) {
         Map<String, Object> item = salesInquiryService.getCard(id);
@@ -259,6 +271,7 @@ public class SalesInquiryWebController {
         return showViewing(item, null, form, null, model);
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @PostMapping("/{id}/viewings")
     public String addViewing(
             @PathVariable long id,
@@ -284,6 +297,7 @@ public class SalesInquiryWebController {
         }
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @GetMapping("/{id}/viewings/{viewingId}/edit")
     public String rescheduleForm(
             @PathVariable long id,
@@ -312,6 +326,7 @@ public class SalesInquiryWebController {
         }
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @PostMapping("/{id}/viewings/{viewingId}")
     public String reschedule(
             @PathVariable long id,
@@ -339,18 +354,21 @@ public class SalesInquiryWebController {
         }
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @PostMapping("/{id}/viewings/{viewingId}/confirm")
     public String confirmViewing(@PathVariable long id, @PathVariable long viewingId, RedirectAttributes flash) {
         return runViewingAction(id, () -> salesInquiryService.confirmViewing(id, viewingId),
                 "Đã xác nhận lịch xem xe.", flash);
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @PostMapping("/{id}/viewings/{viewingId}/done")
     public String finishViewing(@PathVariable long id, @PathVariable long viewingId, RedirectAttributes flash) {
         return runViewingAction(id, () -> salesInquiryService.finishViewing(id, viewingId),
                 "Đã ghi nhận khách đã xem xe.", flash);
     }
 
+    @RequirePermission(Perm.VIEWING_MANAGE)
     @PostMapping("/{id}/viewings/{viewingId}/cancel")
     public String cancelViewing(@PathVariable long id, @PathVariable long viewingId, RedirectAttributes flash) {
         return runViewingAction(id, () -> salesInquiryService.cancelViewing(id, viewingId),

@@ -44,7 +44,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       setMenu(false);
-      $$('details.user-menu[open], details.filter-dropdown[open]').forEach((x) => { x.open = false; });
+      $$('details.user-menu[open], details.filter-dropdown[open], details.select-dd[open]').forEach((x) => { x.open = false; });
     }
     if (e.key === 'Tab' && sidebar?.classList.contains('is-open')) {
       const focusable = $$('a, button, summary', sidebar).filter((x) => x.getClientRects().length);
@@ -67,7 +67,7 @@
   });
 
   document.addEventListener('click', (e) => {
-    $$('details.user-menu[open], details.filter-dropdown[open]').forEach((x) => {
+    $$('details.user-menu[open], details.filter-dropdown[open], details.select-dd[open]').forEach((x) => {
       if (!x.contains(e.target)) x.open = false;
     });
   });

@@ -11,6 +11,8 @@ import fu.he.training.fall2026.service.VehicleModelService;
 import fu.he.training.fall2026.service.VehicleTypeService;
 import fu.he.training.fall2026.service.consignmentrequest.ConsignmentRequestService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -45,6 +47,7 @@ public class ConsignmentWebController {
     private final VehicleModelService vehicleModelService;
     private final VehicleTypeService vehicleTypeService;
 
+    @RequirePermission(Perm.CONSIGNMENT_VIEW)
     @GetMapping
     public String list(Model model) {
         /* DataTables tìm kiếm / sắp xếp / phân trang ở trình duyệt nên lấy toàn bộ hồ sơ. */
@@ -52,6 +55,7 @@ public class ConsignmentWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.CONSIGNMENT_EDIT)
     @GetMapping("/new")
     public String createForm(Model model) {
         ConsignmentCreateRequest form = new ConsignmentCreateRequest();
@@ -62,6 +66,7 @@ public class ConsignmentWebController {
     }
 
     /** Tạo cùng lúc chủ xe + xe + hồ sơ (DRAFT). "Gửi duyệt" cũng tạo rồi gửi duyệt luôn. */
+    @RequirePermission(Perm.CONSIGNMENT_EDIT)
     @PostMapping("/new")
     public String create(
             @Valid @ModelAttribute("form") ConsignmentCreateRequest form,
@@ -87,6 +92,7 @@ public class ConsignmentWebController {
         return CREATE_VIEW;
     }
 
+    @RequirePermission(Perm.CONSIGNMENT_VIEW)
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         var consignment = consignmentRequestService.get(id);
@@ -95,6 +101,7 @@ public class ConsignmentWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.CONSIGNMENT_EDIT)
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         ConsignmentRequestResponse c = consignmentRequestService.get(id);
@@ -140,6 +147,7 @@ public class ConsignmentWebController {
     }
 
     /** Lưu sửa hồ sơ DRAFT (cùng form với màn tạo). "Gửi duyệt" thì lưu rồi gửi duyệt luôn. */
+    @RequirePermission(Perm.CONSIGNMENT_EDIT)
     @PostMapping
     public String save(
             @Valid @ModelAttribute("form") ConsignmentCreateRequest form,
@@ -174,6 +182,7 @@ public class ConsignmentWebController {
         model.addAttribute("vehicleTypes", vehicleTypeService.listActive());
     }
 
+    @RequirePermission(Perm.CONSIGNMENT_SUBMIT)
     @PostMapping("/submit")
     public String submit(@RequestParam Long id, RedirectAttributes flash) {
         consignmentRequestService.submit(id);
@@ -182,6 +191,7 @@ public class ConsignmentWebController {
     }
 
     /** Màn yêu cầu rút hồ sơ: hồ sơ đang WITHDRAW_REQUESTED thì hiện yêu cầu đã gửi, ngược lại hiện form gửi. */
+    @RequirePermission(Perm.CONSIGNMENT_WITHDRAW)
     @GetMapping("/{id}/withdraw")
     public String withdrawForm(@PathVariable Long id, Model model) {
         model.addAttribute("consignment", consignmentRequestService.get(id));
@@ -189,6 +199,7 @@ public class ConsignmentWebController {
         return WITHDRAW_VIEW;
     }
 
+    @RequirePermission(Perm.CONSIGNMENT_WITHDRAW)
     @PostMapping("/withdraw")
     public String withdraw(
             @Valid @ModelAttribute WithdrawRequest form,

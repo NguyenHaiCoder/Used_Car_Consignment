@@ -6,6 +6,8 @@ import fu.he.training.fall2026.entity.enums.TransferStatus;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.service.TransferService;
 import fu.he.training.fall2026.util.SessionAuthUtils;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -45,6 +47,7 @@ public class TransferWebController {
         model.addAttribute("statuses", transferService.statusMeta());
     }
 
+    @RequirePermission(Perm.TRANSFER_VIEW)
     @GetMapping
     public String list(
             @RequestParam(required = false) String q,
@@ -81,6 +84,7 @@ public class TransferWebController {
         return LIST_VIEW;
     }
 
+    @RequirePermission(Perm.TRANSFER_CREATE)
     @GetMapping("/new")
     public String createForm(@RequestParam(required = false) Long contractId, Model model) {
         model.addAttribute("candidates", transferService.candidates());
@@ -101,6 +105,7 @@ public class TransferWebController {
         return CREATE_VIEW;
     }
 
+    @RequirePermission(Perm.TRANSFER_CREATE)
     @PostMapping
     public String create(@RequestParam(required = false) Long contractId, RedirectAttributes flash) {
         if (contractId == null) {
@@ -117,6 +122,7 @@ public class TransferWebController {
         }
     }
 
+    @RequirePermission(Perm.TRANSFER_VIEW)
     @GetMapping("/{id:\\d+}")
     public String detail(@PathVariable long id, Model model) {
         TransferResponse item = transferService.get(id);
@@ -128,12 +134,14 @@ public class TransferWebController {
         return DETAIL_VIEW;
     }
 
+    @RequirePermission(Perm.TRANSFER_VIEW)
     @GetMapping("/{id:\\d+}/evidence")
     public RedirectView evidence(@PathVariable long id) {
         String url = transferService.evidenceUrl(id);
         return new RedirectView(url);
     }
 
+    @RequirePermission(Perm.TRANSFER_START)
     @PostMapping("/{id:\\d+}/start")
     public String start(@PathVariable long id, HttpSession session, RedirectAttributes flash) {
         try {
@@ -145,6 +153,7 @@ public class TransferWebController {
         return "redirect:" + BASE + "/" + id;
     }
 
+    @RequirePermission(Perm.TRANSFER_COMPLETE)
     @PostMapping("/{id:\\d+}/complete")
     public String complete(
             @PathVariable long id,

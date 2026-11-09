@@ -5,6 +5,8 @@ import fu.he.training.fall2026.entity.enums.ConsignmentStatus;
 import fu.he.training.fall2026.service.consignmentcontract.ConsignmentContractService;
 import fu.he.training.fall2026.service.ConsignmentService;
 import fu.he.training.fall2026.service.consignmentrequest.ConsignmentRequestService;
+import fu.he.training.fall2026.security.Perm;
+import fu.he.training.fall2026.security.RequirePermission;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,6 +36,7 @@ public class ManagerConsignmentWebController {
         return List.of();
     }
 
+    @RequirePermission(Perm.MANAGER_CONSIGNMENT_VIEW)
     @GetMapping
     public String list(
             @RequestParam(required = false) String q,
@@ -45,17 +48,19 @@ public class ManagerConsignmentWebController {
         model.addAttribute("q", q == null ? "" : q);
         model.addAttribute("status", status);
         model.addAttribute("counts", consignmentService.countByStatus());
-        return "manager/consignments/app-list";
+        return "manager/consignments/list";
     }
 
+    @RequirePermission(Perm.MANAGER_CONSIGNMENT_VIEW)
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         model.addAttribute("consignment", consignmentRequestService.get(id));
         model.addAttribute("agreement", contractService.findByConsignment(id).orElse(null));
         model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));
-        return "manager/consignments/app-detail";
+        return "manager/consignments/detail";
     }
 
+    @RequirePermission(Perm.MANAGER_CONSIGNMENT_VIEW)
     @GetMapping("/{id}/withdraw")
     public String withdraw(@PathVariable Long id, Model model) {
         var checks = consignmentRequestService.withdrawChecks(id);
@@ -63,6 +68,6 @@ public class ManagerConsignmentWebController {
         // the last check is "no pending request", which only matters to the requester
         model.addAttribute("checks", checks.subList(0, checks.size() - 1));
         model.addAttribute("withdrawRequest", consignmentService.findWithdrawRequest(id).orElse(null));
-        return "manager/consignments/app-withdraw";
+        return "manager/consignments/withdraw";
     }
 }

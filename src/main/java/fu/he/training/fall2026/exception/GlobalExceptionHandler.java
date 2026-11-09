@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.exception;
 
+import fu.he.training.fall2026.security.PermissionDenial;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.support.RequestContextUtils;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -39,6 +41,24 @@ public class GlobalExceptionHandler {
         HttpStatus status = ex.getStatus() != null ? ex.getStatus() : HttpStatus.BAD_REQUEST;
         response.setStatus(status.value());
         return render(model, request, status, ex.getMessage());
+    }
+
+    /**
+     * Nguyễn Việt Hải: chức năng đang bị tắt cho role. Có trang để quay lại thì redirect kèm toast,
+     * không thì hiện trang 403.
+     */
+    @ExceptionHandler(PermissionDeniedException.class)
+    public String handlePermissionDenied(Model model, HttpServletRequest request, HttpServletResponse response) {
+        String back = PermissionDenial.backTarget(request);
+        if (back != null) {
+            RequestContextUtils.getOutputFlashMap(request)
+                    .put(PermissionDenial.FLASH_KEY, PermissionDeniedException.MESSAGE);
+            return "redirect:" + back;
+        }
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        String view = render(model, request, HttpStatus.FORBIDDEN, PermissionDeniedException.MESSAGE);
+        model.addAttribute("error", "Không có quyền truy cập");
+        return view;
     }
 
     /** Nguyễn Phúc Khang: tệp vượt spring.servlet.multipart.* thì báo rõ lý do, không rơi vào lỗi 500 chung. */

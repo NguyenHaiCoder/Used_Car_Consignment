@@ -102,16 +102,20 @@
 .common-header .user-text strong { display: block; font-size: 14px; font-weight: 700; line-height: 1.25; white-space: nowrap; }
 .common-header .user-text small { display: block; font-size: 12.5px; color: var(--ink-soft); line-height: 1.25; }
 .common-header .menu-pop {
-  position: absolute; top: calc(100% + 6px); right: 0; z-index: 35; display: grid; min-width: 170px; padding: 6px;
-  border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 8px 22px rgba(10, 40, 90, .18);
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 35; display: grid; min-width: 170px; padding: 0;
+  border: 1px solid var(--dd-border, #4a4a4a); border-radius: 4px; background: var(--dd-item-bg, #fff);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .18);
 }
 .common-header .menu-pop a,
 .common-header .menu-pop button {
-  display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: 6px;
-  background: none; font-size: 13px; text-align: left; white-space: nowrap; cursor: pointer;
+  display: block; width: 100%; padding: 10px 14px; border: 0; border-radius: 0;
+  background: var(--dd-item-bg, #fff); color: var(--dd-item-fg, #0b1b33);
+  font-size: 13px; font-weight: 500; text-align: left; white-space: nowrap; cursor: pointer;
 }
 .common-header .menu-pop a:hover,
-.common-header .menu-pop button:hover { background: var(--blue-50); }
+.common-header .menu-pop button:hover {
+  background: var(--dd-active-bg, #6b6b6b); color: var(--dd-active-fg, #fff); font-weight: 700;
+}
 .common-header .menu-pop form { margin: 0; }
 
 

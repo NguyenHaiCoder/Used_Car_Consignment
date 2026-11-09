@@ -1,15 +1,39 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{common/layout :: shell(~{::content})}">
+      th:replace="~{shell/layout :: page(${screen.title}, 'Quản trị', 'admin-employees',
+                    null, ~{::link}, ~{::#staff-detail})}">
+<head>
+  <title>Hồ sơ nhân viên</title>
+  <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
+    <link rel="stylesheet" th:href="@{/css/app/inspector-news.css}">
+    <link rel="stylesheet" th:href="@{/css/app/sales-inquiries.css}">
+  </th:block>
+</head>
 <body>
-<!-- Hồ sơ Nguyễn Việt Hải: edit this page composition here; data comes from Spring Model. -->
-<section th:fragment="content" class="screen-content" data-template="admin/employees/detail">
-  <p class="alert" th:if="${!#strings.isEmpty(screen.notice)}" th:text="${screen.notice}"></p>
-  <div class="detail-grid">
-    <section th:replace="~{common/fragments/components :: facts}"></section>
-    <section th:replace="~{common/fragments/components :: checks}"></section>
+<div id="staff-detail" class="inq-detail">
+  <div class="contracts-header">
+    <div class="contracts-header-left">
+      <div class="contracts-title-icon"><svg th:replace="~{shell/icons :: icon('user')}"></svg></div>
+      <div>
+        <h2 th:text="${screen.title}">Hồ sơ</h2>
+        <nav class="contracts-breadcrumb"><a th:href="@{/admin/employees}">Nhân sự</a><span>/</span><span>Chi tiết</span></nav>
+      </div>
+      <span class="pill" th:classappend="${screen.status == 'ACTIVE'} ? 'pill--listed' : 'pill--closed'" th:text="${screen.status == 'ACTIVE' ? 'Đang hoạt động' : 'Đã khóa'}">Trạng thái</span>
+    </div>
+    <div class="contracts-header-actions">
+      <a class="btn-c btn-c--ghost" th:each="action : ${screen.actions}" th:if="${action.enabled and action.kind == 'link'}"
+         th:href="@{${action.url}}" th:text="${action.label}">Thao tác</a>
+    </div>
   </div>
-  <section th:replace="~{common/fragments/components :: history}"></section>
-</section>
+  <p th:replace="~{admin/parts :: notice}"></p>
+  <section class="staff-profile" aria-label="Thông tin nhân viên" th:if="${screen != null and !#lists.isEmpty(screen.facts)}">
+    <article class="card" th:each="fact : ${screen.facts}">
+      <small th:text="${fact.label}">Nhãn</small>
+      <strong th:text="${fact.value == 'ACTIVE' ? 'Đang hoạt động' : (fact.value == 'LOCKED' ? 'Đã khóa' : fact.value)}">Giá trị</strong>
+    </article>
+  </section>
+</div>
 </body>
 </html>

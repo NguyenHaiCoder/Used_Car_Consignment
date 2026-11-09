@@ -1,5 +1,6 @@
 package fu.he.training.fall2026.service.impl;
 
+import fu.he.training.fall2026.constant.handover.HandoverCatalog;
 import fu.he.training.fall2026.controller.web.consignment.CatalogPageSupport;
 import fu.he.training.fall2026.dto.handover.HandoverConfirmRequest;
 import fu.he.training.fall2026.dto.handover.HandoverFilter;
@@ -72,12 +73,7 @@ public class HandoverServiceImpl implements HandoverService {
 
     @Override
     public Map<String, Map<String, String>> statusMeta() {
-        Map<String, Map<String, String>> map = new LinkedHashMap<>();
-        map.put("PENDING", meta("Chờ điều kiện", "slate", "hourglass", "draft"));
-        map.put("READY", meta("Sẵn sàng", "blue", "car", "signed"));
-        map.put("COMPLETED", meta("Đã bàn giao", "amber", "handshake", "pending"));
-        map.put("FINALIZED", meta("Hoàn tất giao dịch", "green", "check", "listed"));
-        return map;
+        return HandoverCatalog.STATUSES;
     }
 
     @Override
@@ -221,6 +217,11 @@ public class HandoverServiceImpl implements HandoverService {
         if (!paid || !transferred) {
             throw new BusinessException("Chỉ đóng sale khi đã thu đủ tiền và sang tên xong.", HttpStatus.CONFLICT);
         }
+        completeContract(handover);
+    }
+
+    /** Bàn giao xong thì hợp đồng Hoàn tất, hồ sơ ký gửi Hoàn thành, mở quyết toán. */
+    private void completeContract(Handover handover) {
         SalesContract contract = handover.getSalesContract();
         contract.setStatus(ContractStatus.COMPLETED);
         contract.setSaleClosed(true);
@@ -230,7 +231,7 @@ public class HandoverServiceImpl implements HandoverService {
                 .findByVehicleIdOrderByIdDesc(contract.getReservation().getVehicle().getId()).stream()
                 .findFirst()
                 .orElseThrow(() -> new BusinessException("Không tìm thấy hồ sơ ký gửi.", HttpStatus.CONFLICT));
-        consignment.setStatus(ConsignmentStatus.SOLD);
+        consignment.setStatus(ConsignmentStatus.COMPLETED);
         settlementService.openFor(contract);
     }
 
@@ -389,10 +390,6 @@ public class HandoverServiceImpl implements HandoverService {
 
     private static BigDecimal millions(Integer value) {
         return value == null ? null : MILLION.multiply(BigDecimal.valueOf(value.longValue()));
-    }
-
-    private static Map<String, String> meta(String label, String tone, String icon, String pill) {
-        return Map.of("label", label, "tone", tone, "icon", icon, "pill", pill);
     }
 
     private static String nullToEmpty(String value) {

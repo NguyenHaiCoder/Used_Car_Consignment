@@ -12,25 +12,31 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
+    private static final String[] ROLE_AREAS = {
+            "/admin/**",
+            "/manager/**",
+            "/consignments/**",
+            "/consignment/**",
+            "/inspector/**",
+            "/sales/**",
+            "/finance/**",
+            "/handover/**",
+            "/documents/**"};
+
     private final RoleAuthInterceptor roleAuthInterceptor;
+    private final PermissionInterceptor permissionInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(roleAuthInterceptor)
-                .addPathPatterns(
-                        "/admin/**",
-                        "/manager/**",
-                        "/consignments/**",
-                        "/consignment/**",
-                        "/inspector/**",
-                        "/sales/**",
-                        "/finance/**",
-                        "/handover/**",
-                        "/documents/**")
+                .addPathPatterns(ROLE_AREAS)
                 .excludePathPatterns(
                         "/css/**",
                         "/js/**",
                         "/images/**",
                         "/error/**");
+        // Nguyễn Việt Hải: đăng ký sau nên chạy sau, lúc này đã chắc người dùng đăng nhập đúng role.
+        registry.addInterceptor(permissionInterceptor)
+                .addPathPatterns(ROLE_AREAS);
     }
 }

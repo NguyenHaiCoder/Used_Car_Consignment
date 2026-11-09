@@ -25,6 +25,7 @@ import fu.he.training.fall2026.repository.InspectionTypeStepRepository;
 import fu.he.training.fall2026.repository.ValuationRepository;
 import fu.he.training.fall2026.service.FileStorageService;
 import fu.he.training.fall2026.service.InspectorVehicleService;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,6 +90,7 @@ public class InspectorVehicleServiceImpl implements InspectorVehicleService {
                 .code(consignment.getCode())
                 .displayLabel(vehicle.getDisplayLabel())
                 .vin(vehicle.getVin())
+                .expectedPrice(consignment.getExpectedPrice())
                 .build();
     }
 
@@ -151,6 +153,8 @@ public class InspectorVehicleServiceImpl implements InspectorVehicleService {
             }
             inspectionItemRepository.saveAll(items);
 
+            requireAskingPrice(consignment.getExpectedPrice(), form.getProposedPrice());
+
             Valuation valuation = new Valuation();
             valuation.setCode(temporaryCode());
             valuation.setConsignment(consignment);
@@ -159,6 +163,10 @@ public class InspectorVehicleServiceImpl implements InspectorVehicleService {
             valuation.setValuedOn(LocalDate.now());
             valuationRepository.save(valuation);
             valuation.setCode("DG-" + valuation.getId());
+
+            // Giá đề xuất là giá chào bán của xe. Giá sàn trong hợp đồng ký gửi là điều khoản chủ xe đã ký,
+            // kiểm định không được đổi; bán dưới giá sàn thì Quản lý duyệt (loại Giá dưới sàn).
+            consignment.getVehicle().setAskingPrice(form.getProposedPrice());
 
             consignment.setStatus(ConsignmentStatus.INSPECTED);
             inspectionItemRepository.flush();
@@ -212,6 +220,18 @@ public class InspectorVehicleServiceImpl implements InspectorVehicleService {
         } catch (BusinessException ignored) {
             // The photo stays on storage; the inspection itself was not saved.
         }
+    }
+
+    /** Giá chào bán sau kiểm định không được thấp hơn giá mong muốn của chủ xe. */
+    private static void requireAskingPrice(BigDecimal expectedPrice, BigDecimal askingPrice) {
+        if (expectedPrice != null && askingPrice != null && askingPrice.compareTo(expectedPrice) < 0) {
+            throw new BusinessException("Giá chào bán không được thấp hơn giá mong muốn của chủ xe ("
+                    + formatVnd(expectedPrice) + " ₫).");
+        }
+    }
+
+    private static String formatVnd(BigDecimal amount) {
+        return java.text.NumberFormat.getNumberInstance(java.util.Locale.forLanguageTag("vi-VN")).format(amount);
     }
 
     private static void requireStatus(Consignment consignment, ConsignmentStatus expected, String action) {

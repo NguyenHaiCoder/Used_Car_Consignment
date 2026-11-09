@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GaragePro - Xác minh OTP</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/app/palette.css}">
   <style>
     * {
       margin: 0;
@@ -13,16 +14,15 @@
     }
 
     :root {
-      --primary: #FF7A00;
-      --primary-dark: #e66d00;
-      --accent-purple: #9D4EDD;
-      --accent-cyan: #00D9FF;
-      --accent-pink: #FF6B9D;
+      --primary: var(--blue-600);
+      --primary-dark: var(--navy-700);
+      --accent-blue: var(--blue-500);
+      --accent-light: #8fbfff;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-      background: #0a0a0f;
+      background: #06152e;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -32,16 +32,16 @@
       position: relative;
     }
 
-    /* Galaxy Background với màu cam */
+    /* Galaxy Background */
     .galaxy-bg {
       position: absolute;
       width: 100%;
       height: 100%;
       background: 
-        radial-gradient(ellipse at 15% 25%, rgba(255, 122, 0, 0.25) 0%, transparent 50%),
-        radial-gradient(ellipse at 85% 75%, rgba(157, 78, 221, 0.2) 0%, transparent 50%),
-        radial-gradient(ellipse at 50% 50%, rgba(0, 217, 255, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 30% 80%, rgba(255, 107, 157, 0.2) 0%, transparent 50%);
+        radial-gradient(ellipse at 15% 25%, rgba(22, 104, 227, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 75%, rgba(47, 134, 245, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(143, 191, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 30% 80%, rgba(7, 49, 122, 0.2) 0%, transparent 50%);
       animation: galaxyPulse 10s ease-in-out infinite;
     }
 
@@ -56,7 +56,7 @@
       }
     }
 
-    /* Floating Particles với màu cam */
+    /* Floating Particles */
     .particles {
       position: absolute;
       width: 100%;
@@ -89,7 +89,7 @@
       }
     }
 
-    /* Shooting Stars với màu cam */
+    /* Shooting Stars */
     .shooting-stars {
       position: absolute;
       width: 100%;
@@ -103,7 +103,7 @@
       height: 3px;
       background: var(--primary);
       border-radius: 50%;
-      box-shadow: 0 0 15px 3px rgba(255, 122, 0, 0.8);
+      box-shadow: 0 0 15px 3px rgba(22, 104, 227, 0.8);
       animation: shoot 4s linear infinite;
     }
 
@@ -122,17 +122,17 @@
     .otp-container {
       position: relative;
       z-index: 10;
-      background: rgba(18, 18, 25, 0.75);
+      background: rgba(12, 37, 74, 0.88);
       backdrop-filter: blur(50px) saturate(180%);
       -webkit-backdrop-filter: blur(50px) saturate(180%);
-      border: 1.5px solid rgba(255, 122, 0, 0.25);
+      border: 1.5px solid rgba(22, 104, 227, 0.25);
       border-radius: 32px;
       padding: 55px 50px;
       max-width: 460px;
       width: 90%;
       box-shadow: 
         0 25px 70px rgba(0, 0, 0, 0.6),
-        0 0 120px rgba(255, 122, 0, 0.15),
+        0 0 120px rgba(22, 104, 227, 0.15),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
       animation: containerFadeIn 1s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -153,7 +153,7 @@
       width: 85px;
       height: 85px;
       margin: 0 auto 35px;
-      background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-cyan));
+      background: linear-gradient(135deg, var(--primary), var(--accent-blue), var(--accent-light));
       background-size: 200% 200%;
       border-radius: 24px;
       display: flex;
@@ -162,11 +162,13 @@
       font-size: 40px;
       color: #fff;
       box-shadow: 
-        0 12px 35px rgba(255, 122, 0, 0.5),
-        0 0 50px rgba(157, 78, 221, 0.3),
+        0 12px 35px rgba(22, 104, 227, 0.5),
+        0 0 50px rgba(47, 134, 245, 0.3),
         inset 0 2px 0 rgba(255, 255, 255, 0.2);
       animation: iconGradient 4s ease infinite, iconFloat 4s ease-in-out infinite;
     }
+
+    .logo-icon .ic { width: 40px; height: 40px; }
 
     @keyframes iconGradient {
       0%, 100% { background-position: 0% 50%; }
@@ -184,7 +186,7 @@
       text-align: center;
       margin-bottom: 12px;
       letter-spacing: -0.8px;
-      background: linear-gradient(135deg, #fff, var(--primary), var(--accent-purple));
+      background: linear-gradient(135deg, #fff, var(--blue-100), var(--accent-light));
       background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -198,7 +200,7 @@
 
     .subtitle {
       font-size: 15px;
-      color: rgba(255, 255, 255, 0.65);
+      color: #aac0df;
       text-align: center;
       margin-bottom: 45px;
       line-height: 1.6;
@@ -206,15 +208,15 @@
 
     .email-badge {
       display: inline-block;
-      background: linear-gradient(135deg, rgba(255, 122, 0, 0.2), rgba(157, 78, 221, 0.15));
-      border: 1px solid rgba(255, 122, 0, 0.4);
-      color: var(--primary);
+      background: linear-gradient(135deg, rgba(22, 104, 227, 0.2), rgba(47, 134, 245, 0.15));
+      border: 1px solid rgba(22, 104, 227, 0.4);
+      color: var(--accent-light);
       padding: 5px 14px;
       border-radius: 10px;
       font-size: 14px;
       font-weight: 600;
       margin-top: 6px;
-      text-shadow: 0 0 10px rgba(255, 122, 0, 0.3);
+      text-shadow: 0 0 10px rgba(22, 104, 227, 0.3);
     }
 
     /* OTP Input Grid - VUÔNG TRÒN */
@@ -228,8 +230,8 @@
     .otp-inputs input {
       width: 100%;
       aspect-ratio: 1;
-      background: rgba(30, 30, 40, 0.5);
-      border: 2.5px solid rgba(255, 122, 0, 0.2);
+      background: rgba(5, 36, 90, 0.5);
+      border: 2.5px solid rgba(22, 104, 227, 0.2);
       border-radius: 18px;
       color: #fff;
       font-size: 32px;
@@ -237,25 +239,25 @@
       text-align: center;
       transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       outline: none;
-      caret-color: var(--primary);
+      caret-color: var(--accent-light);
       position: relative;
     }
 
     .otp-inputs input:focus {
-      background: rgba(30, 30, 40, 0.95);
-      border-color: var(--primary);
+      background: rgba(5, 36, 90, 0.95);
+      border-color: var(--accent-blue);
       box-shadow: 
-        0 0 0 5px rgba(255, 122, 0, 0.2),
-        0 12px 30px rgba(255, 122, 0, 0.5),
+        0 0 0 5px rgba(22, 104, 227, 0.2),
+        0 12px 30px rgba(22, 104, 227, 0.5),
         inset 0 2px 0 rgba(255, 255, 255, 0.08);
       transform: scale(1.08) translateY(-2px);
     }
 
     .otp-inputs input.filled {
-      background: linear-gradient(135deg, rgba(255, 122, 0, 0.25), rgba(157, 78, 221, 0.15));
+      background: linear-gradient(135deg, rgba(22, 104, 227, 0.25), rgba(47, 134, 245, 0.15));
       border-color: var(--primary);
       box-shadow: 
-        0 0 25px rgba(255, 122, 0, 0.4),
+        0 0 25px rgba(22, 104, 227, 0.4),
         inset 0 2px 0 rgba(255, 255, 255, 0.1);
       animation: fillPulse 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
@@ -270,7 +272,7 @@
     .btn-verify {
       width: 100%;
       height: 58px;
-      background: linear-gradient(135deg, var(--primary), var(--accent-purple), var(--accent-cyan));
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary), var(--navy-800));
       background-size: 200% 200%;
       border: none;
       border-radius: 18px;
@@ -280,8 +282,8 @@
       cursor: pointer;
       transition: all 0.35s ease;
       box-shadow: 
-        0 12px 35px rgba(255, 122, 0, 0.45),
-        0 0 50px rgba(157, 78, 221, 0.25);
+        0 12px 35px rgba(22, 104, 227, 0.45),
+        0 0 50px rgba(47, 134, 245, 0.25);
       position: relative;
       overflow: hidden;
       animation: buttonGradient 4s ease infinite;
@@ -307,8 +309,8 @@
     .btn-verify:hover {
       transform: translateY(-3px);
       box-shadow: 
-        0 18px 45px rgba(255, 122, 0, 0.6),
-        0 0 70px rgba(157, 78, 221, 0.35);
+        0 18px 45px rgba(22, 104, 227, 0.6),
+        0 0 70px rgba(47, 134, 245, 0.35);
     }
 
     .btn-verify:hover::before {
@@ -317,6 +319,19 @@
 
     .btn-verify:active {
       transform: scale(0.97);
+    }
+
+    .btn-verify:focus-visible, .resend-link:focus-visible {
+      outline: 3px solid var(--accent-light);
+      outline-offset: 4px;
+    }
+
+    .btn-verified {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 8px;
+      text-decoration: none;
     }
 
     .btn-verify:disabled {
@@ -352,26 +367,26 @@
       text-align: center;
       margin-top: 32px;
       padding-top: 28px;
-      border-top: 1.5px solid rgba(255, 122, 0, 0.2);
+      border-top: 1.5px solid rgba(22, 104, 227, 0.2);
     }
 
     .resend-text {
       font-size: 15px;
-      color: rgba(255, 255, 255, 0.65);
+      color: #aac0df;
     }
 
     .resend-link {
-      color: var(--primary);
+      color: var(--accent-light);
       text-decoration: none;
       font-weight: 700;
       margin-left: 6px;
       transition: all 0.25s;
-      text-shadow: 0 0 12px rgba(255, 122, 0, 0.5);
+      text-shadow: 0 0 12px rgba(22, 104, 227, 0.5);
     }
 
     .resend-link:hover {
-      color: #ffaa55;
-      text-shadow: 0 0 20px rgba(255, 122, 0, 0.8);
+      color: var(--blue-100);
+      text-shadow: 0 0 20px rgba(22, 104, 227, 0.8);
       transform: translateY(-1px);
     }
 
@@ -413,24 +428,24 @@
     .success-icon {
       width: 110px;
       height: 110px;
-      background: linear-gradient(135deg, #10b981, #34d399);
+      background: linear-gradient(135deg, var(--primary), var(--accent-blue));
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       margin: 0 auto 25px;
       font-size: 55px;
-      box-shadow: 0 25px 70px rgba(16, 185, 129, 0.6);
+      box-shadow: 0 25px 70px rgba(22, 104, 227, 0.6);
       animation: successGlow 1.5s ease-in-out infinite;
     }
 
     @keyframes successGlow {
       0%, 100% { 
-        box-shadow: 0 25px 70px rgba(16, 185, 129, 0.6);
+        box-shadow: 0 25px 70px rgba(22, 104, 227, 0.6);
         transform: scale(1);
       }
       50% { 
-        box-shadow: 0 30px 90px rgba(16, 185, 129, 0.9);
+        box-shadow: 0 30px 90px rgba(22, 104, 227, 0.9);
         transform: scale(1.05);
       }
     }
@@ -512,9 +527,23 @@
   <!-- Shooting Stars -->
   <div class="shooting-stars" id="shootingStars"></div>
 
-  <div class="otp-container">
+  <!--/* Đã nhập OTP xong rồi bấm Back: báo đã đăng nhập, không hiện lại ô nhập mã. */-->
+  <div class="otp-container" th:if="${verified}">
     <div class="logo-icon">
-      <i class="fas fa-shield-check"></i>
+      <svg th:replace="~{shell/icons :: icon('check')}"></svg>
+    </div>
+    <h1 class="title">Đã xác minh</h1>
+    <p class="subtitle">
+      Mã OTP này đã được sử dụng.<br>
+      Bạn đã đăng nhập thành công với
+      <span class="email-badge" th:text="${email}">email@example.com</span>
+    </p>
+    <a class="btn-verify btn-verified" th:href="@{${homePath}}">Vào trang làm việc</a>
+  </div>
+
+  <div class="otp-container" th:unless="${verified}">
+    <div class="logo-icon">
+      <svg th:replace="~{shell/icons :: icon('shield-check')}"></svg>
     </div>
 
     <h1 class="title">Xác minh danh tính</h1>
@@ -528,8 +557,7 @@
       <i class="fas fa-exclamation-circle"></i>
       <span th:text="${otpError} ?: 'Mã OTP không chính xác. Vui lòng thử lại.'">Mã OTP không chính xác.</span>
     </div>
-    <p th:if="${authInfo}" style="text-align:center;color:#86efac;margin-bottom:1rem;font-size:14px;" th:text="${authInfo}"></p>
-    <p id="otpMailNote" hidden style="text-align:center;color:#86efac;margin-bottom:1rem;font-size:14px;"></p>
+    <p th:if="${authInfo}" style="text-align:center;color:var(--accent-light);margin-bottom:1rem;font-size:14px;" th:text="${authInfo}"></p>
 
     <form id="otpForm" th:action="@{/auth/verify-otp}" th:object="${verifyOtpRequest}" method="post" onsubmit="return prepareOtpSubmit(event)">
       <input type="hidden" th:field="*{email}" id="emailHidden"/>
@@ -572,9 +600,16 @@
   </div>
 
   <script>
-    // Create floating particles với màu cam
+    // Trang được khôi phục từ bộ nhớ đệm khi bấm Back (nút còn đang xoay): tải lại để server trả đúng trạng thái.
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) window.location.reload();
+    });
+
+    // Create floating particles
     const particlesContainer = document.getElementById('particles');
-    const colors = ['#FF7A00', '#9D4EDD', '#00D9FF', '#FF6B9D'];
+    const palette = getComputedStyle(document.documentElement);
+    const colors = ['--blue-600', '--blue-500', '--blue-100', '--navy-700']
+      .map((token) => palette.getPropertyValue(token).trim());
     
     for (let i = 0; i < 35; i++) {
       const particle = document.createElement('div');
@@ -587,7 +622,7 @@
       particlesContainer.appendChild(particle);
     }
 
-    // Create shooting stars với màu cam
+    // Create shooting stars
     const starsContainer = document.getElementById('shootingStars');
     setInterval(() => {
       const star = document.createElement('div');
@@ -617,25 +652,7 @@
       emailHidden.value = emailFromQuery;
     }
 
-    otpInputs[0].focus();
-
-    // Nút Sao chép mã trong email: mail chặn JavaScript nên việc copy làm ở đây.
-    // Mã nằm sau dấu # nên không gửi lên server, và được xóa khỏi thanh địa chỉ ngay.
-    const otpFromMail = (window.location.hash.match(/^#otp=(\d{6})$/) || [])[1];
-    if (otpFromMail) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      otpInputs.forEach((input, i) => {
-        input.value = otpFromMail[i];
-        input.classList.add('filled');
-      });
-      verifyBtn.focus();
-      const mailNote = document.getElementById('otpMailNote');
-      mailNote.textContent = 'Đã điền sẵn mã, bấm Xác nhận để đăng nhập.';
-      mailNote.hidden = false;
-      navigator.clipboard?.writeText(otpFromMail)?.then(() => {
-        mailNote.textContent = 'Đã sao chép và điền sẵn mã, bấm Xác nhận để đăng nhập.';
-      }).catch(() => {});
-    }
+    if (otpInputs.length) otpInputs[0].focus();
 
     // Handle input navigation
     otpInputs.forEach((input, index) => {
