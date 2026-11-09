@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -23,6 +24,7 @@ import lombok.Setter;
 public class ConsignmentAgreement extends BaseEntity {
 
     @Column(nullable = false, length = 40)
+    @Nationalized
     private String code;
 
     @OneToOne(optional = false)
@@ -47,14 +49,18 @@ public class ConsignmentAgreement extends BaseEntity {
     private LocalDate validTo;
 
     @Column(length = 4000)
+    @Nationalized
     private String custodyTerms;
 
     @Column(length = 4000)
+    @Nationalized
     private String terminationTerms;
 
     @Column(length = 4000)
+    @Nationalized
     private String payoutTerms;
 
     @Column(length = 500)
+    @Nationalized
     private String signatureEvidencePath;
 }

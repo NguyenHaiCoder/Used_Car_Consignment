@@ -5,6 +5,7 @@ import fu.he.training.fall2026.entity.consignment.VehicleSaleNews;
 import fu.he.training.fall2026.entity.enums.ListingStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -74,6 +75,24 @@ public interface VehicleSaleNewsRepository extends JpaRepository<VehicleSaleNews
             """)
     Optional<VehicleSaleNews> findDetailById(@Param("id") Long id);
 
+    @Query("""
+            select n from VehicleSaleNews n
+              join fetch n.consignment c
+              join fetch c.vehicle v
+            where n.status = :status and v.id = :vehicleId
+            """)
+    Optional<VehicleSaleNews> findByStatusAndVehicleId(
+            @Param("status") ListingStatus status, @Param("vehicleId") Long vehicleId);
+
+    @Query("""
+            select n from VehicleSaleNews n
+              join n.consignment c
+              join c.vehicle v
+            where v.id = :vehicleId
+            order by n.id desc
+            """)
+    List<VehicleSaleNews> findByVehicleId(@Param("vehicleId") Long vehicleId);
+
     /** Staff who own at least one listing, for the "Người phụ trách" filter. */
     @Query("select distinct u from VehicleSaleNews n join n.assignedTo u order by u.fullName")
     List<User> findStaffs();
@@ -112,12 +131,43 @@ public interface VehicleSaleNewsRepository extends JpaRepository<VehicleSaleNews
             @Param("priceMax") BigDecimal priceMax,
             Pageable pageable);
 
+    /** Trang bán xe: tin đang bán và tin đã đặt cọc. */
+    @Query(value = """
+            select n from VehicleSaleNews n join fetch n.consignment c join fetch c.vehicle v
+            where n.status in :statuses
+              and (:brand is null or v.make = :brand)
+              and (:priceMin is null or n.listPrice >= :priceMin)
+              and (:priceMax is null or n.listPrice < :priceMax)
+              and (lower(n.title) like :pattern
+                   or lower(concat(v.make, ' ', v.model)) like :pattern
+                   or cast(v.year as string) like :pattern
+                   or lower(coalesce(v.fuelType, '')) like :pattern)
+            """,
+            countQuery = """
+            select count(n) from VehicleSaleNews n join n.consignment c join c.vehicle v
+            where n.status in :statuses
+              and (:brand is null or v.make = :brand)
+              and (:priceMin is null or n.listPrice >= :priceMin)
+              and (:priceMax is null or n.listPrice < :priceMax)
+              and (lower(n.title) like :pattern
+                   or lower(concat(v.make, ' ', v.model)) like :pattern
+                   or cast(v.year as string) like :pattern
+                   or lower(coalesce(v.fuelType, '')) like :pattern)
+            """)
+    Page<VehicleSaleNews> searchPublicIn(
+            @Param("pattern") String pattern,
+            @Param("statuses") Collection<ListingStatus> statuses,
+            @Param("brand") String brand,
+            @Param("priceMin") BigDecimal priceMin,
+            @Param("priceMax") BigDecimal priceMax,
+            Pageable pageable);
+
     @Query("""
             select distinct v.make from VehicleSaleNews n join n.consignment c join c.vehicle v
-            where n.status = :status
+            where n.status in :statuses
             order by v.make
             """)
-    List<String> findBrands(@Param("status") ListingStatus status);
+    List<String> findBrands(@Param("statuses") Collection<ListingStatus> statuses);
 
     /** Newest listings in the given status with their vehicle; the page size is the number of cards. */
     @Query("""

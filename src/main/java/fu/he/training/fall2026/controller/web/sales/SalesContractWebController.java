@@ -1,17 +1,21 @@
 package fu.he.training.fall2026.controller.web.sales;
 
+import fu.he.training.fall2026.constant.sales.SalesDealCatalog;
+import fu.he.training.fall2026.dto.sales.DealListFilter;
+import fu.he.training.fall2026.dto.sales.ReservationResponse;
+import fu.he.training.fall2026.dto.sales.SalesContractForm;
+import fu.he.training.fall2026.dto.sales.SalesContractResponse;
 import fu.he.training.fall2026.exception.BusinessException;
 import fu.he.training.fall2026.exception.ResourceNotFoundException;
 import fu.he.training.fall2026.service.PaymentService;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import fu.he.training.fall2026.service.ReservationService;
+import fu.he.training.fall2026.service.SalesContractService;
+import fu.he.training.fall2026.service.impl.ReservationServiceImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,10 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Đỗ Lan Anh: luồng Hợp đồng bán xe, chạy trên mock trong bộ nhớ ({@link SalesDealUiData}), chưa ghi DB.
- * Nút gửi yêu cầu thu gọi PaymentService (Cường) khi hợp đồng đã có trong DB.
- */
+/** Hợp đồng bán xe — controller mỏng, dữ liệu lấy từ {@link SalesContractService}. */
 @Controller
 @RequestMapping("/sales/contracts")
 @RequiredArgsConstructor
@@ -32,19 +33,19 @@ public class SalesContractWebController {
     private static final String BASE = "/sales/contracts";
     private static final String LIST_VIEW = "sales/contracts/list";
     private static final String DOC_VIEW = "sales/contracts/create";
-    private static final String SIGNATURE_PREFIX = "data:image/png;base64,";
 
+    private final SalesContractService salesContractService;
+    private final ReservationService reservationService;
     private final PaymentService paymentService;
 
     @ModelAttribute
     public void dictionaries(Model model) {
-        model.addAttribute("statuses", SalesDealUiData.CONTRACT_STATUSES);
+        model.addAttribute("statuses", SalesDealCatalog.CONTRACT_STATUSES);
     }
 
     @GetMapping
-    public String list(@RequestParam Map<String, String> params, Model model) {
-        SalesDealUiData.bindList(model, BASE, SalesDealUiData.contracts(), "salePrice", "created",
-                SalesDealUiData.CONTRACT_STATUSES, params);
+    public String list(@ModelAttribute DealListFilter filter, Model model) {
+        salesContractService.bindList(model, BASE, filter);
         return LIST_VIEW;
     }
 
@@ -55,174 +56,188 @@ public class SalesContractWebController {
             RedirectAttributes flash) {
         if (reservationId == null) {
             model.addAttribute("contract", null);
-            model.addAttribute("reservations", SalesDealUiData.activeReservations());
+            model.addAttribute("reservations", salesContractService.activeReservations());
             return DOC_VIEW;
         }
-        Map<String, Object> reservation = findReservation(reservationId);
-        String redirect = blockedBy(reservation, flash);
-        return redirect != null ? redirect : show(SalesDealUiData.draftContract(reservation, now()), null, model);
+        String redirect = blockedBy(reservationId, flash);
+        if (redirect != null) {
+            return redirect;
+        }
+        return show(salesContractService.draftFromReservation(reservationId), toForm(null), null, model);
     }
 
     @PostMapping
     public String create(
             @RequestParam long reservationId,
-            @RequestParam Map<String, String> form,
+            @Valid @ModelAttribute("form") SalesContractForm form,
+            BindingResult errors,
             Model model,
             RedirectAttributes flash) {
-        Map<String, Object> reservation = findReservation(reservationId);
-        String redirect = blockedBy(reservation, flash);
+        String redirect = blockedBy(reservationId, flash);
         if (redirect != null) {
             return redirect;
         }
-        Map<String, Object> contract = SalesDealUiData.draftContract(reservation, now());
-        String error = apply(contract, form);
-        if (error != null) {
-            return show(contract, error, model);
+        SalesContractResponse draft = salesContractService.draftFromReservation(reservationId);
+        applyDraftPreview(draft, form);
+        if (errors.hasErrors()) {
+            return show(draft, form, null, model);
         }
-        SalesDealUiData.addContract(contract, reservation);
-        return finish(contract, flash);
+        try {
+            Long id = salesContractService.create(reservationId, form);
+            return finish(salesContractService.findById(id), flash);
+        } catch (BusinessException ex) {
+            rejectContractBusiness(errors, ex.getMessage());
+            return show(draft, form, null, model);
+        }
     }
 
     @GetMapping("/{id}")
     public String open(@PathVariable long id, Model model) {
-        return show(find(id), null, model);
+        SalesContractResponse contract = salesContractService.findById(id);
+        return show(contract, toForm(contract), null, model);
     }
 
     @PostMapping("/{id}")
     public String save(
             @PathVariable long id,
-            @RequestParam Map<String, String> form,
+            @Valid @ModelAttribute("form") SalesContractForm form,
+            BindingResult errors,
             Model model,
             RedirectAttributes flash) {
-        Map<String, Object> contract = find(id);
-        if (!SalesDealUiData.DRAFT.equals(contract.get("status"))) {
+        SalesContractResponse contract = salesContractService.findById(id);
+        if (!"DRAFT".equals(contract.getStatus())) {
             flash.addFlashAttribute("flashError", "Hợp đồng đã ký nên không sửa được.");
             return "redirect:" + BASE + "/" + id;
         }
-        Map<String, Object> edited = new LinkedHashMap<>(contract);
-        String error = apply(edited, form);
-        if (error != null) {
-            return show(edited, error, model);
+        applyDraftPreview(contract, form);
+        if (errors.hasErrors()) {
+            return show(contract, form, null, model);
         }
-        contract.putAll(edited);
-        return finish(contract, flash);
+        try {
+            salesContractService.update(id, form);
+            return finish(salesContractService.findById(id), flash);
+        } catch (BusinessException ex) {
+            rejectContractBusiness(errors, ex.getMessage());
+            return show(contract, form, null, model);
+        }
     }
 
-    /** Vũ Mạnh Cường: Sales gửi yêu cầu thu — ưu tiên DB, fallback mock của Lan Anh. */
+    /** Sales gửi yêu cầu thu sang Tài chính. */
     @PostMapping("/{id}/payment-request")
     public String requestPayment(@PathVariable long id, RedirectAttributes flash) {
+        SalesContractResponse contract = salesContractService.findById(id);
+        if (!"SIGNED".equals(contract.getStatus()) && !"ACTIVE".equals(contract.getStatus())) {
+            flash.addFlashAttribute("flashError", "Chỉ gửi yêu cầu thu cho hợp đồng đã ký.");
+            return "redirect:" + BASE + "/" + id;
+        }
         try {
             paymentService.createRequest(id);
             flash.addFlashAttribute("flashMessage", "Đã gửi yêu cầu thu tiền sang Tài chính.");
-            return "redirect:" + BASE + "/" + id;
-        } catch (ResourceNotFoundException | BusinessException ignored) {
-            // Hợp đồng mock chưa có trong DB — giữ luồng Lan Anh.
-        }
-        Map<String, Object> contract = find(id);
-        if (SalesDealUiData.SIGNED.equals(contract.get("status"))) {
-            SalesDealUiData.requestPayment(contract);
-            flash.addFlashAttribute("flashMessage", "Đã gửi yêu cầu thu tiền sang Tài chính.");
-        } else {
-            flash.addFlashAttribute("flashError", "Chỉ gửi yêu cầu thu cho hợp đồng đã ký.");
+        } catch (ResourceNotFoundException | BusinessException ex) {
+            flash.addFlashAttribute("flashError", ex.getMessage());
         }
         return "redirect:" + BASE + "/" + id;
     }
 
-    private static String finish(Map<String, Object> contract, RedirectAttributes flash) {
-        flash.addFlashAttribute("flashMessage", SalesDealUiData.SIGNED.equals(contract.get("status"))
-                ? "Đã ký hợp đồng " + contract.get("code") + "."
-                : "Đã lưu nháp hợp đồng " + contract.get("code") + ".");
-        return "redirect:" + BASE + "/" + contract.get("id");
-    }
-
-    /** Ghi nội dung form vào hợp đồng; bấm Ký hợp đồng thì kiểm tra thêm thông tin người mua và chữ ký hai bên. */
-    private static String apply(Map<String, Object> contract, Map<String, String> form) {
-        for (String key : List.of("buyerIdNumber", "buyerAddress", "paymentTerms", "handoverTerms", "terminationTerms")) {
-            contract.put(key, form.getOrDefault(key, "").trim());
-        }
-        Long salePrice = SalesDealUiData.parseMoney(form.get("salePrice"));
-        long deposit = (Long) contract.get("deposit");
-        if (salePrice != null) {
-            contract.put("salePrice", salePrice);
-            contract.put("remaining", salePrice - deposit);
-        }
-        if (salePrice == null || salePrice <= deposit) {
-            return "Giá bán phải lớn hơn tiền cọc đã đặt.";
-        }
-        if (!"sign".equals(form.get("intent"))) {
-            return null;
-        }
-        if (!form.getOrDefault("buyerIdNumber", "").trim().matches("\\d{12}")) {
-            return "Số CCCD của người mua phải đủ 12 số.";
-        }
-        if (form.getOrDefault("buyerAddress", "").isBlank()) {
-            return "Vui lòng nhập địa chỉ người mua.";
-        }
-        String seller = form.getOrDefault("sellerSignature", "");
-        String buyer = form.getOrDefault("buyerSignature", "");
-        if (!seller.startsWith(SIGNATURE_PREFIX) || !buyer.startsWith(SIGNATURE_PREFIX)) {
-            return "Hợp đồng cần đủ chữ ký của hai bên.";
-        }
-        contract.put("sellerSignature", seller);
-        contract.put("buyerSignature", buyer);
-        contract.put("status", SalesDealUiData.SIGNED);
-        contract.put("signedOn", LocalDate.now().toString());
-        return null;
-    }
-
-    private static String show(Map<String, Object> contract, String error, Model model) {
+    private String show(
+            SalesContractResponse contract, SalesContractForm form, String error, Model model) {
         model.addAttribute("contract", contract);
+        model.addAttribute("form", form != null ? form : toForm(contract));
         model.addAttribute("formError", error);
-        model.addAttribute("editable", SalesDealUiData.DRAFT.equals(contract.get("status")));
-        model.addAttribute("isSigned", !String.valueOf(contract.get("signedOn")).isEmpty());
-        model.addAttribute("steps", steps(contract));
+        model.addAttribute("editable", "DRAFT".equals(contract.getStatus()));
+        model.addAttribute("isSigned", contract.getSignedOn() != null && !contract.getSignedOn().isBlank());
+        model.addAttribute("steps", salesContractService.steps(contract));
         return DOC_VIEW;
     }
 
-    /** Ba mốc cuối do luồng khác cập nhật, đủ cả ba thì mới hoàn tất giao dịch. */
-    private static List<Map<String, String>> steps(Map<String, Object> contract) {
-        boolean signed = !String.valueOf(contract.get("signedOn")).isEmpty();
-        List<Map<String, String>> steps = new ArrayList<>();
-        steps.add(step("Tư vấn", String.valueOf(contract.get("inquiryCode")), "done"));
-        steps.add(step("Đặt cọc giữ xe", String.valueOf(contract.get("reservationCode")), "done"));
-        steps.add(step("Ký hợp đồng", signed ? "Đã ký hai bên" : "Chờ ký", signed ? "done" : "current"));
-        steps.add(milestone("Thanh toán", (Boolean) contract.get("paid")));
-        steps.add(milestone("Sang tên", (Boolean) contract.get("transferred")));
-        steps.add(milestone("Bàn giao xe", (Boolean) contract.get("handedOver")));
-        return steps;
-    }
-
-    private static Map<String, String> milestone(String label, boolean done) {
-        return step(label, done ? "Đã hoàn tất" : "Chưa thực hiện", done ? "done" : "");
-    }
-
-    private static Map<String, String> step(String label, String note, String state) {
-        return Map.of("label", label, "note", note, "state", state);
-    }
-
-    /** Phiếu đã có hợp đồng thì mở lại hợp đồng đó, phiếu đã kết thúc thì quay về phiếu. Hợp lệ thì trả về null. */
-    private static String blockedBy(Map<String, Object> reservation, RedirectAttributes flash) {
-        var existing = SalesDealUiData.contractOf((Long) reservation.get("id"));
-        if (existing.isPresent()) {
-            flash.addFlashAttribute("flashError", "Phiếu đặt cọc này đã có hợp đồng, mình mở lại để cập nhật tiếp.");
-            return "redirect:" + BASE + "/" + existing.get().get("id");
+    private static SalesContractForm toForm(SalesContractResponse contract) {
+        SalesContractForm form = new SalesContractForm();
+        if (contract == null) {
+            return form;
         }
-        if (!SalesDealUiData.ACTIVE.equals(reservation.get("status"))) {
-            flash.addFlashAttribute("flashError", "Chỉ lập được hợp đồng từ phiếu đặt cọc còn hiệu lực.");
-            return "redirect:/sales/reservations/" + reservation.get("id");
+        form.setSalePrice(ReservationServiceImpl.money(contract.getSalePrice()));
+        form.setBuyerIdNumber(contract.getBuyerIdNumber());
+        form.setBuyerAddress(contract.getBuyerAddress());
+        form.setPaymentTerms(contract.getPaymentTerms());
+        form.setHandoverTerms(contract.getHandoverTerms());
+        form.setTerminationTerms(contract.getTerminationTerms());
+        form.setSellerSignature(contract.getSellerSignature());
+        form.setBuyerSignature(contract.getBuyerSignature());
+        return form;
+    }
+
+    private static String finish(SalesContractResponse contract, RedirectAttributes flash) {
+        flash.addFlashAttribute(
+                "flashMessage",
+                "SIGNED".equals(contract.getStatus())
+                        ? "Đã ký hợp đồng " + contract.getCode() + "."
+                        : "Đã lưu nháp hợp đồng " + contract.getCode() + ".");
+        return "redirect:" + BASE + "/" + contract.getId();
+    }
+
+    /** Phiếu đã có HĐ thì mở lại HĐ đó; phiếu không còn ACTIVE thì quay về phiếu. */
+    private String blockedBy(Long reservationId, RedirectAttributes flash) {
+        var existing = salesContractService.findByReservationId(reservationId);
+        if (existing.isPresent()) {
+            flash.addFlashAttribute(
+                    "flashError",
+                    "Phiếu đặt cọc này đã có hợp đồng, mình mở lại để cập nhật tiếp.");
+            return "redirect:" + BASE + "/" + existing.get().getId();
+        }
+        ReservationResponse reservation = reservationService.findById(reservationId);
+        if (!"ACTIVE".equals(reservation.getStatus())) {
+            flash.addFlashAttribute(
+                    "flashError", "Chỉ lập được hợp đồng từ phiếu đặt cọc còn hiệu lực.");
+            return "redirect:/sales/reservations/" + reservationId;
         }
         return null;
     }
 
-    private static String now() {
-        return LocalDateTime.now().withSecond(0).withNano(0).toString();
+    private static void applyDraftPreview(SalesContractResponse draft, SalesContractForm form) {
+        Long salePrice = ReservationServiceImpl.parseMoney(form.getSalePrice());
+        if (salePrice != null) {
+            draft.setSalePrice(salePrice);
+            draft.setRemaining(salePrice - draft.getDeposit());
+        }
+        if (form.getBuyerIdNumber() != null) {
+            draft.setBuyerIdNumber(form.getBuyerIdNumber().trim());
+        }
+        if (form.getBuyerAddress() != null) {
+            draft.setBuyerAddress(form.getBuyerAddress().trim());
+        }
+        if (form.getPaymentTerms() != null && !form.getPaymentTerms().isBlank()) {
+            draft.setPaymentTerms(form.getPaymentTerms().trim());
+        }
+        if (form.getHandoverTerms() != null && !form.getHandoverTerms().isBlank()) {
+            draft.setHandoverTerms(form.getHandoverTerms().trim());
+        }
+        if (form.getTerminationTerms() != null && !form.getTerminationTerms().isBlank()) {
+            draft.setTerminationTerms(form.getTerminationTerms().trim());
+        }
+        if (form.getSellerSignature() != null) {
+            draft.setSellerSignature(form.getSellerSignature());
+        }
+        if (form.getBuyerSignature() != null) {
+            draft.setBuyerSignature(form.getBuyerSignature());
+        }
     }
 
-    private static Map<String, Object> find(long id) {
-        return SalesDealUiData.contract(id).orElseThrow(() -> new ResourceNotFoundException("Hợp đồng bán xe", id));
-    }
-
-    private static Map<String, Object> findReservation(long id) {
-        return SalesDealUiData.reservation(id).orElseThrow(() -> new ResourceNotFoundException("Phiếu đặt cọc", id));
+    private static void rejectContractBusiness(BindingResult errors, String message) {
+        if (message == null || message.isBlank()) {
+            errors.reject("error", "Không lưu được hợp đồng.");
+            return;
+        }
+        String lower = message.toLowerCase();
+        if (lower.contains("giá bán") || lower.contains("tiền cọc")) {
+            errors.rejectValue("salePrice", "salePrice", message);
+        } else if (lower.contains("cccd")) {
+            errors.rejectValue("buyerIdNumber", "buyerIdNumber", message);
+        } else if (lower.contains("địa chỉ")) {
+            errors.rejectValue("buyerAddress", "buyerAddress", message);
+        } else if (lower.contains("chữ ký")) {
+            errors.reject("error", message);
+        } else {
+            errors.reject("error", message);
+        }
     }
 }

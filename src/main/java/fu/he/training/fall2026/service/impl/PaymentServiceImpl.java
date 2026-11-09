@@ -217,7 +217,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setReservation(contract.getReservation());
         payment.setAmount(amount);
         payment.setStatus(PaymentStatus.PAID);
-        payment.setPayerName(contract.getReservation().getBuyer().getFullName());
+        payment.setPayerName(contract.getReservation().getInquiry().getFullName());
         payment.setReferenceCode(ref);
         payment.setMethod(method);
         payment.setPaidAt(Instant.now());
@@ -330,8 +330,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .code(generatePaymentCode(contract.getId()))
                 .reference(contract.getCode())
                 .contractCode(contract.getCode())
-                .buyer(contract.getReservation().getBuyer().getFullName())
-                .phone(contract.getReservation().getBuyer().getPhone())
+                .buyer(contract.getReservation().getInquiry().getFullName())
+                .phone(contract.getReservation().getInquiry().getPhone())
                 .car(contract.getReservation().getVehicle().getDisplayLabel())
                 .plate(nullToEmpty(contract.getReservation().getVehicle().getLicensePlate()))
                 .file(fileCode(contract))
@@ -387,8 +387,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .code(generateRefundCode(reservation.getId()))
                 .reference(reservation.getCode())
                 .contractCode(reservation.getCode())
-                .buyer(reservation.getBuyer().getFullName())
-                .phone(reservation.getBuyer().getPhone())
+                .buyer(reservation.getInquiry().getFullName())
+                .phone(reservation.getInquiry().getPhone())
                 .car(reservation.getVehicle().getDisplayLabel())
                 .plate(nullToEmpty(reservation.getVehicle().getLicensePlate()))
                 .file("")
@@ -422,7 +422,7 @@ public class PaymentServiceImpl implements PaymentService {
         deposit.setReservation(contract.getReservation());
         deposit.setAmount(nz(contract.getDepositAmount()));
         deposit.setStatus(PaymentStatus.PAID);
-        deposit.setPayerName(contract.getReservation().getBuyer().getFullName());
+        deposit.setPayerName(contract.getReservation().getInquiry().getFullName());
         deposit.setReferenceCode(contract.getReservation().getCode());
         deposit.setMethod("Đặt cọc");
         deposit.setPaidAt(contract.getCreatedAt());
@@ -437,7 +437,7 @@ public class PaymentServiceImpl implements PaymentService {
         deposit.setReservation(reservation);
         deposit.setAmount(nz(reservation.getDepositAmount()));
         deposit.setStatus(PaymentStatus.PAID);
-        deposit.setPayerName(reservation.getBuyer().getFullName());
+        deposit.setPayerName(reservation.getInquiry().getFullName());
         deposit.setReferenceCode(reservation.getCode());
         deposit.setMethod("Đặt cọc");
         deposit.setPaidAt(reservation.getCreatedAt());

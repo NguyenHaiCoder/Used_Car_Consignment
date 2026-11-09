@@ -310,7 +310,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .plate(nullToEmpty(contract.getReservation().getVehicle().getLicensePlate()))
                 .file(consignment.getCode())
                 .owner(owner.getFullName())
-                .buyer(contract.getReservation().getBuyer().getFullName())
+                .buyer(contract.getReservation().getInquiry().getFullName())
                 .staff(contract.getReservation().getAssignedTo() != null
                         ? contract.getReservation().getAssignedTo().getFullName() : "")
                 .salePrice(money(s.getBaseAmount()))

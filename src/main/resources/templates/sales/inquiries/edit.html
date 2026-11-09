@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-<!--/* Đỗ Lan Anh: Màn Sửa tư vấn. Không đổi được SĐT và xe: một Inquiry luôn là một khách với một xe; xe khác thì tạo tư vấn mới.
-       Không đổi được người phụ trách: chỉ Manager được gán lại. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(${'Sửa ' + item.code}, 'Kinh doanh', 'sales-inquiries',
                     null, ~{::link}, ~{::#inquiry-edit})}">
@@ -31,9 +29,13 @@
     </div>
   </div>
 
-  <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+  <form class="inq-form" method="post" th:action="@{/sales/inquiries/{id}(id=${item.id})}" th:object="${form}" novalidate>
+    <p class="flash flash--error" th:if="${#fields.hasGlobalErrors()}"
+       th:each="err : ${#fields.globalErrors()}" th:text="${err}" role="alert"></p>
+    <p class="flash flash--error" th:if="${flashError}" th:text="${flashError}" role="alert"></p>
+    <input type="hidden" th:field="*{car}">
+    <input type="hidden" th:field="*{consent}">
 
-  <form class="inq-form" method="post" th:action="@{/sales/inquiries/{id}(id=${item.id})}">
     <section class="section-card">
       <div class="section-head">
         <svg th:replace="~{shell/icons :: icon('user')}"></svg>
@@ -44,17 +46,19 @@
           <div class="field">
             <label for="inq-name">Họ và tên <span class="req">*</span></label>
             <div class="field-input">
-              <input id="inq-name" name="fullName" minlength="2" maxlength="160" required th:value="${item.buyer}">
+              <input id="inq-name" th:field="*{fullName}" maxlength="160"
+                     th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
             </div>
+            <span class="field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></span>
           </div>
           <div class="field">
             <label for="inq-phone">Số điện thoại</label>
             <div class="field-input">
-              <input id="inq-phone" readonly th:value="${item.phone}">
+              <input id="inq-phone" th:field="*{phone}" readonly>
             </div>
           </div>
         </div>
-        <section th:replace="~{sales/inquiries/fields :: buyerExtra(${item.email}, ${item.area}, ${item.buyerNote})}"></section>
+        <section th:replace="~{sales/inquiries/fields :: buyerExtra}"></section>
       </div>
     </section>
 
@@ -78,11 +82,11 @@
             </div>
           </div>
         </div>
-        <fieldset th:replace="~{sales/inquiries/fields :: needChoice(${item.need})}"></fieldset>
+        <fieldset th:replace="~{sales/inquiries/fields :: needChoice}"></fieldset>
       </div>
     </section>
 
-    <section th:replace="~{sales/inquiries/fields :: demand(${item.budgetMin}, ${item.budgetMax}, ${#strings.listJoin(item.priorities, ', ')}, ${item.buyTime})}"></section>
+    <section th:replace="~{sales/inquiries/fields :: demand}"></section>
 
     <div class="create-actions">
       <a class="btn-c btn-c--ghost" th:href="@{/sales/inquiries/{id}(id=${item.id})}">Hủy</a>

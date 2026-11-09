@@ -18,4 +18,6 @@ public class PublicListingCardResponse {
     String fuelType;
     /** First photo of the listing, null when it has none. */
     String coverUrl;
+    /** LISTED hoặc RESERVED. */
+    String status;
 }

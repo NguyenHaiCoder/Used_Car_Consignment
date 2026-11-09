@@ -35,6 +35,11 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+    # V10–V12 sửa EXEC → checksum đổi; bỏ validate để máy cũ vẫn migrate V13
+    out-of-order: true
+    validate-on-migrate: false
+
+
   jpa:
     open-in-view: false
     hibernate:

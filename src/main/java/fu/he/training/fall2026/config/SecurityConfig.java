@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/",
                                 "/home",
                                 "/tin-ban-xe",
+                                "/tin-ban-xe/**",
                                 "/login",
                                 "/auth/sign-in",
                                 "/verify-otp",

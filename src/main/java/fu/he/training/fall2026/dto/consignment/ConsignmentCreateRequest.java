@@ -33,6 +33,7 @@ public class ConsignmentCreateRequest {
     private String phone;
 
     @Email(message = "Email chưa đúng định dạng.")
+    @NotBlank(message = "Vui lòng nhập email.")
     @Size(max = 180, message = "Email tối đa 180 ký tự.")
     private String email;
 
@@ -40,6 +41,7 @@ public class ConsignmentCreateRequest {
     @Pattern(regexp = "^\\d{12}$", message = "CCCD cần 12 chữ số.")
     private String idNumber;
 
+    @NotBlank(message = "Vui lòng nhập địa chỉ.")
     @Size(max = 500, message = "Địa chỉ tối đa 500 ký tự.")
     private String address;
 
@@ -63,6 +65,7 @@ public class ConsignmentCreateRequest {
     @NotNull(message = "Vui lòng chọn dòng xe.")
     private Long vehicleModelId;
 
+    @NotBlank(message = "Vui lòng nhập biển số.")
     @Size(max = 20, message = "Biển số tối đa 20 ký tự.")
     private String licensePlate;
 
@@ -87,9 +90,11 @@ public class ConsignmentCreateRequest {
     @Size(max = 40, message = "Số máy tối đa 40 ký tự.")
     private String engineNumber;
 
+    @NotBlank(message = "Vui lòng chọn loại xe.")
     @Size(max = 40, message = "Loại xe tối đa 40 ký tự.")
     private String vehicleType;
 
+    @NotBlank(message = "Vui lòng chọn hộp số.")
     @Size(max = 40, message = "Hộp số tối đa 40 ký tự.")
     private String transmission;
 
@@ -97,6 +102,7 @@ public class ConsignmentCreateRequest {
     @Size(max = 40, message = "Nhiên liệu tối đa 40 ký tự.")
     private String fuelType;
 
+    @NotBlank(message = "Vui lòng nhập nơi để xe.")
     @Size(max = 160, message = "Nơi để xe tối đa 160 ký tự.")
     private String location;
 
@@ -108,6 +114,7 @@ public class ConsignmentCreateRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate intakeDate;
 
+    @NotBlank(message = "Vui lòng nhập nơi lưu giữ.")
     @Size(max = 160, message = "Nơi lưu giữ tối đa 160 ký tự.")
     private String custodyLocation;
 

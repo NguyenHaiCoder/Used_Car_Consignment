@@ -16,4 +16,7 @@ public interface PublicSaleNewsService {
 
     /** Newest listed cars for the home carousel. */
     List<PublicListingCardResponse> featured();
+
+    /** One LISTED card for the contact form; throws if missing or not listed. */
+    PublicListingCardResponse getListed(Long id);
 }

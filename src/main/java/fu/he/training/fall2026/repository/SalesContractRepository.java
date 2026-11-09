@@ -18,9 +18,8 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
     @Query("""
             select sc from SalesContract sc
             join fetch sc.reservation r
-            join fetch r.buyer
-            join fetch r.vehicle
             join fetch r.inquiry i
+            join fetch r.vehicle
             left join fetch i.assignedTo
             left join fetch r.assignedTo
             where sc.id = :id
@@ -30,9 +29,30 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
     @Query("""
             select sc from SalesContract sc
             join fetch sc.reservation r
-            join fetch r.buyer
-            join fetch r.vehicle
             join fetch r.inquiry i
+            join fetch r.vehicle
+            left join fetch r.assignedTo
+            where r.id = :reservationId
+            """)
+    Optional<SalesContract> findByReservationId(@Param("reservationId") Long reservationId);
+
+    @Query("""
+            select sc from SalesContract sc
+            join fetch sc.reservation r
+            join fetch r.inquiry i
+            join fetch r.vehicle
+            left join fetch r.assignedTo
+            order by sc.id desc
+            """)
+    List<SalesContract> findAllDetail();
+
+    boolean existsByReservationId(Long reservationId);
+
+    @Query("""
+            select sc from SalesContract sc
+            join fetch sc.reservation r
+            join fetch r.inquiry i
+            join fetch r.vehicle
             left join fetch i.assignedTo
             left join fetch r.assignedTo
             where sc.signedOn is not null
@@ -46,7 +66,7 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
     @Query(value = """
             select sc from SalesContract sc
               join fetch sc.reservation r
-              join fetch r.buyer
+              join fetch r.inquiry i
               join fetch r.vehicle
               left join fetch r.assignedTo u
             where exists (
@@ -59,8 +79,8 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
               and (:amountMin is null or sc.salePrice >= :amountMin)
               and (:amountMax is null or sc.salePrice <= :amountMax)
               and (lower(sc.code) like :pattern
-                   or lower(r.buyer.fullName) like :pattern
-                   or lower(r.buyer.phone) like :pattern
+                   or lower(coalesce(i.fullName, '')) like :pattern
+                   or lower(coalesce(i.phone, '')) like :pattern
                    or lower(r.vehicle.make) like :pattern
                    or lower(r.vehicle.model) like :pattern
                    or lower(coalesce(r.vehicle.licensePlate, '')) like :pattern
@@ -69,7 +89,7 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
             countQuery = """
             select count(sc) from SalesContract sc
               join sc.reservation r
-              join r.buyer
+              join r.inquiry i
               join r.vehicle
               left join r.assignedTo u
             where exists (
@@ -82,8 +102,8 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
               and (:amountMin is null or sc.salePrice >= :amountMin)
               and (:amountMax is null or sc.salePrice <= :amountMax)
               and (lower(sc.code) like :pattern
-                   or lower(r.buyer.fullName) like :pattern
-                   or lower(r.buyer.phone) like :pattern
+                   or lower(coalesce(i.fullName, '')) like :pattern
+                   or lower(coalesce(i.phone, '')) like :pattern
                    or lower(r.vehicle.make) like :pattern
                    or lower(r.vehicle.model) like :pattern
                    or lower(coalesce(r.vehicle.licensePlate, '')) like :pattern
@@ -112,7 +132,7 @@ public interface SalesContractRepository extends JpaRepository<SalesContract, Lo
     @Query("""
             select sc from SalesContract sc
               join fetch sc.reservation r
-              join fetch r.buyer
+              join fetch r.inquiry
               join fetch r.vehicle
               left join fetch r.assignedTo
             where sc.signedOn is not null

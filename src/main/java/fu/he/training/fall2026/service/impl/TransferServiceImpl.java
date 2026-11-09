@@ -14,7 +14,6 @@ import fu.he.training.fall2026.entity.enums.InquiryStatus;
 import fu.he.training.fall2026.entity.enums.PaymentStatus;
 import fu.he.training.fall2026.entity.enums.ReservationStatus;
 import fu.he.training.fall2026.entity.enums.TransferStatus;
-import fu.he.training.fall2026.entity.sales.Buyer;
 import fu.he.training.fall2026.entity.sales.Inquiry;
 import fu.he.training.fall2026.entity.sales.Reservation;
 import fu.he.training.fall2026.entity.sales.SalesContract;
@@ -302,7 +301,8 @@ public class TransferServiceImpl implements TransferService {
                     || st == ConsignmentStatus.COMPLETED
                     || st == ConsignmentStatus.CLOSED;
         }
-        String inquiryNote = inquiry.getCode() + " · " + inquiry.getBuyer().getFullName();
+        String contactName = inquiry.getFullName() == null ? "" : inquiry.getFullName();
+        String inquiryNote = inquiry.getCode() + " · " + contactName;
         String depositNote = reservation.getCode() + " · "
                 + (reservation.getDepositAmount() == null
                         ? "0"
@@ -328,7 +328,6 @@ public class TransferServiceImpl implements TransferService {
 
     private TransferResponse toPreviewDto(SalesContract contract, TransferCase transfer) {
         Reservation reservation = contract.getReservation();
-        Buyer buyer = reservation.getBuyer();
         Vehicle vehicle = reservation.getVehicle();
         Inquiry inquiry = reservation.getInquiry();
         Consignment consignment = latestConsignment(vehicle.getId());
@@ -375,10 +374,10 @@ public class TransferServiceImpl implements TransferService {
                 .salesStaff(salesStaff)
                 .signedOn(contract.getSignedOn())
                 .salePrice(salePrice)
-                .buyer(buyer.getFullName())
-                .phone(buyer.getPhone())
-                .buyerIdNumber(blankToEmpty(buyer.getIdNumber()))
-                .buyerAddress(blankToEmpty(buyer.getAddress()))
+                .buyer(blankToEmpty(inquiry.getFullName()))
+                .phone(blankToEmpty(inquiry.getPhone()))
+                .buyerIdNumber(blankToEmpty(inquiry.getIdNumber()))
+                .buyerAddress(blankToEmpty(inquiry.getAddress()))
                 .car(carLabel)
                 .file(consignment == null ? "" : consignment.getCode())
                 .plate(blankToEmpty(vehicle.getLicensePlate()))

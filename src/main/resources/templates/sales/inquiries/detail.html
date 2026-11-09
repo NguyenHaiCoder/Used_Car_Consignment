@@ -154,27 +154,29 @@
 
       <section class="card inq-card">
         <h3><svg th:replace="~{shell/icons :: icon('file')}"></svg>Ghi chú tư vấn</h3>
-        <form class="inq-note-form" method="post" th:action="@{/sales/inquiries/{id}/notes(id=${item.id})}">
+        <form class="inq-note-form" method="post" th:action="@{/sales/inquiries/{id}/notes(id=${item.id})}" th:unless="${locked}">
           <label class="sr-only" for="inq-note">Ghi chú tư vấn</label>
           <textarea class="field-textarea" id="inq-note" name="note" rows="3" maxlength="2000"
                     th:text="${item.note}" placeholder="Nhập ghi chú tư vấn..."></textarea>
           <button class="btn-c btn-c--primary" type="submit">Lưu</button>
         </form>
+        <p class="muted" th:if="${locked}" th:text="${item.note == '' ? 'Chưa có ghi chú.' : item.note}">Ghi chú</p>
       </section>
     </div>
   </div>
 
   <dialog class="intake-dialog inq-close-dialog" id="inq-close-dialog" aria-labelledby="inq-close-title" th:unless="${locked}">
-    <form method="post" th:action="@{/sales/inquiries/{id}/close(id=${item.id})}">
+    <form method="post" th:action="@{/sales/inquiries/{id}/close(id=${item.id})}" th:object="${closeForm}" novalidate>
       <h3 id="inq-close-title">Đóng tư vấn</h3>
       <p th:text="${'Tư vấn ' + item.code + ' sẽ kết thúc và các lịch xem còn hiệu lực bị hủy.'}">Xác nhận</p>
       <label for="inq-close-reason">Lý do <span class="req">*</span></label>
-      <span class="select">
-        <select id="inq-close-reason" name="closeReason" required>
+      <span class="select" th:classappend="${#fields.hasErrors('closeReason')} ? 'is-invalid'">
+        <select id="inq-close-reason" th:field="*{closeReason}">
           <option value="">Chọn lý do</option>
           <option th:each="r : ${closeReasons}" th:value="${r}" th:text="${r}">Lý do</option>
         </select>
       </span>
+      <span class="field-error" th:if="${#fields.hasErrors('closeReason')}" th:errors="*{closeReason}"></span>
       <div class="inq-dialog-actions">
         <button class="btn-c btn-c--ghost" type="button" data-close-dialog>Hủy</button>
         <button class="btn-c btn-c--danger" type="submit">Đóng tư vấn</button>

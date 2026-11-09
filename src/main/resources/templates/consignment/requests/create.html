@@ -80,12 +80,12 @@
           </div>
           <div class="form-row form-row--2">
             <div class="field">
-              <label>Email</label>
+              <label>Email <span class="req">*</span></label>
               <div class="field-input"><input type="email" th:field="*{email}" placeholder="email@example.com" maxlength="180"></div>
               <span class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
             </div>
             <div class="field">
-              <label>Địa chỉ</label>
+              <label>Địa chỉ <span class="req">*</span></label>
               <div class="field-input"><input type="text" th:field="*{address}" placeholder="Địa chỉ" maxlength="500"></div>
               <span class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></span>
             </div>
@@ -147,7 +147,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Loại xe</label>
+              <label>Loại xe <span class="req">*</span></label>
               <select class="field-select" th:field="*{vehicleType}">
                 <option value="">Chọn loại xe</option>
                 <option th:each="t : ${vehicleTypes}" th:value="${t.label}" th:text="${t.label}">SUV</option>
@@ -157,7 +157,7 @@
           </div>
           <div class="form-row form-row--3">
             <div class="field">
-              <label>Biển số</label>
+              <label>Biển số <span class="req">*</span></label>
               <div class="field-input"><input type="text" th:field="*{licensePlate}" placeholder="51H-678.90" maxlength="20"></div>
               <span class="field-error" th:if="${#fields.hasErrors('licensePlate')}" th:errors="*{licensePlate}"></span>
             </div>
@@ -182,7 +182,7 @@
               <span class="field-error" th:if="${#fields.hasErrors('odometerKm')}" th:errors="*{odometerKm}"></span>
             </div>
             <div class="field">
-              <label>Hộp số</label>
+              <label>Hộp số <span class="req">*</span></label>
               <select class="field-select" th:field="*{transmission}">
                 <option value="">Chọn hộp số</option>
                 <option value="Số sàn">Số sàn</option>
@@ -244,12 +244,12 @@
               <span class="field-error" th:if="${#fields.hasErrors('intakeDate')}" th:errors="*{intakeDate}"></span>
             </div>
             <div class="field">
-              <label>Nơi để xe</label>
+              <label>Nơi để xe <span class="req">*</span></label>
               <div class="field-input"><input type="text" th:field="*{location}" placeholder="Vị trí xe hiện tại" maxlength="160"></div>
               <span class="field-error" th:if="${#fields.hasErrors('location')}" th:errors="*{location}"></span>
             </div>
             <div class="field">
-              <label>Nơi lưu giữ</label>
+              <label>Nơi lưu giữ <span class="req">*</span></label>
               <div class="field-input"><input type="text" th:field="*{custodyLocation}" placeholder="Bãi / kho lưu giữ xe" maxlength="160"></div>
               <span class="field-error" th:if="${#fields.hasErrors('custodyLocation')}" th:errors="*{custodyLocation}"></span>
             </div>

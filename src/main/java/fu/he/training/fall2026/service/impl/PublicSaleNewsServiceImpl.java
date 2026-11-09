@@ -5,6 +5,7 @@ import fu.he.training.fall2026.dto.listing.PublicListingFilter;
 import fu.he.training.fall2026.entity.consignment.Vehicle;
 import fu.he.training.fall2026.entity.consignment.VehicleSaleNews;
 import fu.he.training.fall2026.entity.enums.ListingStatus;
+import fu.he.training.fall2026.exception.ResourceNotFoundException;
 import fu.he.training.fall2026.repository.VehicleSaleNewsRepository;
 import fu.he.training.fall2026.service.FileStorageService;
 import fu.he.training.fall2026.service.PublicSaleNewsService;
@@ -22,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
+
+    /** Trang bán xe vẫn hiện xe đã đặt cọc; trang chủ chỉ lấy tin đang mở liên hệ. */
+    private static final List<ListingStatus> ON_SALE = List.of(ListingStatus.LISTED, ListingStatus.RESERVED);
 
     private static final int PAGE_SIZE = 6;
     private static final int FEATURED_SIZE = 6;
@@ -67,7 +71,7 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
     @Override
     @Transactional(readOnly = true)
     public List<String> listBrands() {
-        return newsRepository.findBrands(ListingStatus.LISTED);
+        return newsRepository.findBrands(ON_SALE);
     }
 
     @Override
@@ -78,9 +82,18 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PublicListingCardResponse getListed(Long id) {
+        VehicleSaleNews news = newsRepository.findDetailById(id)
+                .filter(n -> n.getStatus() == ListingStatus.LISTED)
+                .orElseThrow(() -> new ResourceNotFoundException("Tin bán xe", id));
+        return toDto(news);
+    }
+
     private Page<VehicleSaleNews> search(String pattern, String brand, Long[] budget, Pageable pageable) {
-        return newsRepository.searchPublic(
-                pattern, ListingStatus.LISTED, brand, millions(budget[0]), millions(budget[1]), pageable);
+        return newsRepository.searchPublicIn(
+                pattern, ON_SALE, brand, millions(budget[0]), millions(budget[1]), pageable);
     }
 
     private PublicListingCardResponse toDto(VehicleSaleNews n) {
@@ -95,6 +108,7 @@ public class PublicSaleNewsServiceImpl implements PublicSaleNewsService {
                 .odometerKm(vehicle.getOdometerKm())
                 .fuelType(vehicle.getFuelType())
                 .coverUrl(photos.isEmpty() ? null : photos.get(0))
+                .status(n.getStatus().name())
                 .build();
     }
 
