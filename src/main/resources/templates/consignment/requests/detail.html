@@ -32,7 +32,7 @@
      th:with="s=${consignment.status.name()},
               statusNames=${ {'DRAFT':'Lưu nháp','SUBMITTED':'Chờ phê duyệt','ACTIVE':'Đã duyệt','INSPECTION_RECEIVED':'Đang kiểm định','INSPECTED':'Đã kiểm định','LISTED':'Đang đăng bán','RESERVED':'Đã đặt cọc','SOLD':'Đã bán','COMPLETED':'Hoàn thành','WITHDRAW_REQUESTED':'Đang yêu cầu rút ký gửi','WITHDRAWN':'Đã rút ký gửi','CLOSED':'Đã đóng ký gửi'} },
               statusTones=${ {'DRAFT':'draft','SUBMITTED':'pending','ACTIVE':'approved','INSPECTION_RECEIVED':'pending','INSPECTED':'approved','LISTED':'approved','RESERVED':'approved','SOLD':'approved','COMPLETED':'closed','WITHDRAW_REQUESTED':'pending','WITHDRAWN':'withdrawn','CLOSED':'closed'} },
-              open=${s != 'SOLD' and s != 'COMPLETED' and s != 'WITHDRAW_REQUESTED' and s != 'WITHDRAWN' and s != 'CLOSED'}">
+              open=${s != 'DRAFT' and s != 'SOLD' and s != 'COMPLETED' and s != 'WITHDRAW_REQUESTED' and s != 'WITHDRAWN' and s != 'CLOSED'}">
 
   <div class="contracts-header">
     <div class="contracts-header-left">

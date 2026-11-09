@@ -56,7 +56,7 @@
             <tr th:each="c : ${consignments}"
                 th:with="s=${c.status.name()},
                          tone=${s == 'DRAFT' ? 'draft' : (s == 'SUBMITTED' or s == 'WITHDRAW_REQUESTED' ? 'pending' : (s == 'WITHDRAWN' ? 'withdrawn' : (s == 'CLOSED' or s == 'COMPLETED' ? 'closed' : 'approved')))},
-                         open=${s != 'SOLD' and s != 'COMPLETED' and s != 'WITHDRAW_REQUESTED' and s != 'WITHDRAWN' and s != 'CLOSED'}">
+                         open=${s != 'DRAFT' and s != 'SOLD' and s != 'COMPLETED' and s != 'WITHDRAW_REQUESTED' and s != 'WITHDRAWN' and s != 'CLOSED'}">
               <td class="col-check">
                 <input class="row-check" type="checkbox" th:attr="aria-label=${'Chọn ' + c.code}">
               </td>
