@@ -290,3 +290,7 @@ textarea.field-textarea::placeholder { color: var(--mute); }
   .col-span-2, .col-span-3 { grid-column: span 1; }
   .photo-slot, .photo-add { width: 90px; height: 66px; }
 }
+
+/* Form tạo/sửa hồ sơ ký gửi không còn sidebar: một cột full-width (các màn khác vẫn dùng 2 cột). */
+#create-consignment .create-layout,
+#edit-consignment .create-layout { grid-template-columns: minmax(0, 1fr); }

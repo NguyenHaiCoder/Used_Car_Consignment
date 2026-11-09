@@ -6,15 +6,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 @Getter
 @Setter
@@ -24,13 +24,11 @@ import lombok.Setter;
 public class ConsignmentAgreement extends BaseEntity {
 
     @Column(nullable = false, length = 40)
+    @Nationalized
     private String code;
 
-    @Column(nullable = false)
-    private int versionNo;
-
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "consignment_id", nullable = false)
+    @OneToOne(optional = false)
+    @JoinColumn(name = "consignment_id", nullable = false, unique = true)
     private Consignment consignment;
 
     @Enumerated(EnumType.STRING)
@@ -51,14 +49,18 @@ public class ConsignmentAgreement extends BaseEntity {
     private LocalDate validTo;
 
     @Column(length = 4000)
+    @Nationalized
     private String custodyTerms;
 
     @Column(length = 4000)
+    @Nationalized
     private String terminationTerms;
 
     @Column(length = 4000)
+    @Nationalized
     private String payoutTerms;
 
     @Column(length = 500)
+    @Nationalized
     private String signatureEvidencePath;
 }

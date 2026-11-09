@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!--/* Hà Lệ Quyên: Màn hình tạo / soạn Hợp đồng Ký gửi xe.
-       Hiển thị văn bản hợp đồng pháp lý thật, các điều khoản có thể chỉnh inline.
-       Chờ BE: form action, th:field binding, th:object="${form}" thật. */-->
+<!--/* Hà Lệ Quyên: màn soạn / xem hợp đồng ký gửi của một hồ sơ (GET /consignment/contracts/new?consignmentId=...,
+       lưu bằng POST /consignment/contracts). Chỉ có các ô của ConsignmentAgreement; chủ xe và xe lấy từ hồ sơ để đọc.
+       Model: form (ConsignmentContractRequest), consignment (ConsignmentRequestResponse), agreement (hợp đồng đã có hoặc null). */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page(
-          'Tạo hợp đồng ký gửi',
+          'Hợp đồng ký gửi',
           'Hệ thống Quản lý Ký gửi xe',
           'contracts',
           null,
@@ -12,32 +12,20 @@
           ~{::#contract-create})}">
 <head>
   <th:block th:fragment="link">
+    <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
     <link rel="stylesheet" th:href="@{/css/app/consignment-contracts.css}">
-    <script th:src="@{/js/app/consignment-contracts.js}" defer></script>
   </th:block>
 </head>
 <body>
 
 <div id="contract-create" class="contracts-wrap"
-     th:with="hasHs=${consignment != null},
-              hasOwner=${consignor != null},
-              v=${hasHs ? consignment.vehicle : null},
-              contractCode=${agreement != null ? agreement.code : (hasHs ? 'HDKG-' + consignment.id : 'HDKG-XXXXXX')},
-              priceText=${form.priceFloor != null ? #numbers.formatDecimal(form.priceFloor, 0, 'POINT', 0, 'COMMA') : ''},
-              commissionText=${form.commissionRate != null ? form.commissionRate : '1.5'},
-              fromText=${form.validFrom != null ? #temporals.format(form.validFrom, 'dd/MM/yyyy') : ''},
-              toText=${form.validTo != null ? #temporals.format(form.validTo, 'dd/MM/yyyy') : ''},
-              dayPart=${form.validFrom != null ? #temporals.format(form.validFrom, 'dd') : ''},
-              monthPart=${form.validFrom != null ? #temporals.format(form.validFrom, 'MM') : ''},
-              yearPart=${form.validFrom != null ? #temporals.format(form.validFrom, 'yyyy') : ''},
-              odoText=${v != null and v.odometerKm != null ? #numbers.formatInteger(v.odometerKm, 1, 'POINT') + ' km' : '38.650 km'},
-              chassisText=${v != null ? (v.chassisNumber ?: v.vin ?: '—') : '—'},
-              engineText=${v != null and v.engineNumber != null ? v.engineNumber : 'G4NLMN123456'},
-              makeText=${v != null and v.make != null ? v.make : '—'},
-              modelText=${v != null and v.model != null ? v.model : (v != null ? v.displayLabel : '—')},
-              yearText=${v != null and v.year != null ? v.year : '—'},
-              colorText=${v != null and v.color != null ? v.color : 'Xanh dương'},
-              imgLabel=${v != null ? #strings.replace(v.displayLabel, ' ', '+') : 'Xe'}">
+     th:with="statusNames=${ {'DRAFT':'Lưu nháp','PENDING_SIGNATURE':'Chờ ký','ACTIVE':'Hiệu lực','TERMINATED':'Chấm dứt'} },
+              locked=${agreement != null and agreement.status.name() != 'DRAFT'},
+              contractCode=${agreement != null ? agreement.code : 'HDKG-' + consignment.id},
+              statusText=${agreement == null ? 'Chưa soạn' : (agreement.expired ? 'Hết hạn' : statusNames[agreement.status.name()])},
+              fromText=${form.validFrom != null ? #temporals.format(form.validFrom, 'dd/MM/yyyy') : '—'},
+              toText=${form.validTo != null ? #temporals.format(form.validTo, 'dd/MM/yyyy') : '—'},
+              termDays=${form.validFrom != null and form.validTo != null ? T(java.time.temporal.ChronoUnit).DAYS.between(form.validFrom, form.validTo) + 1 : null}">
 
   <!--/* ── Page header ── */-->
   <div class="contracts-header">
@@ -56,601 +44,329 @@
           <span>/</span>
           <a th:href="@{/consignment/contracts}">Hợp đồng ký gửi</a>
           <span>/</span>
-          <span th:text="${contractCode}">HDKG-000268</span>
+          <span th:text="${contractCode}">HDKG-1</span>
         </nav>
         <h2>Hợp đồng ký gửi xe</h2>
       </div>
-      <span class="badge-draft-contract">Lưu nháp</span>
-    </div>
-    <div class="contracts-header-actions">
-      <button type="button" class="btn-c btn-c--outline" title="In hợp đồng">
-        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <rect x="6" y="14" width="12" height="8"/>
-        </svg>
-        In hợp đồng
-      </button>
-      <button type="button" class="btn-c btn-c--outline" title="Tải PDF">
-        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Tải PDF
-      </button>
-      <button type="button" class="btn-c btn-c--outline" title="Thêm">
-        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-        </svg>
-      </button>
+      <span class="badge-draft-contract" th:text="${statusText}">Chưa soạn</span>
     </div>
   </div>
 
-  <!--/* ── Main layout ── */-->
-  <div class="contracts-layout">
+  <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
+  <p class="flash flash--error" th:if="${locked}" role="status">
+    Hợp đồng đã gửi duyệt hoặc đã ký nên không sửa trực tiếp được.
+  </p>
 
-    <!--/* ══════ LEFT: HỢP ĐỒNG VĂN BẢN PHÁP LÝ ══════ */-->
-    <div class="contract-doc">
+  <form th:action="@{/consignment/contracts}" th:object="${form}" method="post" enctype="multipart/form-data" novalidate>
+    <input type="hidden" th:field="*{id}">
+    <input type="hidden" th:field="*{consignmentId}">
 
-      <!--/* Republic header */-->
-      <div class="contract-republic-block">
-        <div class="contract-republic">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
-        <div class="contract-freedom">Độc lập – Tự do – Hạnh phúc</div>
-        <hr class="contract-underline-row">
-      </div>
+    <p class="flash flash--error" th:each="e : ${#fields.globalErrors()}" th:text="${e}" role="alert"></p>
 
-      <!--/* Title */-->
-      <div class="contract-title-block">
-        <div class="contract-doc-title">Hợp đồng ký gửi xe</div>
-        <div class="contract-doc-num">
-          Số:&nbsp;<input class="inline-field" type="text" th:value="${contractCode}" value="HDKG-000268" style="width:130px;">
-          &nbsp;&nbsp;
-          TP. Hồ Chí Minh, ngày&nbsp;<input class="inline-field" type="text" th:value="${dayPart}" value="15" style="width:28px;">
-          &nbsp;tháng&nbsp;<input class="inline-field" type="text" th:value="${monthPart}" value="01" style="width:28px;">
-          &nbsp;năm&nbsp;<input class="inline-field" type="text" th:value="${yearPart}" value="2025" style="width:44px;">
+    <!--/* ── Main layout ── */-->
+    <div class="contracts-layout">
+
+      <!--/* ══════ LEFT: HỢP ĐỒNG VĂN BẢN PHÁP LÝ ══════ */-->
+      <div class="contract-doc">
+
+        <div class="contract-republic-block">
+          <div class="contract-republic">Cộng hòa xã hội chủ nghĩa Việt Nam</div>
+          <div class="contract-freedom">Độc lập – Tự do – Hạnh phúc</div>
+          <hr class="contract-underline-row">
         </div>
-      </div>
 
-      <!--/* Preamble */-->
-      <div class="contract-preamble">
-        <p>Căn cứ <strong>Bộ luật Dân sự năm 2015</strong> và các văn bản pháp luật liên quan;</p>
-        <p>Căn cứ <strong>Luật Thương mại năm 2005</strong> về hoạt động trung gian thương mại;</p>
-        <p>Trên cơ sở thỏa thuận, thiện chí và bình đẳng giữa hai bên, hôm nay hai bên cùng ký kết
-          <strong>Hợp đồng ký gửi xe</strong> với những điều khoản và điều kiện như sau:</p>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── ĐIỀU 1: Các bên ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          Điều 1. Các bên tham gia hợp đồng
+        <div class="contract-title-block">
+          <div class="contract-doc-title">Hợp đồng ký gửi xe</div>
+          <div class="contract-doc-num">
+            Số: <strong th:text="${contractCode}">HDKG-1</strong>
+            &nbsp;&nbsp;TP. Hồ Chí Minh, ngày <strong th:text="${fromText}">15/01/2025</strong>
+          </div>
         </div>
-        <div class="article-body">
-          <div class="parties-grid">
-            <!--/* Bên A: Chủ xe */-->
-            <div class="party-block">
-              <div class="party-label">
-                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
-                Bên ký gửi (Bên A)
+
+        <div class="contract-preamble">
+          <p>Căn cứ <strong>Bộ luật Dân sự năm 2015</strong> và các văn bản pháp luật liên quan;</p>
+          <p>Căn cứ <strong>Luật Thương mại năm 2005</strong> về hoạt động trung gian thương mại;</p>
+          <p>Trên cơ sở thỏa thuận, thiện chí và bình đẳng giữa hai bên, hôm nay hai bên cùng ký kết
+            <strong>Hợp đồng ký gửi xe</strong> với những điều khoản và điều kiện như sau:</p>
+        </div>
+        <hr class="contract-divider">
+
+        <!--/* ── ĐIỀU 1: Các bên (lấy từ hồ sơ ký gửi, chỉ đọc) ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Điều 1. Các bên tham gia hợp đồng
+          </div>
+          <div class="article-body">
+            <div class="parties-grid">
+              <div class="party-block">
+                <div class="party-label">Bên ký gửi (Bên A)</div>
+                <div class="contract-row"><span class="cl">Họ và tên:</span>
+                  <span class="cv" style="font-weight:600;" th:text="${consignment.consignorName}">Họ tên</span></div>
+                <div class="contract-row"><span class="cl">SĐT:</span>
+                  <span class="cv" th:text="${consignment.phone}">SĐT</span></div>
+                <div class="contract-row"><span class="cl">Số CCCD:</span>
+                  <span class="cv" th:text="${consignment.idNumber}">CCCD</span></div>
+                <div class="contract-row"><span class="cl">Địa chỉ:</span>
+                  <span class="cv" th:text="${consignment.address ?: '—'}">Địa chỉ</span></div>
               </div>
-              <div class="contract-row"><span class="cl">Họ và tên:</span>
-                <span class="cv"><input class="inline-field" type="text"
-                  th:value="${hasOwner ? consignor.fullName : ''}" value="Nguyễn Minh Đức"></span></div>
-              <div class="contract-row"><span class="cl">SĐT:</span>
-                <span class="cv"><input class="inline-field" type="text"
-                  th:value="${hasOwner ? consignor.phone : ''}" value="0912 345 678"></span></div>
-              <div class="contract-row"><span class="cl">Số CCCD:</span>
-                <span class="cv"><input class="inline-field" type="text"
-                  th:value="${hasOwner ? consignor.idNumber : ''}" value="079082001234"></span></div>
-              <div class="contract-row"><span class="cl">Địa chỉ:</span>
-                <span class="cv"><input class="inline-field" type="text"
-                  th:value="${hasOwner ? (consignor.address ?: '') : ''}"
-                  value="Số 28, đường Nguyễn Văn Linh, P. Tân Phú, Q.7, TP. HCM"></span></div>
-            </div>
-            <!--/* Bên B: Công ty — dữ liệu cố định */-->
-            <div class="party-block">
-              <div class="party-label">
-                <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                  <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
-                </svg>
-                Bên nhận ký gửi (Bên B)
+              <div class="party-block">
+                <div class="party-label">Bên nhận ký gửi (Bên B)</div>
+                <div class="contract-row"><span class="cl">Công ty:</span>
+                  <span class="cv" style="font-weight:600;">Công ty CP AutoTrade</span></div>
+                <div class="contract-row"><span class="cl">MST:</span>
+                  <span class="cv">0312345678</span></div>
+                <div class="contract-row"><span class="cl">Địa chỉ:</span>
+                  <span class="cv">Khu Công nghệ cao, TP. Thủ Đức, TP. HCM</span></div>
+                <div class="contract-row"><span class="cl">Đại diện:</span>
+                  <span class="cv">Nguyễn Việt Hải – Trưởng phòng Kinh doanh</span></div>
               </div>
-              <div class="contract-row"><span class="cl">Công ty:</span>
-                <span class="cv" style="font-weight:600;">Công ty CP AutoTrade</span></div>
-              <div class="contract-row"><span class="cl">MST:</span>
-                <span class="cv">0312345678</span></div>
-              <div class="contract-row"><span class="cl">Địa chỉ:</span>
-                <span class="cv">Khu Công nghệ cao, TP. Thủ Đức, TP. HCM</span></div>
-              <div class="contract-row"><span class="cl">Đại diện:</span>
-                <span class="cv">Nguyễn Việt Hải – Trưởng phòng Kinh doanh</span></div>
             </div>
           </div>
         </div>
-      </div>
-      <hr class="contract-divider">
+        <hr class="contract-divider">
 
-      <!--/* ── ĐIỀU 2: Thông tin xe ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3"/>
-            <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
-          </svg>
-          Điều 2. Thông tin xe ký gửi
-        </div>
-        <div class="article-body">
-          <div class="vehicle-contract-grid">
-            <div class="vehicle-contract-img">
-              <img th:src="${'https://placehold.co/148x111/dbeafe/1668e3?text=' + imgLabel}"
-                   src="https://placehold.co/148x111/dbeafe/1668e3?text=Xe" alt="Xe ký gửi">
-            </div>
+        <!--/* ── ĐIỀU 2: Thông tin xe (lấy từ hồ sơ ký gửi, chỉ đọc) ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v9a2 2 0 0 1-2 2h-3"/>
+              <circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
+            </svg>
+            Điều 2. Thông tin xe ký gửi
+          </div>
+          <div class="article-body">
             <div class="vehicle-contract-fields">
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Hãng xe:</span><span class="cv" th:text="${makeText}">Hyundai</span></div>
+                <span class="cl">Hãng xe:</span><span class="cv" th:text="${consignment.make}">Hãng</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Dòng xe:</span><span class="cv" th:text="${modelText}">Tucson</span></div>
+                <span class="cl">Dòng xe:</span><span class="cv" th:text="${consignment.model}">Dòng</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Năm SX:</span><span class="cv" th:text="${yearText}">2022</span></div>
+                <span class="cl">Năm SX:</span><span class="cv" th:text="${consignment.year ?: '—'}">2022</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Màu sắc:</span><span class="cv" th:text="${colorText}">Xanh dương</span></div>
+                <span class="cl">Màu sắc:</span><span class="cv" th:text="${consignment.color ?: '—'}">Màu</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">VIN:</span><span class="cv" style="font-weight:700" th:text="${v != null ? v.vin : '—'}">VIN</span></div>
+                <span class="cl">Biển số:</span><span class="cv" th:text="${consignment.licensePlate ?: '—'}">Biển số</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Số km:</span><span class="cv" th:text="${odoText}">38.650 km</span></div>
+                <span class="cl">VIN:</span><span class="cv" style="font-weight:700" th:text="${consignment.vin}">VIN</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Số khung:</span><span class="cv" style="font-size:12px" th:text="${chassisText}">KMHJ3815NNU123456</span></div>
+                <span class="cl">Số máy:</span><span class="cv" th:text="${consignment.engineNumber ?: '—'}">Số máy</span></div>
               <div class="contract-row" style="grid-template-columns:90px 1fr">
-                <span class="cl">Số máy:</span><span class="cv" style="font-size:12px" th:text="${engineText}">G4NLMN123456</span></div>
+                <span class="cl">Số km:</span>
+                <span class="cv" th:text="${consignment.odometerKm != null ? #numbers.formatInteger(consignment.odometerKm, 1, 'POINT') + ' km' : '—'}">Số km</span></div>
             </div>
           </div>
         </div>
-      </div>
-      <hr class="contract-divider">
+        <hr class="contract-divider">
 
-      <!--/* ── ĐIỀU 3: Điều khoản ký gửi ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-          </svg>
-          Điều 3. Điều khoản ký gửi &amp; dịch vụ
-        </div>
-        <div class="article-body">
-          <div class="terms-inline-row">
-            <div class="terms-inline-field">
-              <label>Giá chủ xe mong muốn <span style="color:var(--red)">*</span></label>
-              <div class="field-row">
-                <input type="text" th:value="${priceText}" value="780.000.000">
-                <span>VNĐ</span>
-              </div>
-            </div>
-            <div class="terms-inline-field">
-              <label>Giá chào bán (sàn)</label>
-              <div class="field-row">
-                <input type="text"
-                       th:value="${listingPriceText}"
-                       th:placeholder="${listingPriceText == null or listingPriceText.isEmpty()} ? 'Để trống — điền sau khi có định giá' : ''"
-                       readonly
-                       title="Lấy từ định giá sau kiểm định">
-                <span>VNĐ</span>
-              </div>
-            </div>
-            <div class="terms-inline-field">
-              <label>Hoa hồng dịch vụ <span style="color:var(--red)">*</span></label>
-              <div class="field-row">
-                <input type="number" th:value="${commissionText}" value="1.5" step="0.1" min="0" max="10" style="width:60px">
-                <span>% / giá bán thực tế</span>
-              </div>
-            </div>
-            <div class="terms-inline-field">
-              <label>Ngày bắt đầu <span style="color:var(--red)">*</span></label>
-              <div class="field-row">
-                <input type="text" th:value="${fromText}" value="15/01/2025">
-                <span></span>
-              </div>
-            </div>
-            <div class="terms-inline-field">
-              <label>Ngày kết thúc <span style="color:var(--red)">*</span></label>
-              <div class="field-row">
-                <input type="text" th:value="${toText}" value="15/03/2025">
-                <span th:text="${'(' + (termDays ?: 60) + ' ngày)'}">(60 ngày)</span>
-              </div>
-            </div>
-            <div class="terms-inline-field">
-              <label>Hình thức thanh toán</label>
-              <div class="field-row">
-                <input type="text" value="Chuyển khoản">
-                <span></span>
-              </div>
-            </div>
+        <!--/* ── ĐIỀU 3: Giá sàn, hoa hồng, thời hạn ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            Điều 3. Giá sàn, hoa hồng &amp; thời hạn ký gửi
           </div>
-          <p style="margin:8px 0 4px;font-size:13px;"><strong>Điều khoản chính:</strong></p>
-          <!--/* Chờ BE: th:field="${form.custodyTerms}" chính là điều khoản bảo quản từ backend */-->
-          <textarea class="terms-textarea" rows="4"
-                    placeholder="Nhập điều khoản chính của hợp đồng...">• Công ty đảm nhận quảng cáo, chào bán, trưng bày và thương thảo thay Bên A.
-• Hoa hồng 1,5% trên giá bán thực tế, trả ngay sau khi thanh toán hoàn tất.
-• Chủ xe ủy quyền cho đơn vị quản lý, trưng bày và chào bán xe theo quy định.</textarea>
-          <div class="terms-hint">138 / 1.000</div>
-        </div>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── ĐIỀU 4: Trách nhiệm bảo quản xe (custodyTerms) ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-          Điều 4. Trách nhiệm bảo quản xe
-        </div>
-        <div class="article-body">
-          <!--/* Chờ BE: th:field="${form.custodyTerms}" */-->
-          <textarea class="terms-textarea" rows="5"
-                    placeholder="Nhập điều khoản bảo quản xe..."
-                    th:text="${form.custodyTerms != null ? form.custodyTerms : ''}">4.1. Bên B có trách nhiệm bảo quản xe trong suốt thời gian ký gửi, đảm bảo xe không bị hư hỏng thêm so với tình trạng bàn giao.
-4.2. Bên B không được tự ý sửa chữa, cải tạo xe khi chưa có sự đồng ý bằng văn bản của Bên A.
-4.3. Bên A có quyền kiểm tra tình trạng xe vào các ngày làm việc với thông báo trước 24 giờ.
-4.4. Mọi rủi ro về hỏng hóc, trộm cắp trong quá trình bảo quản thuộc trách nhiệm của Bên B.</textarea>
-          <div class="terms-hint">0 / 2.000</div>
-        </div>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── ĐIỀU 5: Điều khoản thanh toán (payoutTerms) ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-          </svg>
-          Điều 5. Điều khoản thanh toán
-        </div>
-        <div class="article-body">
-          <!--/* Chờ BE: th:field="${form.payoutTerms}" */-->
-          <textarea class="terms-textarea" rows="4"
-                    placeholder="Nhập điều khoản thanh toán..."
-                    th:text="${form.payoutTerms != null ? form.payoutTerms : ''}">5.1. Sau khi xe được bán thành công, Bên B thanh toán cho Bên A số tiền bán xe trừ hoa hồng trong vòng 3 ngày làm việc.
-5.2. Hình thức thanh toán: Chuyển khoản ngân hàng vào tài khoản do Bên A chỉ định.
-5.3. Bên B cung cấp đầy đủ chứng từ thanh toán và hóa đơn liên quan.</textarea>
-          <div class="terms-hint">0 / 2.000</div>
-        </div>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── ĐIỀU 6: Điều khoản chấm dứt (terminationTerms) ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/>
-            <line x1="9" y1="9" x2="15" y2="15"/>
-          </svg>
-          Điều 6. Điều khoản chấm dứt hợp đồng
-        </div>
-        <div class="article-body">
-          <!--/* Chờ BE: th:field="${form.terminationTerms}" */-->
-          <textarea class="terms-textarea" rows="4"
-                    placeholder="Nhập điều khoản chấm dứt hợp đồng..."
-                    th:text="${form.terminationTerms != null ? form.terminationTerms : ''}">6.1. Hợp đồng chấm dứt khi xe được bán thành công hoặc hết thời hạn ký gửi.
-6.2. Bên A có quyền rút ký gửi trước hạn với thông báo trước 3 ngày làm việc; không phát sinh phí nếu xe chưa được bán.
-6.3. Bên B có quyền chấm dứt nếu Bên A vi phạm nghĩa vụ cung cấp giấy tờ pháp lý đầy đủ.
-6.4. Khi chấm dứt, Bên B bàn giao xe lại trong trạng thái nguyên vẹn trong vòng 24 giờ.</textarea>
-          <div class="terms-hint">0 / 2.000</div>
-        </div>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── ĐIỀU 7: Điều khoản chung ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          Điều 7. Điều khoản chung
-        </div>
-        <div class="article-body">
-          <p style="margin-bottom:8px;">Hợp đồng này gồm <strong>07 Điều</strong>, được lập thành
-            <strong>02 bản</strong> có giá trị pháp lý như nhau. Mỗi bên giữ <strong>01 bản</strong>.
-            Mọi sửa đổi, bổ sung hợp đồng chỉ có hiệu lực khi được lập thành văn bản và có chữ ký của
-            cả hai bên. Tranh chấp phát sinh được giải quyết thông qua thương lượng; nếu không thành,
-            đưa ra Tòa án nhân dân TP. Hồ Chí Minh giải quyết theo quy định pháp luật.</p>
-        </div>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── D. TÀI LIỆU ĐÍNH KÈM ── */-->
-      <div class="article">
-        <div class="article-heading">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-          </svg>
-          Tài liệu đính kèm
-        </div>
-        <div class="article-body">
-          <div class="doc-attach-grid">
-            <div class="doc-slot is-uploaded">
-              <div class="doc-slot-check">✓</div>
-              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
-              </svg>
-              <span>CCCD chủ xe.jpg</span>
-            </div>
-            <div class="doc-slot is-uploaded">
-              <div class="doc-slot-check">✓</div>
-              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              <span>Đăng ký xe.jpg</span>
-            </div>
-            <div class="doc-slot is-uploaded">
-              <div class="doc-slot-check">✓</div>
-              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="9" y1="15" x2="15" y2="15"/>
-              </svg>
-              <span>Giấy tờ xe.pdf</span>
-            </div>
-            <div class="doc-slot is-uploaded">
-              <div class="doc-slot-check">✓</div>
-              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-              </svg>
-              <span>Ảnh xe (4)</span>
-            </div>
-            <div class="doc-add" role="button" tabindex="0">
-              <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Tải lên tài liệu
-            </div>
-          </div>
-        </div>
-      </div>
-      <hr class="contract-divider">
-
-      <!--/* ── Chữ ký hợp đồng ── */-->
-      <div class="contract-signatures">
-        <div class="sig-block">
-          <div class="sig-role">Bên ký gửi (Bên A)</div>
-          <div class="sig-note">(Ký và ghi rõ họ tên)</div>
-          <div class="sig-pad" data-sig="party-a">
-            <canvas class="sig-canvas" aria-label="Ký tên bên A"></canvas>
-            <span class="sig-placeholder">Chạm để ký tên</span>
-          </div>
-          <button type="button" class="sig-clear" hidden>Ký lại</button>
-          <div class="sig-name" th:text="${hasOwner ? consignor.fullName : '—'}">Nguyễn Minh Đức</div>
-          <div class="sig-title-role">Chủ xe</div>
-        </div>
-        <div class="sig-block">
-          <div class="sig-role">Bên nhận ký gửi (Bên B)</div>
-          <div class="sig-note">(Ký, ghi rõ họ tên &amp; đóng dấu)</div>
-          <div class="sig-pad" data-sig="party-b">
-            <canvas class="sig-canvas" aria-label="Ký tên bên B"></canvas>
-            <span class="sig-placeholder">Chạm để ký tên</span>
-          </div>
-          <button type="button" class="sig-clear" hidden>Ký lại</button>
-          <div class="sig-name">Nguyễn Việt Hải</div>
-          <div class="sig-title-role">Đại diện công ty</div>
-        </div>
-      </div>
-
-    </div><!--/* end contract-doc */-->
-
-    <!--/* ══════ RIGHT: SIDEBAR ══════ */-->
-    <aside class="contracts-sidebar">
-
-      <!--/* Thông tin hợp đồng */-->
-      <div class="csb-card">
-        <div class="csb-head">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="8" y="2" width="8" height="4" rx="1"/>
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-            <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
-          </svg>
-          <h4>Thông tin hợp đồng</h4>
-        </div>
-        <div class="csb-body">
-          <div class="meta-row"><span class="mk">Số hợp đồng</span>
-            <span class="mv code" th:text="${contractCode}">HDKG-000268</span></div>
-          <div class="meta-row"><span class="mk">Mã hồ sơ</span>
-            <span class="mv code" th:text="${hasHs ? consignment.code : '—'}">KG-001205</span></div>
-          <hr class="meta-sep">
-          <div class="meta-row"><span class="mk">Chủ xe</span>
-            <span class="mv" th:text="${hasOwner ? consignor.fullName : '—'}">—</span></div>
-          <div class="meta-row"><span class="mk">Nhân viên tạo</span>
-            <span class="mv">Hà Lệ Quyên</span></div>
-          <hr class="meta-sep">
-          <div class="meta-row"><span class="mk">Trạng thái</span>
-            <span class="mv"><span class="badge-draft-contract">Lưu nháp</span></span></div>
-          <div class="meta-row"><span class="mk">Hiệu lực</span>
-            <span class="mv" th:text="${fromText != null and fromText != '' ? fromText + ' – ' + toText : '—'}">15/01 – 15/03/2025</span></div>
-          <div class="meta-row"><span class="mk">Thời hạn</span>
-            <span class="mv" style="color:var(--amber-ink);font-weight:700;"
-                 th:text="${(termDays ?: 60) + ' ngày'}">60 ngày</span></div>
-        </div>
-      </div>
-
-      <!--/* Tiến độ xử lý */-->
-      <div class="csb-card">
-        <div class="csb-head">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/>
-            <path d="M6 15V9a6 6 0 0 1 6-6h1"/><path d="m15 3 3 3-3 3"/>
-          </svg>
-          <h4>Tiến độ xử lý</h4>
-        </div>
-        <div class="csb-body" style="padding:10px 12px;">
-          <div class="timeline">
-            <div class="tl-item">
-              <div class="tl-line-wrap">
-                <div class="tl-dot done">
-                  <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6 9 17l-5-5"/>
-                  </svg>
+          <div class="article-body">
+            <div class="terms-inline-row">
+              <div class="terms-inline-field">
+                <label>Giá sàn của chủ xe <span style="color:var(--red)">*</span></label>
+                <div class="field-row">
+                  <input type="number" th:field="*{priceFloor}" min="1" step="1" th:readonly="${locked}">
+                  <span>VNĐ</span>
                 </div>
-                <div class="tl-connector done"></div>
+                <span class="field-error" th:if="${#fields.hasErrors('priceFloor')}" th:errors="*{priceFloor}"></span>
               </div>
-              <div class="tl-text">
-                <strong>Tạo hồ sơ ký gửi</strong>
-                <small>15/01/2025 09:20</small>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-line-wrap">
-                <div class="tl-dot done">
-                  <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 6 9 17l-5-5"/>
-                  </svg>
+              <div class="terms-inline-field">
+                <label>Hoa hồng theo % <span style="color:var(--red)">*</span></label>
+                <div class="field-row">
+                  <input type="number" th:field="*{commissionRate}" min="0.1" max="100" step="0.1"
+                         style="width:80px" th:readonly="${locked}">
+                  <span>% / giá bán thực tế</span>
                 </div>
-                <div class="tl-connector done"></div>
+                <span class="field-error" th:if="${#fields.hasErrors('commissionRate')}" th:errors="*{commissionRate}"></span>
               </div>
-              <div class="tl-text">
-                <strong>Tiếp nhận xe</strong>
-                <small>15/01/2025 10:30</small>
-              </div>
-            </div>
-            <div class="tl-item is-current">
-              <div class="tl-line-wrap">
-                <div class="tl-dot current">
-                  <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
+              <div class="terms-inline-field">
+                <label>Ngày bắt đầu <span style="color:var(--red)">*</span></label>
+                <div class="field-row">
+                  <input type="date" th:field="*{validFrom}" th:readonly="${locked}">
+                  <span></span>
                 </div>
-                <div class="tl-connector"></div>
+                <span class="field-error" th:if="${#fields.hasErrors('validFrom')}" th:errors="*{validFrom}"></span>
               </div>
-              <div class="tl-text">
-                <strong>Ký hợp đồng ký gửi</strong>
-                <small>15/01/2025 10:45</small>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-line-wrap">
-                <div class="tl-dot">
-                  <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-                    <line x1="7" y1="7" x2="7.01" y2="7"/>
-                  </svg>
+              <div class="terms-inline-field">
+                <label>Ngày kết thúc <span style="color:var(--red)">*</span></label>
+                <div class="field-row">
+                  <input type="date" th:field="*{validTo}" th:readonly="${locked}">
+                  <span th:text="${termDays != null ? '(' + termDays + ' ngày)' : ''}"></span>
                 </div>
-                <div class="tl-connector"></div>
+                <span class="field-error" th:if="${#fields.hasErrors('validTo')}" th:errors="*{validTo}"></span>
+                <span class="field-error" th:if="${#fields.hasErrors('periodValid')}" th:errors="*{periodValid}"></span>
               </div>
-              <div class="tl-text">
-                <strong>Đăng bán</strong>
-                <small style="color:var(--mute)">Chờ ký hợp đồng</small>
-              </div>
-            </div>
-            <div class="tl-item">
-              <div class="tl-line-wrap">
-                <div class="tl-dot">
-                  <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                  </svg>
+              <div class="terms-inline-field">
+                <label for="signatureEvidence">Minh chứng chữ ký (bản hợp đồng đã ký)</label>
+                <div class="field-row" th:if="${agreement != null and agreement.signatureEvidencePath != null}"
+                     th:with="evidenceUrl=${@fileStorageService.getUrl(agreement.signatureEvidencePath)}">
+                  <a th:href="${evidenceUrl}" target="_blank" rel="noopener">Xem tệp đã tải lên</a>
                 </div>
-              </div>
-              <div class="tl-text">
-                <strong>Bán xe &amp; Thanh toán</strong>
-                <small style="color:var(--mute)">—</small>
+                <div class="field-row" th:unless="${locked}">
+                  <input type="file" id="signatureEvidence" name="signatureEvidence"
+                         accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                  <span></span>
+                </div>
+                <small class="muted" th:unless="${locked}">PDF, Word, Excel hoặc ảnh JPG/PNG. Không chọn tệp thì giữ tệp hiện tại.</small>
+                <span class="muted" th:if="${locked and (agreement == null or agreement.signatureEvidencePath == null)}">Chưa có tệp.</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+        <hr class="contract-divider">
 
-      <!--/* Chữ ký nhanh */-->
-      <div class="csb-card">
-        <div class="csb-head">
-          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-          </svg>
-          <h4>Chữ ký hợp đồng</h4>
-        </div>
-        <div class="csb-body sig-preview-grid">
-          <div class="sig-preview">
-            <div class="sig-preview-label">Bên ký gửi</div>
-            <div class="sig-preview-box" data-sig-preview="party-a">
-              <span>Chưa ký</span>
-            </div>
-            <div class="sig-preview-name" th:text="${hasOwner ? consignor.fullName : '—'}">Nguyễn Minh Đức</div>
+        <!--/* ── ĐIỀU 4: Trách nhiệm bảo quản xe ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Điều 4. Trách nhiệm bảo quản xe
           </div>
-          <div class="sig-preview">
-            <div class="sig-preview-label">Bên nhận KG</div>
-            <div class="sig-preview-box" data-sig-preview="party-b">
-              <span>Chưa ký</span>
-            </div>
-            <div class="sig-preview-name">Nguyễn Việt Hải</div>
+          <div class="article-body">
+            <textarea class="terms-textarea" rows="5" th:field="*{custodyTerms}" maxlength="4000"
+                      placeholder="Nhập điều khoản bảo quản xe..." th:readonly="${locked}"></textarea>
+            <span class="field-error" th:if="${#fields.hasErrors('custodyTerms')}" th:errors="*{custodyTerms}"></span>
           </div>
         </div>
-      </div>
+        <hr class="contract-divider">
 
-    </aside>
-  </div><!--/* end contracts-layout */-->
+        <!--/* ── ĐIỀU 5: Điều khoản thanh toán ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+            Điều 5. Điều khoản thanh toán
+          </div>
+          <div class="article-body">
+            <textarea class="terms-textarea" rows="4" th:field="*{payoutTerms}" maxlength="4000"
+                      placeholder="Nhập điều khoản thanh toán..." th:readonly="${locked}"></textarea>
+            <span class="field-error" th:if="${#fields.hasErrors('payoutTerms')}" th:errors="*{payoutTerms}"></span>
+          </div>
+        </div>
+        <hr class="contract-divider">
 
-  <!--/* ── Action bar ── */-->
-  <div class="contracts-actions">
-    <button type="button" class="btn-c btn-c--ghost"
-            th:onclick="|window.location.href='@{/consignment/contracts}'|">
-      <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
-      </svg>
-      Quay lại danh sách
-    </button>
-    <div class="contracts-actions-right">
-      <!--/* Chờ BE: form action="/consignment/agreements/{id}/save" method="post" */-->
-      <button type="button" class="btn-c btn-c--secondary">
+        <!--/* ── ĐIỀU 6: Điều khoản chấm dứt ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            Điều 6. Điều khoản chấm dứt hợp đồng
+          </div>
+          <div class="article-body">
+            <textarea class="terms-textarea" rows="4" th:field="*{terminationTerms}" maxlength="4000"
+                      placeholder="Nhập điều khoản chấm dứt hợp đồng..." th:readonly="${locked}"></textarea>
+            <span class="field-error" th:if="${#fields.hasErrors('terminationTerms')}" th:errors="*{terminationTerms}"></span>
+          </div>
+        </div>
+        <hr class="contract-divider">
+
+        <!--/* ── ĐIỀU 7: Điều khoản chung ── */-->
+        <div class="article">
+          <div class="article-heading">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Điều 7. Điều khoản chung
+          </div>
+          <div class="article-body">
+            <p style="margin-bottom:8px;">Hợp đồng này gồm <strong>07 Điều</strong>, được lập thành
+              <strong>02 bản</strong> có giá trị pháp lý như nhau. Mỗi bên giữ <strong>01 bản</strong>.
+              Mọi sửa đổi, bổ sung hợp đồng chỉ có hiệu lực khi được lập thành văn bản và có chữ ký của
+              cả hai bên. Tranh chấp phát sinh được giải quyết thông qua thương lượng; nếu không thành,
+              đưa ra Tòa án nhân dân TP. Hồ Chí Minh giải quyết theo quy định pháp luật.</p>
+          </div>
+        </div>
+
+      </div><!--/* end contract-doc */-->
+
+      <!--/* ══════ RIGHT: SIDEBAR ══════ */-->
+      <aside class="contracts-sidebar">
+        <div class="csb-card">
+          <div class="csb-head">
+            <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="2" width="8" height="4" rx="1"/>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+            </svg>
+            <h4>Thông tin hợp đồng</h4>
+          </div>
+          <div class="csb-body">
+            <div class="meta-row"><span class="mk">Số hợp đồng</span>
+              <span class="mv code" th:text="${contractCode}">HDKG-1</span></div>
+            <div class="meta-row"><span class="mk">Mã hồ sơ</span>
+              <a class="mv code" th:href="@{/consignments/{id}(id=${consignment.id})}" th:text="${consignment.code}">KG-1</a></div>
+            <hr class="meta-sep">
+            <div class="meta-row"><span class="mk">Chủ xe</span>
+              <span class="mv" th:text="${consignment.consignorName}">Chủ xe</span></div>
+            <div class="meta-row"><span class="mk">Xe</span>
+              <span class="mv" th:text="${consignment.displayLabel}">Xe</span></div>
+            <hr class="meta-sep">
+            <div class="meta-row"><span class="mk">Trạng thái</span>
+              <span class="mv"><span class="badge-draft-contract" th:text="${statusText}">Chưa soạn</span></span></div>
+            <div class="meta-row"><span class="mk">Hiệu lực</span>
+              <span class="mv" th:text="${fromText + ' – ' + toText}">15/01 – 15/03/2025</span></div>
+            <div class="meta-row"><span class="mk">Thời hạn</span>
+              <span class="mv" style="color:var(--amber-ink);font-weight:700;"
+                    th:text="${termDays != null ? termDays + ' ngày' : '—'}">60 ngày</span></div>
+          </div>
+        </div>
+      </aside>
+    </div><!--/* end contracts-layout */-->
+
+    <!--/* ── Action bar ── */-->
+    <div class="contracts-actions">
+      <a class="btn-c btn-c--ghost" th:href="@{/consignment/contracts}">
         <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/>
-          <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
         </svg>
-        Lưu nháp
-      </button>
-      <button type="button" class="btn-c btn-c--primary">
-        <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
-        </svg>
-        Gửi duyệt
-      </button>
+        Quay lại danh sách
+      </a>
+      <div class="contracts-actions-right" th:unless="${locked}">
+        <button type="submit" class="btn-c btn-c--secondary">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Lưu nháp
+        </button>
+        <button type="submit" name="submitAfter" value="true" class="btn-c btn-c--primary">
+          <svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>
+          </svg>
+          Gửi duyệt
+        </button>
+      </div>
     </div>
-  </div>
 
-</div><!--/* end contract-create / th:with */-->
+  </form>
+
+</div><!--/* end contract-create */-->
 
 </body>
 </html>

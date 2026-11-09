@@ -1,23 +1,20 @@
 <!DOCTYPE html>
 <!--/* Hà Lệ Quyên: màn list duy nhất của module ký gửi (Dashboard Workflow).
        Header/sidebar lấy từ shell/layout (th:replace).
-       Model: page, counts, q, status, flashMessage. Phần "Chờ BE" xem ghi chú bên dưới. */-->
+       Model: consignments (toàn bộ hồ sơ, DataTables phân trang ở trình duyệt), flashMessage. Phần "Chờ BE" xem ghi chú bên dưới. */-->
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{shell/layout :: page('Hồ sơ ký gửi', 'Dashboard Workflow Ký gửi xe', 'consignments',
-                    ${#aggregates.sum(counts.entrySet().?[key.name() == 'SUBMITTED'].![value])},
-                    ~{::link}, ~{::#consignment-workflow})}">
+                    null, ~{::link}, ~{::#consignment-workflow})}">
 <head>
   <title>Hồ sơ ký gửi</title>
   <th:block th:fragment="link">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/datatables.net-dt/1.13.6/css/jquery.dataTables.min.css">
     <link rel="stylesheet" th:href="@{/css/app/consignment-workflow.css}">
   </th:block>
 </head>
 <body>
 <div id="consignment-workflow" class="workflow"
-     th:with="statusNames=${ {'DRAFT':'Lưu nháp','SUBMITTED':'Chờ phê duyệt','ACTIVE':'Đã duyệt','INSPECTION_RECEIVED':'Đang kiểm định','INSPECTED':'Đã kiểm định','LISTED':'Đang đăng bán','RESERVED':'Đã đặt cọc','SOLD':'Đã bán','COMPLETED':'Hoàn thành','WITHDRAW_REQUESTED':'Đang yêu cầu rút ký gửi','WITHDRAWN':'Đã rút ký gửi','CLOSED':'Đã đóng ký gửi'} },
-              stageNames=${ {'DRAFT':'Lưu nháp','SUBMITTED':'Chờ phê duyệt','ACTIVE':'Đã duyệt','INSPECTION_RECEIVED':'Đang kiểm định','INSPECTED':'Đã kiểm định','LISTED':'Đang đăng bán','RESERVED':'Đã đặt cọc','SOLD':'Đã bán','COMPLETED':'Hoàn thành','WITHDRAW_REQUESTED':'Đang yêu cầu rút ký gửi','WITHDRAWN':'Đã rút ký gửi','CLOSED':'Đã đóng ký gửi'} },
-              stageIcons=${ {'DRAFT':'file','SUBMITTED':'hourglass','ACTIVE':'wrench','INSPECTION_RECEIVED':'clipboard','INSPECTED':'calendar-check','LISTED':'tag','RESERVED':'handshake','SOLD':'check','COMPLETED':'shield-check','WITHDRAW_REQUESTED':'undo','WITHDRAWN':'undo','CLOSED':'box'} },
-              total=${#aggregates.sum(counts.values())}">
+     th:with="statusNames=${ {'DRAFT':'Lưu nháp','SUBMITTED':'Chờ phê duyệt','ACTIVE':'Đã duyệt','INSPECTION_RECEIVED':'Đang kiểm định','INSPECTED':'Đã kiểm định','LISTED':'Đang đăng bán','RESERVED':'Đã đặt cọc','SOLD':'Đã bán','COMPLETED':'Hoàn thành','WITHDRAW_REQUESTED':'Đang yêu cầu rút ký gửi','WITHDRAWN':'Đã rút ký gửi','CLOSED':'Đã đóng ký gửi'} }">
 
   <section class="page-title">
     <span class="page-title-icon"><svg th:replace="~{shell/icons :: icon('clipboard')}"></svg></span>
@@ -32,47 +29,14 @@
 
   <p class="flash" th:if="${flashMessage}" th:text="${flashMessage}" role="status"></p>
 
-  <form class="card toolbar toolbar--search" method="get" th:action="@{/consignments}">
-    <input type="hidden" name="status" th:if="${status != null}" th:value="${status}">
-    <input type="hidden" name="size" th:value="${size}">
-    <label class="search">
-      <svg th:replace="~{shell/icons :: icon('search')}"></svg>
-      <input type="search" name="q" th:value="${q}" aria-label="Tìm hồ sơ" placeholder="Tìm theo mã hồ sơ, chủ xe, VIN...">
-    </label>
-    <div class="date-range" role="group" aria-label="Khoảng ngày tiếp nhận" data-date-range lang="vi-VN">
-      <svg th:replace="~{shell/icons :: icon('calendar-check')}"></svg>
-      <label class="date-range-field">
-        <span class="sr-only">Từ ngày</span>
-        <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
-               placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Từ ngày"
-               th:value="${fromDate != null ? #temporals.format(fromDate, 'dd/MM/yyyy') : ''}">
-        <input class="date-range-native" type="date" name="from" lang="vi-VN"
-               th:value="${fromDate}" tabindex="-1" aria-hidden="true">
-      </label>
-      <span class="date-range-sep" aria-hidden="true">→</span>
-      <label class="date-range-field">
-        <span class="sr-only">Đến ngày</span>
-        <input class="date-range-display" type="text" inputmode="numeric" maxlength="10"
-               placeholder="dd/mm/yyyy" autocomplete="off" aria-label="Đến ngày"
-               th:value="${toDate != null ? #temporals.format(toDate, 'dd/MM/yyyy') : ''}">
-        <input class="date-range-native" type="date" name="to" lang="vi-VN"
-               th:value="${toDate}" tabindex="-1" aria-hidden="true">
-      </label>
-    </div>
-    <!--/* Chờ BE: chưa có endpoint export. */-->
-    <button class="btn" type="button" disabled title="Chưa có chức năng export">
-      <svg th:replace="~{shell/icons :: icon('download')}"></svg>Export
-    </button>
-  </form>
-
-  <div class="workflow-grid">
+  <div class="workflow-grid workflow-grid--single">
     <section class="card records">
       <header class="card-head">
         <svg th:replace="~{shell/icons :: icon('list')}"></svg>
-        <h3 th:text="${'Danh sách hồ sơ (' + page.totalElements + ' bản ghi)'}">Danh sách hồ sơ</h3>
+        <h3 th:text="${'Danh sách hồ sơ (' + consignments.size() + ' bản ghi)'}">Danh sách hồ sơ</h3>
       </header>
-      <div class="table-wrap" th:unless="${page.empty}">
-        <table class="table">
+      <div class="table-wrap" th:unless="${consignments.isEmpty()}">
+        <table class="table" id="consignment-table">
           <caption class="sr-only">Danh sách hồ sơ ký gửi</caption>
           <thead>
             <tr>
@@ -84,14 +48,12 @@
               <th scope="col">Chủ xe</th>
               <th scope="col">Xe</th>
               <th scope="col">Ngày</th>
-              <th scope="col">Giai đoạn</th>
-              <th scope="col">Phụ trách</th>
               <th scope="col">Trạng thái</th>
               <th scope="col">Hành động</th>
             </tr>
           </thead>
           <tbody>
-            <tr th:each="c : ${page.content}"
+            <tr th:each="c : ${consignments}"
                 th:with="s=${c.status.name()},
                          tone=${s == 'DRAFT' ? 'draft' : (s == 'SUBMITTED' or s == 'WITHDRAW_REQUESTED' ? 'pending' : (s == 'WITHDRAWN' ? 'withdrawn' : (s == 'CLOSED' or s == 'COMPLETED' ? 'closed' : 'approved')))},
                          open=${s != 'SOLD' and s != 'COMPLETED' and s != 'WITHDRAW_REQUESTED' and s != 'WITHDRAWN' and s != 'CLOSED'}">
@@ -104,20 +66,13 @@
                 <div class="vehicle">
                   <span class="vehicle-thumb"><svg th:replace="~{shell/icons :: icon('car')}"></svg></span>
                   <span>
-                    <strong th:text="${c.vehicle.displayLabel}" th:title="${c.vehicle.displayLabel}">Xe</strong>
-                    <small th:text="${(c.vehicle.year != null ? c.vehicle.year + ' · ' : '') + c.vehicle.vin}" th:title="${c.vehicle.vin}">VIN</small>
+                    <strong th:text="${c.displayLabel}" th:title="${c.displayLabel}">Xe</strong>
+                    <small th:text="${(c.year != null ? c.year + ' · ' : '') + c.vin}" th:title="${c.vin}">VIN</small>
                   </span>
                 </div>
               </td>
-              <td th:text="${c.intakeDate != null ? #temporals.format(c.intakeDate, 'dd/MM/yyyy') : '—'}">—</td>
-              <td>
-                <span class="stage">
-                  <svg th:replace="~{shell/icons :: icon(${stageIcons[c.status.name()]})}"></svg>
-                  <span th:text="${stageNames[c.status.name()]}">Giai đoạn</span>
-                </span>
-              </td>
-              <!--/* Chờ BE: ConsignmentResponse chưa có người phụ trách. */-->
-              <td class="muted">—</td>
+              <td th:attr="data-order=${c.intakeDate}"
+                  th:text="${c.intakeDate != null ? #temporals.format(c.intakeDate, 'dd/MM/yyyy') : '—'}">—</td>
               <td><span class="pill" th:classappend="${'pill--' + tone}" th:text="${statusNames[c.status.name()]}">Lưu nháp</span></td>
               <td>
                 <div class="row-actions">
@@ -161,126 +116,47 @@
           </tbody>
         </table>
       </div>
-      <div class="empty" th:if="${page.empty}">
+      <div class="empty" th:if="${consignments.isEmpty()}">
         <svg th:replace="~{shell/icons :: icon('search')}"></svg>
         <h4>Không có hồ sơ phù hợp</h4>
         <p>Thử đổi từ khóa, bỏ bộ lọc hoặc tạo hồ sơ mới.</p>
       </div>
-      <!--/* Hà Lệ Quyên: thanh phân trang luôn hiện, nút hết trang chỉ mờ đi để khung table không đổi kích thước. */-->
-      <nav class="pager" aria-label="Phân trang"
-           th:with="last=${page.totalPages > 0 ? page.totalPages - 1 : 0},
-                    from=${page.number > 2 ? page.number - 2 : 0},
-                    to=${page.number + 2 < last ? page.number + 2 : last},
-                    first=${page.number * page.size + 1}">
-        <span th:text="${page.empty ? 'Không có bản ghi' : 'Hiển thị ' + first + '–' + (first + page.numberOfElements - 1) + ' / ' + page.totalElements + ' hồ sơ'}">Hiển thị</span>
-        <div class="pager-side">
-          <div class="pager-meta">
-            <span class="pager-size-label">Hiển thị</span>
-            <details class="filter-dropdown pager-size-dropdown">
-              <summary class="filter-dropdown-trigger" aria-label="Số dòng mỗi trang">
-                <span th:text="${size}">10</span>
-                <span class="filter-dropdown-caret" aria-hidden="true">
-                  <svg th:replace="~{shell/icons :: icon('chevron')}"></svg>
-                </span>
-              </summary>
-              <div class="filter-dropdown-menu" role="listbox" aria-label="Số dòng mỗi trang">
-                <a class="filter-dropdown-item" role="option" th:each="n : ${ {5, 10, 20} }"
-                   th:classappend="${n == size} ? 'is-active'"
-                   th:href="@{/consignments(q=${q},status=${status},from=${fromDate},to=${toDate},page=0,size=${n})}"
-                   th:text="${n}" th:attr="aria-selected=${n == size}">10</a>
-              </div>
-            </details>
-          </div>
-          <div class="pager-links">
-            <a class="page-link" th:if="${page.hasPrevious()}" aria-label="Trang trước"
-               th:href="@{/consignments(q=${q},status=${status},from=${fromDate},to=${toDate},page=${page.number - 1},size=${size})}">‹</a>
-            <span class="page-link is-off" th:unless="${page.hasPrevious()}" aria-hidden="true">‹</span>
-            <a class="page-link" th:each="n : ${#numbers.sequence(from, to)}"
-               th:classappend="${n == page.number} ? 'is-active'"
-               th:attr="aria-current=${n == page.number ? 'page' : null}"
-               th:href="@{/consignments(q=${q},status=${status},from=${fromDate},to=${toDate},page=${n},size=${size})}"
-               th:text="${n + 1}">1</a>
-            <a class="page-link" th:if="${page.hasNext()}" aria-label="Trang sau"
-               th:href="@{/consignments(q=${q},status=${status},from=${fromDate},to=${toDate},page=${page.number + 1},size=${size})}">›</a>
-            <span class="page-link is-off" th:unless="${page.hasNext()}" aria-hidden="true">›</span>
-          </div>
-        </div>
-      </nav>
     </section>
 
-    <div class="side-stack">
-      <section class="card">
-        <header class="card-head">
-          <svg th:replace="~{shell/icons :: icon('filter')}"></svg><h3>Bộ lọc nhanh</h3>
-        </header>
-        <ul class="quick"
-            th:with="St=${T(fu.he.training.fall2026.entity.enums.ConsignmentStatus)}">
-          <li><a th:replace="~{shell/ui :: quick('check', 'Tất cả hồ sơ', ${total},
-              @{/consignments(q=${q},from=${fromDate},to=${toDate},size=${size})}, ${status == null})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('file', 'Lưu nháp', ${counts.get(St.DRAFT) ?: 0},
-              @{/consignments(q=${q},status='DRAFT',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'DRAFT'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('hourglass', 'Chờ phê duyệt', ${counts.get(St.SUBMITTED) ?: 0},
-              @{/consignments(q=${q},status='SUBMITTED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'SUBMITTED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('wrench', 'Đã duyệt', ${counts.get(St.ACTIVE) ?: 0},
-              @{/consignments(q=${q},status='ACTIVE',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'ACTIVE'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('clipboard', 'Đang kiểm định', ${counts.get(St.INSPECTION_RECEIVED) ?: 0},
-              @{/consignments(q=${q},status='INSPECTION_RECEIVED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'INSPECTION_RECEIVED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('calendar-check', 'Đã kiểm định', ${counts.get(St.INSPECTED) ?: 0},
-              @{/consignments(q=${q},status='INSPECTED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'INSPECTED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('tag', 'Đang đăng bán', ${counts.get(St.LISTED) ?: 0},
-              @{/consignments(q=${q},status='LISTED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'LISTED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('handshake', 'Đã đặt cọc', ${counts.get(St.RESERVED) ?: 0},
-              @{/consignments(q=${q},status='RESERVED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'RESERVED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('check', 'Đã bán', ${counts.get(St.SOLD) ?: 0},
-              @{/consignments(q=${q},status='SOLD',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'SOLD'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('shield-check', 'Hoàn thành', ${counts.get(St.COMPLETED) ?: 0},
-              @{/consignments(q=${q},status='COMPLETED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'COMPLETED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('undo', 'Đang yêu cầu rút ký gửi', ${counts.get(St.WITHDRAW_REQUESTED) ?: 0},
-              @{/consignments(q=${q},status='WITHDRAW_REQUESTED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'WITHDRAW_REQUESTED'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('undo', 'Đã rút ký gửi', ${counts.get(St.WITHDRAWN) ?: 0},
-              @{/consignments(q=${q},status='WITHDRAWN',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'WITHDRAWN'})}"></a></li>
-          <li><a th:replace="~{shell/ui :: quick('box', 'Đã đóng ký gửi', ${counts.get(St.CLOSED) ?: 0},
-              @{/consignments(q=${q},status='CLOSED',from=${fromDate},to=${toDate},size=${size})},
-              ${status != null and status.name() == 'CLOSED'})}"></a></li>
-        </ul>
-      </section>
-
-      <section class="card">
-        <header class="card-head">
-          <svg th:replace="~{shell/icons :: icon('info')}"></svg><h3>Rule notes</h3>
-        </header>
-        <ul class="rules">
-          <li>Hồ sơ phải đủ thông tin xe, giấy tờ và kiểm định trước khi gửi duyệt.</li>
-          <li>Chỉ tài khoản có quyền phê duyệt mới được duyệt/từ chối.</li>
-          <li>Hồ sơ đã duyệt có thể rút ký gửi trước khi đăng bán.</li>
-          <li>Hồ sơ đóng ký gửi không thể chỉnh sửa, chỉ xem thông tin.</li>
-        </ul>
-      </section>
-
-      <section class="card">
-        <header class="card-head">
-          <svg th:replace="~{shell/icons :: icon('flow')}"></svg><h3>Luồng thao tác</h3>
-        </header>
-        <ol class="flow">
-          <li><svg th:replace="~{shell/icons :: icon('file')}"></svg>Lưu nháp</li>
-          <li><svg th:replace="~{shell/icons :: icon('send')}"></svg>Gửi duyệt</li>
-          <li><svg th:replace="~{shell/icons :: icon('hourglass')}"></svg>Chờ phê duyệt</li>
-          <li><svg th:replace="~{shell/icons :: icon('wrench')}"></svg>Đã duyệt</li>
-        </ol>
-      </section>
-    </div>
   </div>
+
+  <select id="status-filter" aria-label="Lọc theo trạng thái">
+    <option value="">Tất cả trạng thái</option>
+    <option th:each="name : ${statusNames.values()}" th:text="${name}">Lưu nháp</option>
+  </select>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/datatables.net/1.13.6/jquery.dataTables.min.js"></script>
+  <script>
+    var table = jQuery('#consignment-table').DataTable({
+      order: [],                                                /* giữ thứ tự server trả về (mới nhất trước) */
+      columnDefs: [
+        { orderable: false, searchable: false, targets: [0, 6] } /* checkbox + hành động */
+      ],
+      language: {
+        search: 'Tìm kiếm:',
+        lengthMenu: 'Hiển thị _MENU_ dòng',
+        info: 'Hiển thị _START_–_END_ / _TOTAL_ hồ sơ',
+        infoEmpty: 'Không có bản ghi',
+        infoFiltered: '(lọc từ _MAX_ hồ sơ)',
+        zeroRecords: 'Không có hồ sơ phù hợp',
+        paginate: { first: '«', previous: '‹', next: '›', last: '»' }
+      }
+    });
+
+    /* Đưa ô chọn trạng thái vào cạnh ô "Tìm kiếm" của DataTables. */
+    jQuery('#status-filter').css('margin-right', '8px').prependTo('.dataTables_filter');
+
+    /* Chọn trạng thái → lọc cột 5 (Trạng thái). */
+    jQuery('#status-filter').on('change', function () {
+      table.column(5).search(this.value).draw();
+    });
+  </script>
 
 </div>
 </body>

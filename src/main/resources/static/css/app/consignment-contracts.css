@@ -21,7 +21,6 @@
 #contracts-list .records th:nth-child(8) { width: 88px; }
 #contracts-list .records .table .num { text-align: right; }
 #contracts-list .records td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.contract-version { display: block; font-size: 11px; color: var(--ink-soft); }
 .contract-term { font-variant-numeric: tabular-nums; }
 .days-left { font-weight: 600; white-space: nowrap; }
 .days-left--soon { color: var(--amber-ink); }

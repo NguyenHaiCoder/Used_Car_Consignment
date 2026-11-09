@@ -39,6 +39,10 @@ public interface ConsignmentRepository extends JpaRepository<Consignment, Long> 
             @Param("status") ConsignmentStatus status,
             Pageable pageable);
 
+    /** Tất cả hồ sơ kèm chủ xe + xe, mới nhất trước. */
+    @Query("select c from Consignment c join fetch c.consignor join fetch c.vehicle order by c.createdAt desc")
+    List<Consignment> findAllWithDetail();
+
     @Query("select c from Consignment c join fetch c.consignor join fetch c.vehicle where c.id = :id")
     Optional<Consignment> findDetailById(@Param("id") Long id);
 
